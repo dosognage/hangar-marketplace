@@ -6,6 +6,7 @@ import ContactForm from '@/app/components/ContactForm'
 import FavoriteButton from '@/app/components/FavoriteButton'
 import AircraftFitCalculator from '@/app/components/AircraftFitCalculator'
 import LandingFees from '@/app/components/LandingFees'
+import FuelPrices from '@/app/components/FuelPrices'
 import type { Metadata } from 'next'
 
 type ListingPageProps = {
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: ListingPageProps): Promise<Me
   const { id } = await params
   const { data: listing } = await supabase
     .from('listings')
-    .select('title, airport_name, airport_code, city, state, asking_price, monthly_lease, description')
+    .select('title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, description')
     .eq('id', id)
     .single()
 
@@ -31,7 +32,11 @@ export async function generateMetadata({ params }: ListingPageProps): Promise<Me
       ? `$${listing.monthly_lease.toLocaleString()}/mo`
       : 'Contact for price'
 
-  const title = `${listing.title} | ${listing.airport_code} | Hangar Marketplace`
+  const listingLabel =
+    listing.listing_type === 'sale'  ? 'For Sale' :
+    listing.listing_type === 'space' ? 'Space Available' : 'For Lease'
+
+  const title = `${listing.title} | ${listingLabel} | ${listing.airport_code} | Hangar Marketplace`
   const description = listing.description
     ? listing.description.slice(0, 155)
     : `${listing.title} at ${listing.airport_name} (${listing.airport_code}) in ${listing.city}, ${listing.state}. ${price}.`
@@ -149,7 +154,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <span style={badgeStyle(typedListing.listing_type)}>
-              {typedListing.listing_type === 'sale' ? 'For Sale' : 'For Lease'}
+              {typedListing.listing_type === 'sale' ? 'For Sale' : typedListing.listing_type === 'space' ? 'Space Available' : 'For Lease'}
             </span>
             <FavoriteButton
               listingId={typedListing.id}
@@ -177,7 +182,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
       {/* Details card — 2 columns on desktop, 1 on mobile (see globals.css .detail-grid) */}
       <div className="detail-grid">
         <DetailCard title="Hangar Details">
-          <DetailRow label="Listing type" value={typedListing.listing_type === 'sale' ? 'For Sale' : 'For Lease'} />
+          <DetailRow label="Listing type" value={typedListing.listing_type === 'sale' ? 'For Sale' : typedListing.listing_type === 'space' ? 'Space Available' : 'For Lease'} />
           <DetailRow label="Ownership" value={typedListing.ownership_type} />
           {typedListing.square_feet && (
             <DetailRow label="Square feet" value={`${typedListing.square_feet.toLocaleString()} sq ft`} />
@@ -237,6 +242,9 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
         airportName={typedListing.airport_name}
       />
 
+      {/* Fuel prices */}
+      <FuelPrices airportCode={typedListing.airport_code} />
+
       {/* Contact form */}
       <ContactForm
         listingId={typedListing.id}
@@ -278,14 +286,17 @@ const detailLabelStyle: React.CSSProperties = {
 }
 
 function badgeStyle(type: string): React.CSSProperties {
-  const isSale = type === 'sale'
+  const colors =
+    type === 'sale'  ? { bg: '#dbeafe', text: '#1e40af' } :
+    type === 'space' ? { bg: '#fef3c7', text: '#92400e' } :
+                       { bg: '#dcfce7', text: '#166534' }
   return {
     display: 'inline-block',
     padding: '0.2rem 0.75rem',
     borderRadius: '999px',
     fontSize: '0.8rem',
     fontWeight: '600',
-    backgroundColor: isSale ? '#dbeafe' : '#dcfce7',
-    color: isSale ? '#1e40af' : '#166534',
+    backgroundColor: colors.bg,
+    color: colors.text,
   }
 }

@@ -38,6 +38,9 @@ const EMPTY_FORM = {
   contact_phone: '',
 }
 
+// Listings that require a monthly rate (not a sale price)
+const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
+
 export default function SubmitPage() {
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [photos, setPhotos] = useState<File[]>([])
@@ -81,8 +84,8 @@ export default function SubmitPage() {
           state: formData.state,
           listing_type: formData.listing_type,
           ownership_type: formData.ownership_type,
-          asking_price: formData.asking_price ? Number(formData.asking_price) : null,
-          monthly_lease: formData.monthly_lease ? Number(formData.monthly_lease) : null,
+          asking_price: formData.listing_type === 'sale' && formData.asking_price ? Number(formData.asking_price) : null,
+          monthly_lease: IS_RENTAL(formData.listing_type) && formData.monthly_lease ? Number(formData.monthly_lease) : null,
           square_feet: formData.square_feet ? Number(formData.square_feet) : null,
           door_width: formData.door_width ? Number(formData.door_width) : null,
           door_height: formData.door_height ? Number(formData.door_height) : null,
@@ -184,7 +187,8 @@ export default function SubmitPage() {
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ marginBottom: '0.25rem' }}>Submit a Hangar Listing</h1>
         <p style={{ color: '#6b7280', margin: 0 }}>
-          Fill out the details below. Your listing will be reviewed before going live.
+          Listing a full hangar for sale or lease, or have extra space to share? Fill out the details below.
+          Your listing will be reviewed before going live.
         </p>
       </div>
 
@@ -227,26 +231,43 @@ export default function SubmitPage() {
           <TwoCol>
             <Field label="Listing type *">
               <select name="listing_type" value={formData.listing_type} onChange={handleChange} style={inputStyle}>
-                <option value="sale">For Sale</option>
-                <option value="lease">For Lease</option>
+                <option value="sale">For Sale — full hangar</option>
+                <option value="lease">For Lease — full hangar</option>
+                <option value="space">Space Available — partial hangar</option>
               </select>
             </Field>
             <Field label="Ownership type *">
               <input name="ownership_type" placeholder="Private / Municipal / Condo" value={formData.ownership_type} onChange={handleChange} required style={inputStyle} />
             </Field>
           </TwoCol>
+          {formData.listing_type === 'space' && (
+            <div style={{
+              backgroundColor: '#eff6ff', border: '1px solid #bfdbfe',
+              borderRadius: '6px', padding: '0.65rem 0.85rem',
+              fontSize: '0.82rem', color: '#1e40af', lineHeight: 1.5,
+            }}>
+              ✈ Use this option if you own or lease a hangar and have extra space you'd like to share.
+              Enter the available space dimensions and your monthly rate below.
+            </div>
+          )}
         </Section>
 
         {/* ── Pricing ─────────────────────────────────────────────────── */}
         <Section title="Pricing">
-          <TwoCol>
-            <Field label="Asking price ($)">
-              <input name="asking_price" type="number" placeholder="0" value={formData.asking_price} onChange={handleChange} style={inputStyle} />
-            </Field>
-            <Field label="Monthly lease ($)">
+          {IS_RENTAL(formData.listing_type) ? (
+            <Field label={formData.listing_type === 'space' ? 'Monthly rent for the space ($)' : 'Monthly lease ($)'}>
               <input name="monthly_lease" type="number" placeholder="0" value={formData.monthly_lease} onChange={handleChange} style={inputStyle} />
             </Field>
-          </TwoCol>
+          ) : (
+            <TwoCol>
+              <Field label="Asking price ($)">
+                <input name="asking_price" type="number" placeholder="0" value={formData.asking_price} onChange={handleChange} style={inputStyle} />
+              </Field>
+              <Field label="Monthly lease ($)">
+                <input name="monthly_lease" type="number" placeholder="0" value={formData.monthly_lease} onChange={handleChange} style={inputStyle} />
+              </Field>
+            </TwoCol>
+          )}
         </Section>
 
         {/* ── Dimensions ──────────────────────────────────────────────── */}

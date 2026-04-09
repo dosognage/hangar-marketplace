@@ -88,7 +88,7 @@ export async function updateListing(
     asking_price:   listing_type === 'sale' && formData.get('asking_price')
                       ? Number(formData.get('asking_price'))
                       : null,
-    monthly_lease:  listing_type === 'lease' && formData.get('monthly_lease')
+    monthly_lease:  (listing_type === 'lease' || listing_type === 'space') && formData.get('monthly_lease')
                       ? Number(formData.get('monthly_lease'))
                       : null,
     square_feet:    formData.get('square_feet') ? Number(formData.get('square_feet')) : null,

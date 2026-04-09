@@ -132,8 +132,9 @@ export default function EditListingPage() {
             onChange={e => setListingType(e.target.value)}
             style={inputStyle}
           >
-            <option value="sale">For Sale</option>
-            <option value="lease">For Lease</option>
+            <option value="sale">For Sale — full hangar</option>
+            <option value="lease">For Lease — full hangar</option>
+            <option value="space">Space Available — partial hangar</option>
           </select>
         </Field>
 
@@ -143,7 +144,7 @@ export default function EditListingPage() {
             <input name="asking_price" type="number" min="0" defaultValue={listing.asking_price ?? ''} style={inputStyle} />
           </Field>
         ) : (
-          <Field label="Monthly Lease ($)">
+          <Field label={listingType === 'space' ? 'Monthly Rent for Space ($)' : 'Monthly Lease ($)'}>
             <input name="monthly_lease" type="number" min="0" defaultValue={listing.monthly_lease ?? ''} style={inputStyle} />
           </Field>
         )}

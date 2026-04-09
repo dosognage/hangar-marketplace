@@ -271,7 +271,7 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <span style={{ fontWeight: '700', fontSize: '1rem', color: '#111827' }}>{price}</span>
                       <span style={badgeStyle(listing.listing_type)}>
-                        {listing.listing_type === 'sale' ? 'For Sale' : 'For Lease'}
+                        {listing.listing_type === 'sale' ? 'For Sale' : listing.listing_type === 'space' ? 'Space Available' : 'For Lease'}
                       </span>
                     </div>
 
@@ -353,14 +353,17 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function badgeStyle(type: string): React.CSSProperties {
-  const isSale = type === 'sale'
+  const colors =
+    type === 'sale'  ? { bg: '#dbeafe', text: '#1e40af' } :
+    type === 'space' ? { bg: '#fef3c7', text: '#92400e' } :
+                       { bg: '#dcfce7', text: '#166534' }
   return {
     padding: '0.15rem 0.5rem',
     borderRadius: '999px',
     fontSize: '0.7rem',
     fontWeight: '600',
-    backgroundColor: isSale ? '#dbeafe' : '#dcfce7',
-    color: isSale ? '#1e40af' : '#166534',
+    backgroundColor: colors.bg,
+    color: colors.text,
     whiteSpace: 'nowrap',
   }
 }
