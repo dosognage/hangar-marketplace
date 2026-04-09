@@ -29,6 +29,7 @@ type Listing = {
   is_sponsored: boolean
   sponsored_until: string | null
   stripe_customer_id: string | null
+  view_count: number
 }
 
 type Inquiry = {
@@ -59,7 +60,7 @@ export default async function DashboardPage() {
   // Fetch this user's listings
   const { data: listings, error } = await supabase
     .from('listings')
-    .select('id, title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, status, created_at, is_sponsored, sponsored_until, stripe_customer_id')
+    .select('id, title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, status, created_at, is_sponsored, sponsored_until, stripe_customer_id, view_count')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
@@ -229,6 +230,25 @@ export default async function DashboardPage() {
                       {listing.asking_price ? ` · $${listing.asking_price.toLocaleString()}` : ''}
                       {listing.monthly_lease ? ` · $${listing.monthly_lease.toLocaleString()}/mo` : ''}
                     </p>
+
+                    {/* Stats row: views + inquiries */}
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', color: '#6b7280' }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <strong style={{ color: '#111827' }}>{(listing.view_count ?? 0).toLocaleString()}</strong> view{listing.view_count !== 1 ? 's' : ''}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', color: '#6b7280' }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <strong style={{ color: '#111827' }}>{listingInquiries.length}</strong> inquir{listingInquiries.length !== 1 ? 'ies' : 'y'}
+                      </span>
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>

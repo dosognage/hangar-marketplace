@@ -21,6 +21,48 @@ export default function SearchFilters({
   const router = useRouter()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [locating, setLocating] = useState(false)
+
+  async function handleNearMe() {
+    if (!navigator.geolocation) return
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          // Use AviationWeather nearest-station lookup to find closest airport
+          const res = await fetch(
+            `https://avwx.rest/api/station/near/${coords.latitude},${coords.longitude}?n=1&airport=true`,
+            { headers: { Authorization: `TOKEN ${process.env.NEXT_PUBLIC_AVWX_TOKEN ?? ''}` } }
+          ).catch(() => null)
+
+          let code = ''
+          if (res?.ok) {
+            const json = await res.json()
+            code = json?.[0]?.station?.icao ?? ''
+          }
+
+          // Fallback: reverse geocode to city via nominatim (free, no key)
+          if (!code) {
+            const geo = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`
+            ).then(r => r.json()).catch(() => null)
+            code = geo?.address?.city ?? geo?.address?.town ?? geo?.address?.county ?? ''
+          }
+
+          if (code && inputRef.current) {
+            inputRef.current.value = code
+            // Submit immediately
+            router.push(`/?q=${encodeURIComponent(code)}`, { scroll: false })
+          }
+        } finally {
+          setLocating(false)
+        }
+      },
+      () => setLocating(false),
+      { timeout: 8000 }
+    )
+  }
 
   // Count active filters (excluding the main search query)
   const activeFilterCount = [initialType, initialMinPrice, initialMaxPrice, initialMinSqft]
@@ -63,6 +105,7 @@ export default function SearchFilters({
       {/* ── Row 1: Search input (full-width on mobile) ─────────────────── */}
       <div className="sf-top-row">
         <input
+          ref={inputRef}
           name="q"
           type="search"
           defaultValue={initialQ}
@@ -70,6 +113,42 @@ export default function SearchFilters({
           className="sf-search-input"
           style={inputStyle}
         />
+
+        {/* Near me button */}
+        <button
+          type="button"
+          onClick={handleNearMe}
+          disabled={locating}
+          title="Find hangars near me"
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '38px',
+            height: '40px',
+            backgroundColor: locating ? '#e5e7eb' : 'white',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            cursor: locating ? 'default' : 'pointer',
+            color: locating ? '#9ca3af' : '#374151',
+          }}
+        >
+          {locating ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ animation: 'spin 1s linear infinite' }}>
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+              <circle cx="12" cy="12" r="8" strokeDasharray="3 3"/>
+            </svg>
+          )}
+        </button>
 
         {/* Action group — sits inline on desktop, wraps to new line on mobile */}
         <div className="sf-action-group">

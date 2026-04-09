@@ -12,6 +12,7 @@ import SimilarListings from '@/app/components/SimilarListings'
 import type { Metadata } from 'next'
 import { Star } from 'lucide-react'
 import SponsorButton from '@/app/components/SponsorButton'
+import ViewTracker from '@/app/components/ViewTracker'
 
 type ListingPageProps = {
   params: Promise<{ id: string }>
@@ -109,6 +110,7 @@ type Listing = {
   contact_email: string
   contact_phone: string | null
   status: string
+  view_count: number
   listing_photos: Photo[]
 }
 
@@ -205,6 +207,9 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
 
   return (
     <div style={{ maxWidth: '900px' }}>
+      {/* Fire view count increment client-side (bots don't run JS) */}
+      <ViewTracker listingId={typedListing.id} />
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -217,9 +222,24 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', margin: '1rem 0' }}>
         <div>
           <h1 style={{ margin: '0 0 0.3rem', color: '#111827' }}>{typedListing.title}</h1>
-          <p style={{ margin: 0, color: '#6b7280' }}>
-            {typedListing.airport_name} ({typedListing.airport_code}) · {typedListing.city}, {typedListing.state}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <p style={{ margin: 0, color: '#6b7280' }}>
+              {typedListing.airport_name} ({typedListing.airport_code}) · {typedListing.city}, {typedListing.state}
+            </p>
+            {typedListing.view_count > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                fontSize: '0.75rem', color: '#9ca3af',
+              }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                {typedListing.view_count.toLocaleString()} view{typedListing.view_count !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
           <p style={{ margin: 0, fontWeight: '800', fontSize: '1.4rem', color: '#111827' }}>

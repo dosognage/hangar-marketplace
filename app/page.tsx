@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@/lib/supabase-server'
 import SearchFilters from '@/app/components/SearchFilters'
 import SplitView from '@/app/components/SplitView'
+import SaveSearchWidget from '@/app/components/SaveSearchWidget'
 
 type Photo = { storage_path: string; display_order: number }
 
@@ -153,7 +154,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     <div className="home-fullbleed" style={{ margin: '-2rem', display: 'flex', flexDirection: 'column', height: 'calc(100dvh - var(--header-h, 60px))', overflow: 'hidden' }}>
 
       {/* Search bar — desktop only; on mobile the floating bar in SplitView is used */}
-      <div className="desktop-search-bar" style={{ padding: '1rem 2rem', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f8f8f8' }}>
+      <div className="desktop-search-bar" style={{ padding: '1rem 2rem 0.75rem', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f8f8f8', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
         <Suspense fallback={<div style={{ height: '60px' }} />}>
           <SearchFilters
             initialQ={qVal}
@@ -163,6 +164,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             initialMinSqft={minSqftVal}
           />
         </Suspense>
+        <SaveSearchWidget
+          query={qVal}
+          listingType={typeVal}
+          maxPrice={maxPriceVal}
+          minSqft={minSqftVal}
+        />
       </div>
 
       {/* Split view fills remaining height — always rendered (handles empty state internally) */}

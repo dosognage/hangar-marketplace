@@ -10,6 +10,7 @@ import MobileMenu from '@/app/components/MobileMenu'
 import BugReportProvider from '@/app/components/BugReportProvider'
 import BugReportButton from '@/app/components/BugReportButton'
 import HomeAirportWidget from '@/app/components/HomeAirportWidget'
+import GoogleAnalytics from '@/app/components/GoogleAnalytics'
 import { Plane } from 'lucide-react'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
@@ -96,6 +97,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <GoogleAnalytics />
+      </head>
       <body
         style={{
           margin: 0,
