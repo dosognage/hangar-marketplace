@@ -92,11 +92,22 @@ export default async function AdminPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ marginBottom: '0.25rem' }}>Admin Review</h1>
-        <p style={{ color: '#6b7280', margin: 0 }}>
-          {listings?.length ?? 0} pending listing{listings?.length !== 1 ? 's' : ''} · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
-        </p>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ marginBottom: '0.25rem' }}>Admin Review</h1>
+          <p style={{ color: '#6b7280', margin: 0 }}>
+            {listings?.length ?? 0} pending listing{listings?.length !== 1 ? 's' : ''} · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <a href="/admin/featured" style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+          padding: '0.45rem 0.9rem', borderRadius: '7px',
+          backgroundColor: '#fef3c7', color: '#92400e',
+          border: '1px solid #fde68a', fontWeight: '600',
+          fontSize: '0.825rem', textDecoration: 'none', whiteSpace: 'nowrap',
+        }}>
+          ⭐ Manage Featured
+        </a>
       </div>
 
       {/* ── Broker Applications ───────────────────────────────────────────── */}

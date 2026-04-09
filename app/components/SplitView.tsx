@@ -43,6 +43,8 @@ type Listing = Omit<MapListing, 'latitude' | 'longitude'> & {
   door_width: number | null
   door_height: number | null
   description: string | null
+  is_featured: boolean
+  featured_until: string | null
   listing_photos: Photo[]
 }
 
@@ -210,6 +212,9 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
             (a, b) => a.display_order - b.display_order
           )
           const coverPath = sortedPhotos[0]?.storage_path ?? null
+          const isFeaturedActive = listing.is_featured &&
+            listing.featured_until != null &&
+            new Date(listing.featured_until) > new Date()
 
           const price = listing.asking_price
             ? `$${listing.asking_price.toLocaleString()}`
@@ -236,6 +241,21 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
                   transition: 'border-color 0.15s, box-shadow 0.15s',
                   position: 'relative',
                 }}>
+                  {/* Featured badge */}
+                  {isFeaturedActive && (
+                    <div style={{
+                      position: 'absolute', top: '8px', left: '8px', zIndex: 10,
+                      display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                      padding: '0.18rem 0.5rem', borderRadius: '999px',
+                      backgroundColor: '#f59e0b', color: 'white',
+                      fontSize: '0.68rem', fontWeight: '700',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                      pointerEvents: 'none',
+                    }}>
+                      ⭐ Featured
+                    </div>
+                  )}
+
                   {/* Heart button overlay */}
                   <button
                     onClick={(e) => handleHeart(e, listing.id)}

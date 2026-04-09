@@ -26,6 +26,8 @@ type Listing = {
   contact_name: string
   latitude: number | null
   longitude: number | null
+  is_featured: boolean
+  featured_until: string | null
   listing_photos: Photo[]
 }
 
@@ -119,10 +121,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     )
   }
 
-  const safeListings: Listing[] = (listings ?? []).map((l: Listing) => ({
-    ...l,
-    listing_photos: l.listing_photos ?? [],
-  }))
+  const now = new Date()
+  const safeListings: Listing[] = (listings ?? [])
+    .map((l: Listing) => ({ ...l, listing_photos: l.listing_photos ?? [] }))
+    .sort((a: Listing, b: Listing) => {
+      const aFeatured = a.is_featured && a.featured_until && new Date(a.featured_until) > now
+      const bFeatured = b.is_featured && b.featured_until && new Date(b.featured_until) > now
+      if (aFeatured && !bFeatured) return -1
+      if (!aFeatured && bFeatured) return 1
+      return 0
+    })
 
   return (
     // Negative margin breaks out of the layout's max-width / padding

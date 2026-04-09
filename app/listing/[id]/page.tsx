@@ -77,6 +77,8 @@ type Listing = {
   door_height: number | null
   hangar_depth: number | null
   description: string | null
+  is_featured: boolean
+  featured_until: string | null
   contact_name: string
   contact_email: string
   contact_phone: string | null
@@ -154,7 +156,19 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
                 ? `$${typedListing.monthly_lease.toLocaleString()}/mo`
                 : 'Contact for price'}
           </p>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {typedListing.is_featured &&
+              typedListing.featured_until &&
+              new Date(typedListing.featured_until) > new Date() && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                padding: '0.2rem 0.6rem', borderRadius: '999px',
+                backgroundColor: '#f59e0b', color: 'white',
+                fontSize: '0.75rem', fontWeight: '700',
+              }}>
+                ⭐ Featured
+              </span>
+            )}
             <span style={badgeStyle(typedListing.listing_type)}>
               {typedListing.listing_type === 'sale' ? 'For Sale' : typedListing.listing_type === 'space' ? 'Space Available' : 'For Lease'}
             </span>
