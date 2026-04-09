@@ -109,3 +109,37 @@ export async function updateListing(
   revalidatePath(`/listing/${listingId}`)
   redirect('/dashboard')
 }
+
+// ── Toggle saved listing ───────────────────────────────────────────────────
+
+/**
+ * Inserts or deletes a row in saved_listings for the current user.
+ * Returns the new saved state, or redirects to login if not authenticated.
+ */
+export async function toggleSavedListing(
+  listingId: string,
+  currentlySaved: boolean
+): Promise<{ saved: boolean; error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect(`/login?next=/listing/${listingId}`)
+  }
+
+  if (currentlySaved) {
+    const { error } = await supabase
+      .from('saved_listings')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('listing_id', listingId)
+    if (error) return { saved: true, error: error.message }
+    return { saved: false }
+  } else {
+    const { error } = await supabase
+      .from('saved_listings')
+      .insert({ user_id: user.id, listing_id: listingId })
+    if (error) return { saved: false, error: error.message }
+    return { saved: true }
+  }
+}

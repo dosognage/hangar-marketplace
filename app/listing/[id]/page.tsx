@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { createServerClient } from '@/lib/supabase-server'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import ContactForm from '@/app/components/ContactForm'
 import FavoriteButton from '@/app/components/FavoriteButton'
@@ -82,6 +83,21 @@ function photoUrl(path: string) {
 export default async function ListingDetailPage({ params }: ListingPageProps) {
   const { id } = await params
 
+  // Get current user and saved state server-side (cookie auth — reliable)
+  const serverSupabase = await createServerClient()
+  const { data: { user } } = await serverSupabase.auth.getUser()
+
+  let initialSaved = false
+  if (user) {
+    const { data: saved } = await serverSupabase
+      .from('saved_listings')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('listing_id', id)
+      .maybeSingle()
+    initialSaved = !!saved
+  }
+
   const { data: listing, error } = await supabase
     .from('listings')
     .select('*, listing_photos(id, storage_path, display_order)')
@@ -132,7 +148,11 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
             <span style={badgeStyle(typedListing.listing_type)}>
               {typedListing.listing_type === 'sale' ? 'For Sale' : 'For Lease'}
             </span>
-            <FavoriteButton listingId={typedListing.id} />
+            <FavoriteButton
+              listingId={typedListing.id}
+              userId={user?.id ?? null}
+              initialSaved={initialSaved}
+            />
           </div>
         </div>
       </div>
