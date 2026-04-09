@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-
-const RESEND_API_KEY = process.env.RESEND_API_KEY!
-const TEST_TO        = process.env.RESEND_TEST_TO   // dev override
-const SITE_URL       = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
+import { sendEmail, listingApprovedEmail, listingRejectedEmail, newListingAtAirportEmail } from '@/lib/email'
 
 export async function PATCH(request: Request) {
   try {
@@ -18,14 +15,14 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    // Fetch the listing so we can email the seller
+    // Fetch the listing (need airport_code + listing_type for seeker alerts)
     const { data: listing } = await supabaseAdmin
       .from('listings')
-      .select('id, title, contact_name, contact_email')
+      .select('id, title, contact_name, contact_email, airport_code, airport_name, listing_type, price')
       .eq('id', id)
       .single()
 
-    // Update the status
+    // Update status
     const { error } = await supabaseAdmin
       .from('listings')
       .update({ status })
@@ -35,61 +32,56 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Failed to update listing' }, { status: 500 })
     }
 
-    // Send email to seller if we have their details
-    if (listing && RESEND_API_KEY) {
-      const sellerEmail = TEST_TO ?? listing.contact_email
-      const isApproved  = status === 'approved'
-      const listingUrl  = `${SITE_URL}/listing/${listing.id}`
+    if (listing) {
+      const isApproved = status === 'approved'
 
-      const subject = isApproved
-        ? `Your listing "${listing.title}" is now live!`
-        : `Update on your listing "${listing.title}"`
+      // ── 1. Email the listing owner (approval or rejection) ─────────────
+      const sellerEmailData = isApproved
+        ? listingApprovedEmail({ name: listing.contact_name, title: listing.title, listingId: listing.id })
+        : listingRejectedEmail({ name: listing.contact_name, title: listing.title })
 
-      const html = isApproved
-        ? `
-          <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
-            <h2 style="color:#166534">🎉 Your listing is live!</h2>
-            <p>Hi ${listing.contact_name},</p>
-            <p>Great news — your hangar listing <strong>${listing.title}</strong> has been approved and is now live on Hangar Marketplace.</p>
-            <p style="margin:1.5rem 0">
-              <a href="${listingUrl}"
-                style="background:#111827;color:white;padding:0.65rem 1.25rem;border-radius:6px;text-decoration:none;font-weight:600">
-                View your listing →
-              </a>
-            </p>
-            <p style="color:#6b7280;font-size:0.875rem">If you need to make any changes, log in to your dashboard and click Edit.</p>
-          </div>
-        `
-        : `
-          <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
-            <h2 style="color:#991b1b">Listing Not Approved</h2>
-            <p>Hi ${listing.contact_name},</p>
-            <p>Unfortunately your hangar listing <strong>${listing.title}</strong> was not approved at this time.</p>
-            <p>If you have questions or would like to resubmit with changes, please reply to this email or contact us directly.</p>
-            <p style="color:#6b7280;font-size:0.875rem">You can log in to your dashboard to edit and resubmit your listing.</p>
-          </div>
-        `
+      await sendEmail({ to: listing.contact_email, ...sellerEmailData }).catch(e =>
+        console.error('[admin/listings] seller email failed:', e)
+      )
 
-      // Dev banner when using test override
-      const devBanner = TEST_TO
-        ? `<div style="background:#fef3c7;border:1px solid #f59e0b;padding:8px 12px;margin-bottom:16px;font-size:12px;border-radius:4px">
-            <strong>DEV MODE:</strong> Originally sent to ${listing.contact_email}
-           </div>`
-        : ''
+      // ── 2. If approved: notify seekers with active requests at this airport ──
+      if (isApproved && listing.airport_code) {
+        const { data: activeRequests } = await supabaseAdmin
+          .from('hangar_requests')
+          .select('contact_name, contact_email')
+          .eq('airport_code', listing.airport_code)
+          .eq('status', 'active')
 
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'Hangar Marketplace <onboarding@resend.dev>',
-          to:   [sellerEmail],
-          subject,
-          html: devBanner + html,
-        }),
-      })
+        if (activeRequests && activeRequests.length > 0) {
+          // Find unsubscribe tokens for these emails (best-effort)
+          const emails = activeRequests.map(r => r.contact_email)
+          const { data: subs } = await supabaseAdmin
+            .from('email_subscribers')
+            .select('email, unsubscribe_token')
+            .in('email', emails)
+            .is('unsubscribed_at', null)
+
+          const tokenMap = Object.fromEntries((subs ?? []).map(s => [s.email, s.unsubscribe_token]))
+
+          for (const req of activeRequests) {
+            const unsubToken = tokenMap[req.contact_email] ?? 'unsubscribe'
+            const { subject, html } = newListingAtAirportEmail({
+              seekerName:   req.contact_name,
+              airportCode:  listing.airport_code,
+              airportName:  listing.airport_name ?? listing.airport_code,
+              listingTitle: listing.title,
+              listingId:    listing.id,
+              listingType:  listing.listing_type ?? 'lease',
+              price:        listing.price,
+              unsubToken,
+            })
+            await sendEmail({ to: req.contact_email, subject, html }).catch(e =>
+              console.error('[admin/listings] seeker alert failed:', e)
+            )
+          }
+          console.log(`[admin/listings] notified ${activeRequests.length} seekers at ${listing.airport_code}`)
+        }
+      }
     }
 
     return NextResponse.json({ success: true })

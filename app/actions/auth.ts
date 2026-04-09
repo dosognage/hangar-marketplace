@@ -12,6 +12,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
+import { sendEmail, welcomeEmail } from '@/lib/email'
 
 export type AuthState = { error: string; email?: string } | null
 
@@ -73,6 +74,14 @@ export async function signup(
       return { error: 'That email is already registered. Try logging in instead.' }
     }
     return { error: error.message }
+  }
+
+  // Send welcome email (fire-and-forget, non-fatal)
+  try {
+    const { subject, html } = welcomeEmail(name)
+    await sendEmail({ to: email, subject, html })
+  } catch (emailErr) {
+    console.error('[signup] Welcome email failed:', emailErr)
   }
 
   // Supabase may require email confirmation depending on project settings.
