@@ -27,6 +27,7 @@ type Listing = {
   square_feet: number | null
   door_width: number | null
   door_height: number | null
+  hangar_depth: number | null
   description: string | null
   contact_name: string
   contact_email: string
@@ -169,6 +170,9 @@ export default function EditListingPage() {
           </Field>
           <Field label="Door Height (ft)">
             <input name="door_height" type="number" min="0" defaultValue={listing.door_height ?? ''} style={inputStyle} />
+          </Field>
+          <Field label="Hangar Depth (ft)">
+            <input name="hangar_depth" type="number" min="0" defaultValue={listing.hangar_depth ?? ''} style={inputStyle} />
           </Field>
         </div>
 

@@ -4,6 +4,8 @@ import { createServerClient } from '@/lib/supabase-server'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import ContactForm from '@/app/components/ContactForm'
 import FavoriteButton from '@/app/components/FavoriteButton'
+import AircraftFitCalculator from '@/app/components/AircraftFitCalculator'
+import LandingFees from '@/app/components/LandingFees'
 import type { Metadata } from 'next'
 
 type ListingPageProps = {
@@ -66,6 +68,7 @@ type Listing = {
   square_feet: number | null
   door_width: number | null
   door_height: number | null
+  hangar_depth: number | null
   description: string | null
   contact_name: string
   contact_email: string
@@ -185,6 +188,9 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
               value={`${typedListing.door_width ?? '?'}′ W × ${typedListing.door_height ?? '?'}′ H`}
             />
           )}
+          {typedListing.hangar_depth && (
+            <DetailRow label="Hangar depth" value={`${typedListing.hangar_depth}′`} />
+          )}
         </DetailCard>
 
         <DetailCard title="Contact Seller">
@@ -217,6 +223,19 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
           </p>
         </div>
       )}
+
+      {/* Airplane fit calculator */}
+      <AircraftFitCalculator
+        doorWidth={typedListing.door_width}
+        doorHeight={typedListing.door_height}
+        hangarDepth={typedListing.hangar_depth}
+      />
+
+      {/* Landing fees */}
+      <LandingFees
+        airportCode={typedListing.airport_code}
+        airportName={typedListing.airport_name}
+      />
 
       {/* Contact form */}
       <ContactForm

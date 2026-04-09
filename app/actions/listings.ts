@@ -94,6 +94,7 @@ export async function updateListing(
     square_feet:    formData.get('square_feet') ? Number(formData.get('square_feet')) : null,
     door_width:     formData.get('door_width')  ? Number(formData.get('door_width'))  : null,
     door_height:    formData.get('door_height') ? Number(formData.get('door_height')) : null,
+    hangar_depth:   formData.get('hangar_depth') ? Number(formData.get('hangar_depth')) : null,
     description:    (formData.get('description') as string)?.trim() || null,
     contact_name:   (formData.get('contact_name') as string)?.trim(),
     contact_email:  (formData.get('contact_email') as string)?.trim(),

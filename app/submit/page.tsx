@@ -31,6 +31,7 @@ const EMPTY_FORM = {
   square_feet: '',
   door_width: '',
   door_height: '',
+  hangar_depth: '',
   description: '',
   contact_name: '',
   contact_email: '',
@@ -85,6 +86,7 @@ export default function SubmitPage() {
           square_feet: formData.square_feet ? Number(formData.square_feet) : null,
           door_width: formData.door_width ? Number(formData.door_width) : null,
           door_height: formData.door_height ? Number(formData.door_height) : null,
+          hangar_depth: formData.hangar_depth ? Number(formData.hangar_depth) : null,
           description: formData.description || null,
           contact_name: formData.contact_name,
           contact_email: formData.contact_email,
@@ -264,6 +266,12 @@ export default function SubmitPage() {
             <Field label="Door height (ft)">
               <input name="door_height" type="number" placeholder="14" value={formData.door_height} onChange={handleChange} style={inputStyle} />
             </Field>
+          </TwoCol>
+          <TwoCol>
+            <Field label="Hangar depth (ft)">
+              <input name="hangar_depth" type="number" placeholder="45" value={formData.hangar_depth} onChange={handleChange} style={inputStyle} />
+            </Field>
+            <Field label=""><span /></Field>
           </TwoCol>
         </Section>
 
