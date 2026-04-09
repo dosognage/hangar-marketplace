@@ -112,7 +112,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   return (
     // Negative margin breaks out of the layout's max-width / padding
     // so the map can span the full viewport width
-    <div style={{ margin: '-2rem', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 58px)', overflow: 'hidden' }}>
+    <div style={{ margin: '-2rem', display: 'flex', flexDirection: 'column', height: 'calc(100dvh - var(--header-h, 60px))', overflow: 'hidden' }}>
 
       {/* Search bar — constrained width, sits above the split */}
       <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f8f8f8' }}>

@@ -45,13 +45,102 @@ body {
   border-color: #6366f1;
 }
 
-/* ── Responsive nav ───────────────────────────────────────────────────────── */
+/* ── Header & nav ─────────────────────────────────────────────────────────── */
+
+/*
+ * --header-h is consumed by page.tsx to calculate the map/split view height.
+ * It must match the actual rendered header height on each breakpoint.
+ * Desktop: single row = 60px. Mobile: two rows = 108px.
+ */
+:root {
+  --header-h: 60px;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  /* Must be above SplitView z-index:1000 and map-toggle z-index:2000 */
+  z-index: 3000;
+}
+
+/* Desktop: logo left | page links fill center | auth far right */
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  min-height: 60px;
+  gap: 0.5rem;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+  flex: 1; /* fill remaining space, pushing auth to far right */
+}
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* ── Mobile nav: two-row layout ──────────────────────────────────────────── */
 @media (max-width: 640px) {
+  :root {
+    --header-h: 108px;
+  }
+
+  .nav-inner {
+    flex-wrap: wrap;
+    padding: 0.5rem 1rem;
+    min-height: unset;
+    gap: 0;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Row 1: logo (left) | auth (right) — use CSS order to pull auth up */
+  .nav-logo {
+    order: 1;
+    flex: 1;
+  }
+
+  .nav-auth {
+    order: 2;
+    flex-shrink: 0;
+  }
+
+  /* Row 2: scrollable nav links */
+  .nav-links {
+    order: 3;
+    flex: none;
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+
+  /* Tighter link padding on mobile */
+  .nav-links a {
+    font-size: 0.8rem !important;
+    padding: 0.3rem 0.55rem !important;
+    white-space: nowrap;
+  }
+
   .nav-email {
     display: none !important;
-  }
-  .nav-links {
-    gap: 0.5rem !important;
   }
 }
 

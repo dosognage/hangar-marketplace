@@ -39,28 +39,18 @@ export default async function RootLayout({
         }}
       >
         <header
+          className="site-header"
           style={{
             backgroundColor: '#1a3a5c',
             borderBottom: '1px solid #254e7a',
             boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
           }}
         >
-          <nav
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              maxWidth: '1200px',
-              margin: '0 auto',
-              padding: '0 2rem',
-              height: '60px',
-              flexWrap: 'wrap',
-              gap: '0.75rem',
-            }}
-          >
-            {/* Brand / Logo */}
+          <nav className="nav-inner">
+            {/* Brand / Logo — row 1 left */}
             <Link
               href="/"
+              className="nav-logo"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -85,25 +75,15 @@ export default async function RootLayout({
               </div>
             </Link>
 
-            {/* Nav links */}
-            <div
-              className="nav-links"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-                flexWrap: 'wrap',
-              }}
-            >
+            {/* Secondary nav links — inline on desktop, row 2 on mobile */}
+            <div className="nav-links">
               <Link href="/" style={navLinkStyle}>
                 Browse
               </Link>
-
               <Link href="/submit" style={navLinkStyle}>
                 List a Hangar
               </Link>
-
-              {user ? (
+              {user && (
                 <>
                   <Link href="/dashboard" style={navLinkStyle}>
                     My Listings
@@ -119,8 +99,14 @@ export default async function RootLayout({
                   <span className="nav-email" style={{ color: '#93c5fd', fontSize: '0.8rem', padding: '0 0.5rem' }}>
                     {user.email}
                   </span>
-                  <LogoutButton />
                 </>
+              )}
+            </div>
+
+            {/* Auth buttons — far right on desktop, row 1 right on mobile */}
+            <div className="nav-auth">
+              {user ? (
+                <LogoutButton />
               ) : (
                 <>
                   <Link href="/login" style={navLinkStyle}>
