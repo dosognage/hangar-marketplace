@@ -47,6 +47,7 @@ type Listing = Omit<MapListing, 'latitude' | 'longitude'> & {
   featured_until: string | null
   is_sponsored: boolean
   sponsored_until: string | null
+  is_sample: boolean
   listing_photos: Photo[]
 }
 
@@ -359,8 +360,23 @@ export default function SplitView({
                   transition: 'border-color 0.15s, box-shadow 0.15s',
                   position: 'relative',
                 }}>
+                  {/* Sample badge */}
+                  {listing.is_sample && (
+                    <div style={{
+                      position: 'absolute', top: '8px', left: '8px', zIndex: 12,
+                      display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                      padding: '0.18rem 0.5rem', borderRadius: '999px',
+                      backgroundColor: '#f59e0b', color: 'white',
+                      fontSize: '0.68rem', fontWeight: '700',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                      pointerEvents: 'none',
+                    }}>
+                      🔍 Sample
+                    </div>
+                  )}
+
                   {/* Sponsored badge */}
-                  {isSponsoredActive && (
+                  {isSponsoredActive && !listing.is_sample && (
                     <div style={{
                       position: 'absolute', top: '8px', left: '8px', zIndex: 11,
                       display: 'inline-flex', alignItems: 'center', gap: '0.2rem',

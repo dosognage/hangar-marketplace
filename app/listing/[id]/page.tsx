@@ -111,6 +111,7 @@ type Listing = {
   contact_phone: string | null
   status: string
   view_count: number
+  is_sample: boolean
   listing_photos: Photo[]
 }
 
@@ -217,6 +218,34 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
       <Link href="/" style={{ color: '#6366f1', textDecoration: 'none', fontSize: '0.9rem' }}>
         ← Back to listings
       </Link>
+
+      {/* Sample listing banner */}
+      {typedListing.is_sample && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '0.75rem',
+          backgroundColor: '#fffbeb',
+          border: '1.5px solid #f59e0b',
+          borderRadius: '10px',
+          padding: '1rem 1.25rem',
+          marginTop: '1rem',
+        }}>
+          <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>🔍</span>
+          <div>
+            <p style={{ margin: '0 0 0.2rem', fontWeight: '700', color: '#92400e', fontSize: '0.95rem' }}>
+              This is a sample listing
+            </p>
+            <p style={{ margin: 0, color: '#78350f', fontSize: '0.85rem', lineHeight: 1.5 }}>
+              It exists to show you what a real hangar listing looks like — photos, specs, pricing, and more.
+              Real listings from verified owners will appear just like this.{' '}
+              <Link href="/submit" style={{ color: '#92400e', fontWeight: '600' }}>
+                List your hangar free →
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Title + price badge */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', margin: '1rem 0' }}>
@@ -378,13 +407,42 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
       {/* Fuel prices */}
       <FuelPrices airportCode={typedListing.airport_code} />
 
-      {/* Contact form */}
-      <ContactForm
-        listingId={typedListing.id}
-        listingTitle={typedListing.title}
-        sellerName={typedListing.contact_name}
-        sellerEmail={typedListing.contact_email}
-      />
+      {/* Contact form — hidden on sample listings, replaced with owner CTA */}
+      {typedListing.is_sample ? (
+        <div style={{
+          backgroundColor: '#1a3a5c',
+          borderRadius: '10px',
+          padding: '1.75rem',
+          textAlign: 'center',
+          color: 'white',
+        }}>
+          <p style={{ margin: '0 0 0.4rem', fontSize: '1.1rem', fontWeight: '700' }}>
+            Own a hangar at this airport?
+          </p>
+          <p style={{ margin: '0 0 1.25rem', fontSize: '0.9rem', color: '#93c5fd', lineHeight: 1.5 }}>
+            List it for free in minutes. Real buyers are searching for hangars right now.
+          </p>
+          <Link href="/submit" style={{
+            display: 'inline-block',
+            backgroundColor: 'white',
+            color: '#1a3a5c',
+            padding: '0.7rem 1.75rem',
+            borderRadius: '8px',
+            fontWeight: '700',
+            fontSize: '0.95rem',
+            textDecoration: 'none',
+          }}>
+            List your hangar free →
+          </Link>
+        </div>
+      ) : (
+        <ContactForm
+          listingId={typedListing.id}
+          listingTitle={typedListing.title}
+          sellerName={typedListing.contact_name}
+          sellerEmail={typedListing.contact_email}
+        />
+      )}
 
       {/* Similar listings */}
       <SimilarListings

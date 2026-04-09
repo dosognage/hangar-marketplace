@@ -13,7 +13,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import ApproveRejectButtons from './ApproveRejectButtons'
 import BrokerApplicationButtons from './BrokerApplicationButtons'
 import ReGeocodeButton from './RegeoCodeButton'
-import { Star, ClipboardList, Building2 } from 'lucide-react'
+import MarkSampleButton from './MarkSampleButton'
+import { Star, ClipboardList, Building2, CheckCircle } from 'lucide-react'
 
 type Listing = {
   id: string
@@ -34,6 +35,7 @@ type Listing = {
   contact_email: string
   contact_phone: string | null
   status: string
+  is_sample: boolean
 }
 
 type BrokerApp = {
@@ -71,6 +73,13 @@ export default async function AdminPage() {
     .from('listings')
     .select('*')
     .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  // Fetch approved listings (for sample management)
+  const { data: approvedListings } = await supabaseAdmin
+    .from('listings')
+    .select('*')
+    .eq('status', 'approved')
     .order('created_at', { ascending: false })
 
   // Fetch pending broker applications
@@ -199,6 +208,47 @@ export default async function AdminPage() {
               <ApproveRejectButtons id={listing.id} />
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Approved Listings (Sample Management) ────────────────────────── */}
+      {approvedListings && approvedListings.length > 0 && (
+        <div style={{ marginTop: '2.5rem' }}>
+          <h2 style={{ fontSize: '1rem', color: '#374151', margin: '0 0 0.5rem' }}>
+            <CheckCircle size={15} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.35rem', color: '#16a34a' }} /> Approved Listings
+          </h2>
+          <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+            Mark one listing as a sample demo. Sample listings show a banner and disable the contact form.
+          </p>
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            {(approvedListings as Listing[]).map((listing) => (
+              <div key={listing.id} style={{
+                border: `1px solid ${listing.is_sample ? '#fde68a' : '#e5e7eb'}`,
+                borderRadius: '8px', padding: '1rem 1.25rem',
+                backgroundColor: listing.is_sample ? '#fffbeb' : 'white',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem',
+              }}>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 600, color: '#111827', fontSize: '0.95rem' }}>{listing.title}</p>
+                  <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: '#6b7280' }}>
+                    {listing.airport_code} · {listing.city}, {listing.state} · {listing.listing_type}
+                    {listing.is_sample && <span style={{ marginLeft: '0.5rem', color: '#92400e', fontWeight: 600 }}>🔍 Marked as sample</span>}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <MarkSampleButton listingId={listing.id} isSample={listing.is_sample} />
+                  <a
+                    href={`/listing/${listing.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: '0.8rem', color: '#2563eb', textDecoration: 'none' }}
+                  >
+                    View ↗
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
