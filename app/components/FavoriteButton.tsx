@@ -75,7 +75,6 @@ export default function FavoriteButton({ listingId }: Props) {
         borderRadius: '8px',
         padding: '0.5rem 0.85rem',
         cursor: loading ? 'default' : 'pointer',
-        fontSize: '1.1rem',
         display: 'flex',
         alignItems: 'center',
         gap: '0.4rem',
