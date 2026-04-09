@@ -15,9 +15,10 @@ import { logout } from '@/app/actions/auth'
 type Props = {
   displayName: string
   isAdmin: boolean
+  savedCount: number
 }
 
-export default function ProfileMenu({ displayName, isAdmin }: Props) {
+export default function ProfileMenu({ displayName, isAdmin, savedCount }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -97,7 +98,23 @@ export default function ProfileMenu({ displayName, isAdmin }: Props) {
 
           {/* Links */}
           <div style={{ padding: '0.4rem 0' }}>
-            <DropdownLink href="/saved">❤️ Saved listings</DropdownLink>
+            <DropdownLink href="/saved">
+              ❤️ Saved listings
+              {savedCount > 0 && (
+                <span style={{
+                  marginLeft: 'auto',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  borderRadius: '9999px',
+                  fontSize: '0.7rem',
+                  fontWeight: '700',
+                  padding: '0.1rem 0.45rem',
+                  lineHeight: 1.4,
+                }}>
+                  {savedCount}
+                </span>
+              )}
+            </DropdownLink>
             <DropdownLink href="/dashboard">📋 My listings</DropdownLink>
             {isAdmin && <DropdownLink href="/admin">⚙️ Admin</DropdownLink>}
           </div>
@@ -134,7 +151,9 @@ function DropdownLink({ href, children }: { href: string; children: React.ReactN
     <Link
       href={href}
       style={{
-        display: 'block',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
         padding: '0.55rem 1rem',
         fontSize: '0.875rem',
         color: '#374151',

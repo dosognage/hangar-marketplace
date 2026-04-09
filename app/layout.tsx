@@ -29,6 +29,16 @@ export default async function RootLayout({
   const isAdmin =
     user?.email && adminEmails.includes(user.email.toLowerCase())
 
+  // Count saved listings for the nav badge
+  let savedCount = 0
+  if (user) {
+    const { count } = await supabase
+      .from('saved_listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+    savedCount = count ?? 0
+  }
+
   return (
     <html lang="en">
       <body
@@ -95,6 +105,7 @@ export default async function RootLayout({
                     ?? user.email!.split('@')[0]
                   }
                   isAdmin={!!isAdmin}
+                  savedCount={savedCount}
                 />
               ) : (
                 <>
