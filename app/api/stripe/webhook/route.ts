@@ -26,7 +26,13 @@ export async function POST(req: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as {
-      metadata?: { request_id?: string; is_priority?: string; type?: string }
+      metadata?: {
+        request_id?: string
+        is_priority?: string
+        type?: string
+        listing_id?: string
+        duration_days?: string
+      }
       payment_status?: string
     }
 
