@@ -14,6 +14,8 @@ import { useState, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import AircraftAutocomplete from '@/app/components/AircraftAutocomplete'
+import type { AircraftSpec } from '@/lib/aircraft-data'
 
 const DURATIONS = ['Month-to-month', '3 months', '6 months', '1 year', 'Permanent']
 
@@ -51,6 +53,17 @@ function NewRequestForm() {
   ) {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  function handleAircraftSelect(spec: AircraftSpec) {
+    setForm(prev => ({
+      ...prev,
+      aircraft_type:  spec.name,
+      wingspan_ft:    String(spec.wingspan_ft),
+      // Suggest minimum door dims: wingspan + 4 ft clearance, height + 2 ft clearance
+      door_width_ft:  String(Math.ceil(spec.wingspan_ft + 4)),
+      door_height_ft: String(Math.ceil(spec.height_ft + 2)),
+    }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -191,26 +204,31 @@ function NewRequestForm() {
 
         {/* Aircraft */}
         <Section title="Aircraft Info">
+          <Field label="Aircraft type">
+            <AircraftAutocomplete
+              value={form.aircraft_type}
+              onChange={val => setForm(prev => ({ ...prev, aircraft_type: val }))}
+              onSelect={handleAircraftSelect}
+              inputStyle={inputStyle}
+            />
+          </Field>
           <TwoCol>
-            <Field label="Aircraft type">
-              <input name="aircraft_type" value={form.aircraft_type} onChange={handleChange}
-                placeholder="Cessna 172, Piper Arrow…" style={inputStyle} />
-            </Field>
             <Field label="Wingspan (ft)">
               <input name="wingspan_ft" type="number" value={form.wingspan_ft}
                 onChange={handleChange} placeholder="36" min="0" style={inputStyle} />
             </Field>
-          </TwoCol>
-          <TwoCol>
             <Field label="Min door width needed (ft)">
               <input name="door_width_ft" type="number" value={form.door_width_ft}
-                onChange={handleChange} placeholder="38" min="0" style={inputStyle} />
-            </Field>
-            <Field label="Min door height needed (ft)">
-              <input name="door_height_ft" type="number" value={form.door_height_ft}
-                onChange={handleChange} placeholder="12" min="0" style={inputStyle} />
+                onChange={handleChange} placeholder="40" min="0" style={inputStyle} />
             </Field>
           </TwoCol>
+          <Field label="Min door height needed (ft)">
+            <input name="door_height_ft" type="number" value={form.door_height_ft}
+              onChange={handleChange} placeholder="12" min="0" style={inputStyle} />
+          </Field>
+          <p style={{ margin: '-0.3rem 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>
+            Door dimensions are auto-suggested when you pick an aircraft — feel free to adjust.
+          </p>
         </Section>
 
         {/* Terms */}
