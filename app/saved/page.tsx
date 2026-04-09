@@ -4,14 +4,15 @@
  * Shows all listings the logged-in user has hearted.
  */
 
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-
 function photoUrl(path: string) {
-  return `${SUPABASE_URL}/storage/v1/object/public/listing-photos/${path}`
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  return `${base}/storage/v1/object/public/listing-photos/${path}`
 }
 
 export default async function SavedListingsPage() {

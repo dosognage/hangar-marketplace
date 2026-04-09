@@ -6,6 +6,8 @@
  * this page renders.
  */
 
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'

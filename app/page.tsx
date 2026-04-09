@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@/lib/supabase-server'

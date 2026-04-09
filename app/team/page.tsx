@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { getOrCreateOrg, SEAT_LIMITS, TIER_LABELS } from '@/lib/team'

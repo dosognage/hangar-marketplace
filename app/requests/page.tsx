@@ -5,6 +5,8 @@
  * Hangar owners browse and click "I Have Space" to contact them directly.
  */
 
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@/lib/supabase-server'

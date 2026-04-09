@@ -5,6 +5,8 @@
  * this page. We double-check here server-side for defence in depth.
  */
 
+export const dynamic = 'force-dynamic'
+
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
