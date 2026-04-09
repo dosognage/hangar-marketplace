@@ -71,22 +71,19 @@ export default function FavoriteButton({ listingId }: Props) {
       title={saved ? 'Remove from saved' : 'Save listing'}
       style={{
         background: 'none',
-        border: '1px solid #d1d5db',
-        borderRadius: '8px',
-        padding: '0.5rem 0.85rem',
+        border: 'none',
+        padding: '0.25rem',
         cursor: loading ? 'default' : 'pointer',
+        fontSize: '1.6rem',
+        lineHeight: 1,
+        color: saved ? '#dc2626' : '#9ca3af',
+        opacity: loading ? 0.5 : 1,
+        transition: 'color 0.15s, transform 0.1s',
         display: 'flex',
         alignItems: 'center',
-        gap: '0.4rem',
-        color: saved ? '#dc2626' : '#6b7280',
-        fontWeight: '500',
-        fontSize: '0.875rem',
-        backgroundColor: saved ? '#fef2f2' : 'white',
-        borderColor: saved ? '#fca5a5' : '#d1d5db',
-        transition: 'all 0.15s',
       }}
     >
-      {saved ? '❤️' : '🤍'} {saved ? 'Saved' : 'Save'}
+      {saved ? '❤️' : '🤍'}
     </button>
   )
 }
