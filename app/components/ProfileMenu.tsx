@@ -12,14 +12,15 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { logout } from '@/app/actions/auth'
 import HeartIcon from './HeartIcon'
+import { useSavedCount } from './SavedCountProvider'
 
 type Props = {
   displayName: string
   isAdmin: boolean
-  savedCount: number
 }
 
-export default function ProfileMenu({ displayName, isAdmin, savedCount }: Props) {
+export default function ProfileMenu({ displayName, isAdmin }: Props) {
+  const { savedCount } = useSavedCount()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 

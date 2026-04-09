@@ -12,6 +12,7 @@ import { useState, useTransition } from 'react'
 import { toggleSavedListing } from '@/app/actions/listings'
 import HeartIcon from './HeartIcon'
 import { useToast } from './ToastProvider'
+import { useSavedCount } from './SavedCountProvider'
 
 type Props = {
   listingId: string
@@ -23,6 +24,7 @@ export default function FavoriteButton({ listingId, userId, initialSaved }: Prop
   const [saved, setSaved] = useState(initialSaved)
   const [isPending, startTransition] = useTransition()
   const { addToast } = useToast()
+  const { incrementSaved, decrementSaved } = useSavedCount()
 
   function handleClick() {
     if (!userId) {
@@ -33,7 +35,13 @@ export default function FavoriteButton({ listingId, userId, initialSaved }: Prop
       const result = await toggleSavedListing(listingId, saved)
       if (result && typeof result.saved === 'boolean') {
         setSaved(result.saved)
-        addToast(result.saved ? 'Listing saved!' : 'Removed from saved', result.saved ? 'success' : 'info')
+        if (result.saved) {
+          incrementSaved()
+          addToast('Listing saved!', 'success')
+        } else {
+          decrementSaved()
+          addToast('Removed from saved', 'info')
+        }
       }
     })
   }
