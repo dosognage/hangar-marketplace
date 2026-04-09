@@ -98,6 +98,7 @@ export default async function RootLayout({
                 <Link href="/" style={navLinkStyle}>Browse</Link>
                 <Link href="/requests" style={navLinkStyle}>Requests</Link>
                 <Link href="/submit" style={navLinkStyle}>List a Hangar</Link>
+                <Link href="/pricing" style={navLinkStyle}>Pricing</Link>
               </div>
 
               {/* Auth / profile */}
@@ -175,6 +176,7 @@ export default async function RootLayout({
                     <FooterLink href="/submit">List a hangar</FooterLink>
                     <FooterLink href="/requests">Hangar requests</FooterLink>
                     <FooterLink href="/requests/new">Post a request</FooterLink>
+                    <FooterLink href="/pricing">Pricing</FooterLink>
                   </FooterCol>
                   <FooterCol title="Company">
                     <FooterLink href="/privacy">Privacy Policy</FooterLink>
