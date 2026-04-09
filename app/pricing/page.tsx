@@ -102,7 +102,7 @@ const TIERS = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    audience: 'NetJets, Part 135 & large operators',
+    audience: 'Fractional, Part 135 & large operators',
     requests: null, // unlimited
     annualPrice: 799,
     monthlyPrice: 79.99,
@@ -155,7 +155,7 @@ export default function PricingPage() {
         <p style={{ margin: '0 auto', maxWidth: '540px', fontSize: '1rem', color: '#6b7280', lineHeight: 1.7 }}>
           Listing your hangar is always free. Fees apply to hangar <strong>requests</strong> —
           priced to scale from a pilot needing a spot for the night all the way up to a
-          NetJets dispatcher managing dozens of aircraft.
+          corporate dispatcher managing dozens of aircraft.
         </p>
       </div>
 
