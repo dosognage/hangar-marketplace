@@ -9,9 +9,36 @@ import NewsletterSignup from '@/app/components/NewsletterSignup'
 import MobileMenu from '@/app/components/MobileMenu'
 import { Plane } from 'lucide-react'
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
+
 export const metadata = {
-  title: 'Hangar Marketplace',
-  description: 'Marketplace for airplane hangar listings',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'Hangar Marketplace — Find & List Airplane Hangars for Sale or Lease',
+    template: '%s | Hangar Marketplace',
+  },
+  description: 'Search hundreds of aircraft hangars for sale, lease, and rent across the US. List your hangar free. Find space at your airport today.',
+  keywords: ['airplane hangar', 'hangar for sale', 'hangar for lease', 'aircraft hangar rental', 't-hangar', 'aviation property', 'hangar space'],
+  openGraph: {
+    siteName: 'Hangar Marketplace',
+    type: 'website',
+    locale: 'en_US',
+    url: SITE_URL,
+    title: 'Hangar Marketplace — Find & List Airplane Hangars',
+    description: 'Search hundreds of aircraft hangars for sale, lease, and rent across the US.',
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'Hangar Marketplace' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Hangar Marketplace — Find & List Airplane Hangars',
+    description: 'Search hundreds of aircraft hangars for sale, lease, and rent across the US.',
+    images: ['/og-default.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large' as const },
+  },
 }
 
 export default async function RootLayout({
@@ -108,6 +135,7 @@ export default async function RootLayout({
                 <Link href="/" style={navLinkStyle}>Browse</Link>
                 <Link href="/requests" style={navLinkStyle}>Requests</Link>
                 <Link href="/submit" style={navLinkStyle}>List a Hangar</Link>
+                <Link href="/blog" style={navLinkStyle}>Blog</Link>
                 <Link href="/pricing" style={navLinkStyle}>Pricing</Link>
               </div>
 

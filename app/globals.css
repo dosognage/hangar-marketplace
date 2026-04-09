@@ -218,6 +218,63 @@ body {
   }
 }
 
+/* ── Blog content typography ────────────────────────────────────────────── */
+.blog-content .blog-p {
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.75;
+  margin: 0 0 1.25rem;
+}
+.blog-content .blog-h2 {
+  color: #111827;
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 2.25rem 0 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.blog-content .blog-h3 {
+  color: #1f2937;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 1.75rem 0 0.5rem;
+}
+.blog-content .blog-ul {
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 0 0 1.25rem;
+  padding-left: 1.5rem;
+}
+.blog-content .blog-ul li {
+  margin-bottom: 0.4rem;
+}
+.blog-content .blog-hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+.blog-content .blog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.blog-content .blog-table th {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 700;
+  color: #111827;
+}
+.blog-content .blog-table td {
+  border: 1px solid #e5e7eb;
+  padding: 7px 12px;
+  color: #374151;
+}
+.blog-content .blog-table tr:nth-child(even) td {
+  background: #f9fafb;
+}
 /* ── Footer responsive ───────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .footer-cols {

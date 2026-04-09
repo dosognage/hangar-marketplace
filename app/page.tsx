@@ -1,5 +1,18 @@
 export const dynamic = 'force-dynamic'
 
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Browse Airplane Hangars for Sale & Lease | Hangar Marketplace',
+  description: 'Find aircraft hangars for sale, lease, and rent at airports across the US. Filter by state, size, price, and hangar type. Free to browse.',
+  alternates: { canonical: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com' },
+  openGraph: {
+    title: 'Browse Airplane Hangars for Sale & Lease',
+    description: 'Find aircraft hangars for sale, lease, and rent at airports across the US.',
+    type: 'website',
+  },
+}
+
 import { Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@/lib/supabase-server'

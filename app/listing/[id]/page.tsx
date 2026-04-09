@@ -17,12 +17,15 @@ type ListingPageProps = {
   params: Promise<{ id: string }>
 }
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
+const SUPABASE_STORAGE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos`
+
 // ── Dynamic SEO metadata ───────────────────────────────────────────────────
 export async function generateMetadata({ params }: ListingPageProps): Promise<Metadata> {
   const { id } = await params
   const { data: listing } = await supabase
     .from('listings')
-    .select('title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, description')
+    .select('title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, description, square_feet, listing_photos(storage_path, display_order)')
     .eq('id', id)
     .single()
 
@@ -40,19 +43,37 @@ export async function generateMetadata({ params }: ListingPageProps): Promise<Me
     listing.listing_type === 'sale'  ? 'For Sale' :
     listing.listing_type === 'space' ? 'Space Available' : 'For Lease'
 
-  const title = `${listing.title} | ${listingLabel} | ${listing.airport_code} | Hangar Marketplace`
+  const title = `${listing.title} — Hangar ${listingLabel} at ${listing.airport_code} | Hangar Marketplace`
   const description = listing.description
-    ? listing.description.slice(0, 155)
-    : `${listing.title} at ${listing.airport_name} (${listing.airport_code}) in ${listing.city}, ${listing.state}. ${price}.`
+    ? listing.description.slice(0, 160)
+    : `${listing.title} at ${listing.airport_name} (${listing.airport_code}) in ${listing.city}, ${listing.state}. ${listingLabel}${listing.square_feet ? ` · ${listing.square_feet.toLocaleString()} sq ft` : ''} · ${price}. View details and contact the owner on Hangar Marketplace.`
+
+  // First photo for OG image
+  const photos = (listing.listing_photos as Array<{storage_path: string; display_order: number}> ?? [])
+    .sort((a, b) => a.display_order - b.display_order)
+  const ogImage = photos[0]
+    ? `${SUPABASE_STORAGE}/${photos[0].storage_path}`
+    : `${SITE_URL}/og-default.png`
+
+  const canonicalUrl = `${SITE_URL}/listing/${id}`
 
   return {
     title,
     description,
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       title,
       description,
       type: 'website',
       siteName: 'Hangar Marketplace',
+      url: canonicalUrl,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: listing.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImage],
     },
   }
 }
@@ -91,10 +112,8 @@ type Listing = {
   listing_photos: Photo[]
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-
 function photoUrl(path: string) {
-  return `${SUPABASE_URL}/storage/v1/object/public/listing-photos/${path}`
+  return `${SUPABASE_STORAGE}/${path}`
 }
 
 export default async function ListingDetailPage({ params }: ListingPageProps) {
@@ -139,8 +158,57 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
   )
   const photoUrls = sortedPhotos.map((p) => photoUrl(p.storage_path))
 
+  // ── JSON-LD structured data ────────────────────────────────────────────────
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: typedListing.title,
+    description: typedListing.description ?? `${typedListing.title} at ${typedListing.airport_name}`,
+    image: photoUrls,
+    url: `${SITE_URL}/listing/${typedListing.id}`,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'USD',
+      price: typedListing.asking_price ?? typedListing.monthly_lease ?? 0,
+      priceSpecification: typedListing.monthly_lease
+        ? { '@type': 'UnitPriceSpecification', price: typedListing.monthly_lease, priceCurrency: 'USD', unitText: 'MONTH' }
+        : undefined,
+      availability: 'https://schema.org/InStock',
+      seller: {
+        '@type': 'LocalBusiness',
+        name: typedListing.contact_name,
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: typedListing.city,
+          addressRegion: typedListing.state,
+          addressCountry: 'US',
+        },
+      },
+    },
+    additionalProperty: [
+      typedListing.square_feet && { '@type': 'PropertyValue', name: 'Square Footage', value: typedListing.square_feet, unitCode: 'FTK' },
+      typedListing.door_width && { '@type': 'PropertyValue', name: 'Door Width', value: typedListing.door_width, unitCode: 'FOT' },
+      typedListing.door_height && { '@type': 'PropertyValue', name: 'Door Height', value: typedListing.door_height, unitCode: 'FOT' },
+    ].filter(Boolean),
+    areaServed: {
+      '@type': 'Airport',
+      name: typedListing.airport_name,
+      iataCode: typedListing.airport_code,
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: typedListing.city,
+        addressRegion: typedListing.state,
+        addressCountry: 'US',
+      },
+    },
+  }
+
   return (
     <div style={{ maxWidth: '900px' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link href="/" style={{ color: '#6366f1', textDecoration: 'none', fontSize: '0.9rem' }}>
         ← Back to listings
       </Link>
@@ -303,7 +371,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
         currentId={typedListing.id}
         airportCode={typedListing.airport_code}
         state={typedListing.state}
-        supabaseUrl={SUPABASE_URL}
+        supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
       />
     </div>
   )
