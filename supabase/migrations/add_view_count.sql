@@ -30,11 +30,13 @@ $$;
 -- RLS: owners can see inquiries for their listings; anon can insert
 ALTER TABLE inquiries ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can submit an inquiry"
+DROP POLICY IF EXISTS "Anyone can submit an inquiry" ON inquiries;
+CREATE POLICY "Anyone can submit an inquiry"
   ON inquiries FOR INSERT TO anon, authenticated
   WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Listing owners can read their inquiries"
+DROP POLICY IF EXISTS "Listing owners can read their inquiries" ON inquiries;
+CREATE POLICY "Listing owners can read their inquiries"
   ON inquiries FOR SELECT TO authenticated
   USING (
     listing_id IN (

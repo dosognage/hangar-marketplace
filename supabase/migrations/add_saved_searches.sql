@@ -24,10 +24,12 @@ CREATE INDEX IF NOT EXISTS saved_searches_notify_token_idx ON saved_searches(not
 -- RLS: owners can manage their own searches
 ALTER TABLE saved_searches ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can create a saved search"
+DROP POLICY IF EXISTS "Anyone can create a saved search" ON saved_searches;
+CREATE POLICY "Anyone can create a saved search"
   ON saved_searches FOR INSERT TO anon, authenticated
   WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Token holders can delete their search"
+DROP POLICY IF EXISTS "Token holders can delete their search" ON saved_searches;
+CREATE POLICY "Token holders can delete their search"
   ON saved_searches FOR DELETE TO anon, authenticated
   USING (true);  -- deletion is gated by token in the API, not RLS
