@@ -12,6 +12,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import ApproveRejectButtons from './ApproveRejectButtons'
 import BrokerApplicationButtons from './BrokerApplicationButtons'
+import ReGeocodeButton from './RegeoCodeButton'
 import { Star, ClipboardList, Building2 } from 'lucide-react'
 
 type Listing = {
@@ -100,15 +101,18 @@ export default async function AdminPage() {
             {listings?.length ?? 0} pending listing{listings?.length !== 1 ? 's' : ''} · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <a href="/admin/featured" style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-          padding: '0.45rem 0.9rem', borderRadius: '7px',
-          backgroundColor: '#fef3c7', color: '#92400e',
-          border: '1px solid #fde68a', fontWeight: '600',
-          fontSize: '0.825rem', textDecoration: 'none', whiteSpace: 'nowrap',
-        }}>
-          <Star size={14} style={{ flexShrink: 0 }} /> Manage Featured
-        </a>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <ReGeocodeButton />
+          <a href="/admin/featured" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+            padding: '0.45rem 0.9rem', borderRadius: '7px',
+            backgroundColor: '#fef3c7', color: '#92400e',
+            border: '1px solid #fde68a', fontWeight: '600',
+            fontSize: '0.825rem', textDecoration: 'none', whiteSpace: 'nowrap',
+          }}>
+            <Star size={14} style={{ flexShrink: 0 }} /> Manage Featured
+          </a>
+        </div>
       </div>
 
       {/* ── Broker Applications ───────────────────────────────────────────── */}
