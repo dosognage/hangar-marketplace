@@ -46,6 +46,9 @@ export default async function RootLayout({
           margin: 0,
           fontFamily: 'Arial, sans-serif',
           backgroundColor: '#f8f8f8',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
         }}
       >
         {/*
@@ -129,10 +132,59 @@ export default async function RootLayout({
           </header>
 
           <ToastProvider>
-            <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem' }}>
+            <main style={{ flex: 1, maxWidth: '1100px', width: '100%', margin: '0 auto', padding: '2rem', boxSizing: 'border-box' }}>
               {children}
             </main>
           </ToastProvider>
+
+          {/* ── Site footer ─────────────────────────────────────────────── */}
+          <footer style={{
+            backgroundColor: '#111827',
+            borderTop: '1px solid #1f2937',
+            padding: '1.25rem 2rem',
+          }}>
+            <div style={{
+              maxWidth: '1100px',
+              margin: '0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+            }}>
+              {/* Brand + copyright */}
+              <span style={{ color: '#6b7280', fontSize: '0.775rem' }}>
+                © {new Date().getFullYear()}{' '}
+                <span style={{ color: '#9ca3af', fontWeight: '600' }}>Hangar Marketplace</span>
+                {' '}· All rights reserved
+              </span>
+
+              {/* Contact info */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1.25rem',
+                flexWrap: 'wrap',
+              }}>
+                <span style={{ color: '#4b5563', fontSize: '0.7rem', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: '600' }}>
+                  Contact us
+                </span>
+                <a
+                  href="tel:+19203858284"
+                  style={{ color: '#9ca3af', fontSize: '0.775rem', textDecoration: 'none' }}
+                >
+                  (920) 385-8284
+                </a>
+                <a
+                  href="mailto:andre.dosogne@outlook.com"
+                  style={{ color: '#9ca3af', fontSize: '0.775rem', textDecoration: 'none' }}
+                >
+                  andre.dosogne@outlook.com
+                </a>
+              </div>
+            </div>
+          </footer>
+
         </SavedCountProvider>
       </body>
     </html>
