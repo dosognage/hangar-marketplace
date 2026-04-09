@@ -216,7 +216,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
       {/* Title + price badge */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', margin: '1rem 0' }}>
         <div>
-          <h1 style={{ margin: '0 0 0.3rem' }}>{typedListing.title}</h1>
+          <h1 style={{ margin: '0 0 0.3rem', color: '#111827' }}>{typedListing.title}</h1>
           <p style={{ margin: 0, color: '#6b7280' }}>
             {typedListing.airport_name} ({typedListing.airport_code}) · {typedListing.city}, {typedListing.state}
           </p>
