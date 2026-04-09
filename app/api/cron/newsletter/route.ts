@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
       })
 
       try {
-        await sendEmail({ to: sub.email, subject, html, from: 'Hangar Marketplace <newsletter@hangarmarketplace.com>' })
+        await sendEmail({ to: sub.email, subject, html })
         sent++
       } catch (e) {
         errors.push(`${sub.email}: ${String(e)}`)
