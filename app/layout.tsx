@@ -2,6 +2,7 @@ import Link from 'next/link'
 import './globals.css'
 import { createServerClient } from '@/lib/supabase-server'
 import ProfileMenu from '@/app/components/ProfileMenu'
+import ToastProvider from '@/app/components/ToastProvider'
 
 export const metadata = {
   title: 'Hangar Marketplace',
@@ -131,9 +132,11 @@ export default async function RootLayout({
           </nav>
         </header>
 
-        <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem' }}>
-          {children}
-        </main>
+        <ToastProvider>
+          <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem' }}>
+            {children}
+          </main>
+        </ToastProvider>
       </body>
     </html>
   )

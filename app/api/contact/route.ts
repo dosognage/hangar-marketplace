@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
 const RESEND_API = 'https://api.resend.com/emails'
 
@@ -177,6 +178,19 @@ export async function POST(req: NextRequest) {
   if (!buyerRes.ok) {
     const err = await buyerRes.json().catch(() => ({}))
     console.warn('Buyer confirmation email failed (non-fatal):', JSON.stringify(err))
+  }
+
+  // ── Log inquiry to database (non-fatal if table doesn't exist yet) ─────
+  try {
+    await supabase.from('inquiries').insert([{
+      listing_id:   listingId,
+      buyer_name:   buyerName,
+      buyer_email:  buyerEmail,
+      buyer_phone:  buyerPhone ?? null,
+      message,
+    }])
+  } catch {
+    console.warn('Inquiry logging skipped — run the SQL migration to enable it.')
   }
 
   return NextResponse.json({ success: true })

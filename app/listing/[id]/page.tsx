@@ -7,6 +7,8 @@ import FavoriteButton from '@/app/components/FavoriteButton'
 import AircraftFitCalculator from '@/app/components/AircraftFitCalculator'
 import LandingFees from '@/app/components/LandingFees'
 import FuelPrices from '@/app/components/FuelPrices'
+import ShareButton from '@/app/components/ShareButton'
+import SimilarListings from '@/app/components/SimilarListings'
 import type { Metadata } from 'next'
 
 type ListingPageProps = {
@@ -161,6 +163,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
               userId={user?.id ?? null}
               initialSaved={initialSaved}
             />
+            <ShareButton title={typedListing.title} />
           </div>
         </div>
       </div>
@@ -251,6 +254,14 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
         listingTitle={typedListing.title}
         sellerName={typedListing.contact_name}
         sellerEmail={typedListing.contact_email}
+      />
+
+      {/* Similar listings */}
+      <SimilarListings
+        currentId={typedListing.id}
+        airportCode={typedListing.airport_code}
+        state={typedListing.state}
+        supabaseUrl={SUPABASE_URL}
       />
     </div>
   )

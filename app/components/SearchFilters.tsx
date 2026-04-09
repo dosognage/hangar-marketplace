@@ -96,6 +96,7 @@ export default function SearchFilters({
             <option value="">All types</option>
             <option value="sale">For Sale</option>
             <option value="lease">For Lease</option>
+            <option value="space">Space Available</option>
           </select>
         </div>
 

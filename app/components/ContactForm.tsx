@@ -10,6 +10,7 @@
  */
 
 import { useState } from 'react'
+import { useToast } from './ToastProvider'
 
 type Props = {
   listingId: string
@@ -24,6 +25,7 @@ export default function ContactForm({ listingId, listingTitle, sellerName, selle
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' })
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const { addToast } = useToast()
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target
@@ -61,6 +63,7 @@ export default function ContactForm({ listingId, listingTitle, sellerName, selle
 
       setStatus('success')
       setForm({ name: '', email: '', phone: '', message: '' })
+      addToast('Message sent to seller!', 'success')
     } catch {
       setErrorMsg('Network error — please check your connection and try again.')
       setStatus('error')

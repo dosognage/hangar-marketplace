@@ -11,6 +11,7 @@
 import { useState, useTransition } from 'react'
 import { toggleSavedListing } from '@/app/actions/listings'
 import HeartIcon from './HeartIcon'
+import { useToast } from './ToastProvider'
 
 type Props = {
   listingId: string
@@ -21,12 +22,18 @@ type Props = {
 export default function FavoriteButton({ listingId, userId, initialSaved }: Props) {
   const [saved, setSaved] = useState(initialSaved)
   const [isPending, startTransition] = useTransition()
+  const { addToast } = useToast()
 
   function handleClick() {
+    if (!userId) {
+      addToast('Sign in to save listings', 'info')
+      return
+    }
     startTransition(async () => {
       const result = await toggleSavedListing(listingId, saved)
       if (result && typeof result.saved === 'boolean') {
         setSaved(result.saved)
+        addToast(result.saved ? 'Listing saved!' : 'Removed from saved', result.saved ? 'success' : 'info')
       }
     })
   }

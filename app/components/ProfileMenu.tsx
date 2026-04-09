@@ -118,6 +118,7 @@ export default function ProfileMenu({ displayName, isAdmin, savedCount }: Props)
               )}
             </DropdownLink>
             <DropdownLink href="/dashboard">My listings</DropdownLink>
+            <DropdownLink href="/apply-broker">Apply as broker</DropdownLink>
             {isAdmin && <DropdownLink href="/admin">Admin</DropdownLink>}
           </div>
 

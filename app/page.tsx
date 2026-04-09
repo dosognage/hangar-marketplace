@@ -71,9 +71,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       `city.ilike.${like},state.ilike.${like},airport_name.ilike.${like},airport_code.ilike.${like}`
     )
   }
-  if (typeVal === 'sale' || typeVal === 'lease') query = query.eq('listing_type', typeVal)
+  if (typeVal === 'sale' || typeVal === 'lease' || typeVal === 'space') query = query.eq('listing_type', typeVal)
 
-  const priceCol = typeVal === 'lease' ? 'monthly_lease' : 'asking_price'
+  const priceCol = typeVal === 'lease' || typeVal === 'space' ? 'monthly_lease' : 'asking_price'
   const minP = parseFloat(minPriceVal)
   const maxP = parseFloat(maxPriceVal)
   if (!isNaN(minP) && minP > 0) query = query.gte(priceCol, minP)
@@ -97,7 +97,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       const like = `%${qVal.trim()}%`
       fallback = fallback.or(`city.ilike.${like},state.ilike.${like},airport_name.ilike.${like},airport_code.ilike.${like}`)
     }
-    if (typeVal === 'sale' || typeVal === 'lease') fallback = fallback.eq('listing_type', typeVal)
+    if (typeVal === 'sale' || typeVal === 'lease' || typeVal === 'space') fallback = fallback.eq('listing_type', typeVal)
     if (!isNaN(minP) && minP > 0) fallback = fallback.gte(priceCol, minP)
     if (!isNaN(maxP) && maxP > 0) fallback = fallback.lte(priceCol, maxP)
     if (!isNaN(minSq) && minSq > 0) fallback = fallback.gte('square_feet', minSq)
@@ -143,8 +143,26 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       {/* Split view fills remaining height */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
         {safeListings.length === 0 ? (
-          <div style={{ padding: '3rem 2rem', color: '#6b7280', textAlign: 'center' }}>
-            No listings found. Try adjusting your filters.
+          <div style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db"
+                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <p style={{ fontSize: '1.1rem', fontWeight: '700', color: '#111827', margin: '0 0 0.4rem' }}>
+              No hangars found
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0 0 1.5rem' }}>
+              Try a different search or clear the filters.
+            </p>
+            <a href="/" style={{
+              display: 'inline-block', padding: '0.6rem 1.25rem', backgroundColor: '#111827',
+              color: 'white', borderRadius: '6px', textDecoration: 'none',
+              fontWeight: '600', fontSize: '0.875rem',
+            }}>
+              Clear all filters
+            </a>
           </div>
         ) : (
           <SplitView

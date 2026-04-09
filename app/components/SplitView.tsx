@@ -16,6 +16,7 @@ import Link from 'next/link'
 import type { MapListing } from './MapView'
 import { toggleSavedListing } from '@/app/actions/listings'
 import HeartIcon from './HeartIcon'
+import { useToast } from './ToastProvider'
 
 // Load the map lazily — Leaflet requires a browser environment
 const MapView = dynamic(() => import('./MapView'), {
@@ -59,6 +60,7 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
   const [savedSet, setSavedSet] = useState<Set<string>>(() => new Set(savedIds))
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set())
   const [, startTransition] = useTransition()
+  const { addToast } = useToast()
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const panelRef = useRef<HTMLDivElement | null>(null)
   // Mobile: toggle between the card list and the map
@@ -82,6 +84,11 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
     e.stopPropagation()
     if (pendingIds.has(listingId)) return
 
+    if (!userId) {
+      addToast('Sign in to save listings', 'info')
+      return
+    }
+
     const currentlySaved = savedSet.has(listingId)
     // Optimistic update
     setSavedSet(prev => {
@@ -98,6 +105,7 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
         next.delete(listingId)
         return next
       })
+      addToast(currentlySaved ? 'Removed from saved' : 'Listing saved!', currentlySaved ? 'info' : 'success')
     })
   }
 
