@@ -1,8 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, listingApprovedEmail, listingRejectedEmail, newListingAtAirportEmail } from '@/lib/email'
 
-export async function PATCH(request: Request) {
+async function requireAdmin(req: NextRequest) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+    .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  if (!adminEmails.includes((user.email ?? '').toLowerCase())) return null
+  return user
+}
+
+export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
     const { id, status } = body
@@ -83,6 +94,27 @@ export async function PATCH(request: Request) {
         }
       }
     }
+
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: 'Unexpected server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const user = await requireAdmin(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const { id } = await request.json()
+    if (!id) return NextResponse.json({ error: 'Missing listing id' }, { status: 400 })
+
+    // Delete associated photos first (storage objects are managed separately)
+    await supabaseAdmin.from('listing_photos').delete().eq('listing_id', id)
+    await supabaseAdmin.from('inquiries').delete().eq('listing_id', id)
+
+    const { error } = await supabaseAdmin.from('listings').delete().eq('id', id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     return NextResponse.json({ success: true })
   } catch {

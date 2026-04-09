@@ -10,33 +10,10 @@ export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import ApproveRejectButtons from './ApproveRejectButtons'
 import BrokerApplicationButtons from './BrokerApplicationButtons'
 import ReGeocodeButton from './RegeoCodeButton'
-import MarkSampleButton from './MarkSampleButton'
-import { Star, ClipboardList, Building2, CheckCircle } from 'lucide-react'
-
-type Listing = {
-  id: string
-  title: string
-  airport_name: string
-  airport_code: string
-  city: string
-  state: string
-  listing_type: string
-  ownership_type: string
-  asking_price: number | null
-  monthly_lease: number | null
-  square_feet: number | null
-  door_width: number | null
-  door_height: number | null
-  description: string | null
-  contact_name: string
-  contact_email: string
-  contact_phone: string | null
-  status: string
-  is_sample: boolean
-}
+import AdminListingsManager from './AdminListingsManager'
+import { Star, Building2 } from 'lucide-react'
 
 type BrokerApp = {
   id: string
@@ -68,18 +45,10 @@ export default async function AdminPage() {
     redirect('/')
   }
 
-  // Fetch pending listings using the service-role key (bypasses RLS)
-  const { data: listings, error: listingsError } = await supabaseAdmin
+  // Fetch ALL listings (admin sees everything, filterable client-side)
+  const { data: allListings, error: listingsError } = await supabaseAdmin
     .from('listings')
-    .select('*')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-
-  // Fetch approved listings (for sample management)
-  const { data: approvedListings } = await supabaseAdmin
-    .from('listings')
-    .select('*')
-    .eq('status', 'approved')
+    .select('id, title, airport_name, airport_code, city, state, listing_type, ownership_type, asking_price, monthly_lease, square_feet, status, is_sample, is_featured, is_sponsored, contact_name, contact_email, contact_phone, created_at, view_count')
     .order('created_at', { ascending: false })
 
   // Fetch pending broker applications
@@ -92,22 +61,24 @@ export default async function AdminPage() {
   if (listingsError) {
     return (
       <div>
-        <h1>Admin Review</h1>
-        <p style={{ color: '#dc2626' }}>Failed to load pending listings.</p>
+        <h1>Admin</h1>
+        <p style={{ color: '#dc2626' }}>Failed to load listings.</p>
         <pre>{listingsError.message}</pre>
       </div>
     )
   }
 
   const pendingApps = (brokerApps ?? []) as BrokerApp[]
+  const pendingCount = (allListings ?? []).filter(l => l.status === 'pending').length
 
   return (
     <div>
+      {/* ── Header ───────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ marginBottom: '0.25rem' }}>Admin Review</h1>
+          <h1 style={{ marginBottom: '0.25rem' }}>Admin</h1>
           <p style={{ color: '#6b7280', margin: 0 }}>
-            {listings?.length ?? 0} pending listing{listings?.length !== 1 ? 's' : ''} · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
+            {pendingCount} pending review · {(allListings ?? []).length} total listings · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -171,86 +142,11 @@ export default async function AdminPage() {
         </div>
       )}
 
-      {/* ── Listing Reviews ───────────────────────────────────────────────── */}
+      {/* ── All Listings Manager ──────────────────────────────────────────── */}
       <h2 style={{ fontSize: '1rem', color: '#374151', margin: '0 0 0.75rem' }}>
-        <ClipboardList size={15} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.35rem' }} /> Pending Listings
+        All Listings
       </h2>
-
-      {!listings || listings.length === 0 ? (
-        <div style={{
-          backgroundColor: 'white', border: '1px dashed #d1d5db',
-          borderRadius: '12px', padding: '3rem', textAlign: 'center', color: '#6b7280',
-        }}>
-          All caught up — no pending listings.
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          {listings.map((listing: Listing) => (
-            <div key={listing.id} style={{
-              border: '1px solid #e5e7eb', borderRadius: '8px',
-              padding: '1.25rem', backgroundColor: 'white',
-            }}>
-              <h2 style={{ marginTop: 0 }}>{listing.title}</h2>
-              <p><strong>Airport:</strong> {listing.airport_name} ({listing.airport_code})</p>
-              <p><strong>Location:</strong> {listing.city}, {listing.state}</p>
-              <p><strong>Type:</strong> {listing.listing_type} · {listing.ownership_type}</p>
-              <p><strong>Size:</strong> {listing.square_feet ?? 'N/A'} sq ft · Door: {listing.door_width ?? '?'}′ W × {listing.door_height ?? '?'}′ H</p>
-              <p>
-                <strong>Price:</strong>{' '}
-                {listing.asking_price
-                  ? `$${listing.asking_price.toLocaleString()}`
-                  : listing.monthly_lease
-                    ? `$${listing.monthly_lease.toLocaleString()}/month`
-                    : 'Contact for price'}
-              </p>
-              {listing.description && <p><strong>Description:</strong> {listing.description}</p>}
-              <p><strong>Contact:</strong> {listing.contact_name} — {listing.contact_email}{listing.contact_phone ? ` · ${listing.contact_phone}` : ''}</p>
-              <ApproveRejectButtons id={listing.id} />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Approved Listings (Sample Management) ────────────────────────── */}
-      {approvedListings && approvedListings.length > 0 && (
-        <div style={{ marginTop: '2.5rem' }}>
-          <h2 style={{ fontSize: '1rem', color: '#374151', margin: '0 0 0.5rem' }}>
-            <CheckCircle size={15} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.35rem', color: '#16a34a' }} /> Approved Listings
-          </h2>
-          <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
-            Mark one listing as a sample demo. Sample listings show a banner and disable the contact form.
-          </p>
-          <div style={{ display: 'grid', gap: '0.75rem' }}>
-            {(approvedListings as Listing[]).map((listing) => (
-              <div key={listing.id} style={{
-                border: `1px solid ${listing.is_sample ? '#fde68a' : '#e5e7eb'}`,
-                borderRadius: '8px', padding: '1rem 1.25rem',
-                backgroundColor: listing.is_sample ? '#fffbeb' : 'white',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem',
-              }}>
-                <div>
-                  <p style={{ margin: 0, fontWeight: 600, color: '#111827', fontSize: '0.95rem' }}>{listing.title}</p>
-                  <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: '#6b7280' }}>
-                    {listing.airport_code} · {listing.city}, {listing.state} · {listing.listing_type}
-                    {listing.is_sample && <span style={{ marginLeft: '0.5rem', color: '#92400e', fontWeight: 600 }}>🔍 Marked as sample</span>}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <MarkSampleButton listingId={listing.id} isSample={listing.is_sample} />
-                  <a
-                    href={`/listing/${listing.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ fontSize: '0.8rem', color: '#2563eb', textDecoration: 'none' }}
-                  >
-                    View ↗
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <AdminListingsManager initialListings={allListings ?? []} />
     </div>
   )
 }
