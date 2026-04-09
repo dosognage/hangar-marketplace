@@ -3,38 +3,46 @@
 /**
  * Post a Hangar Request
  *
- * Any GA operator can post what they're looking for.
- * No account required — contact info is stored alongside the request.
+ * Flow:
+ *  1. User fills out form and picks Standard ($7.99) or High-Priority ($29.99)
+ *  2. On submit: request saved to DB with status 'pending_payment'
+ *  3. Redirected to Stripe hosted checkout
+ *  4. On payment success: webhook sets status to 'active'
  */
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 const DURATIONS = ['Month-to-month', '3 months', '6 months', '1 year', 'Permanent']
 
 const EMPTY = {
-  contact_name:  '',
-  contact_email: '',
-  contact_phone: '',
-  airport_code:  '',
-  airport_name:  '',
-  city:          '',
-  state:         '',
-  aircraft_type: '',
-  wingspan_ft:   '',
-  door_width_ft: '',
-  door_height_ft:'',
-  monthly_budget:'',
-  duration:      '',
-  move_in_date:  '',
-  notes:         '',
+  contact_name:   '',
+  contact_email:  '',
+  contact_phone:  '',
+  airport_code:   '',
+  airport_name:   '',
+  city:           '',
+  state:          '',
+  aircraft_type:  '',
+  wingspan_ft:    '',
+  door_width_ft:  '',
+  door_height_ft: '',
+  monthly_budget: '',
+  duration:       '',
+  move_in_date:   '',
+  notes:          '',
 }
 
-type Status = 'idle' | 'loading' | 'success' | 'error'
+type Status = 'idle' | 'loading' | 'error'
 
-export default function NewRequestPage() {
-  const [form, setForm]     = useState(EMPTY)
+function NewRequestForm() {
+  const searchParams = useSearchParams()
+  const wasCancelled = searchParams.get('cancelled') === '1'
+
+  const [form, setForm] = useState(EMPTY)
+  const [isPriority, setIsPriority] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -50,69 +58,57 @@ export default function NewRequestPage() {
     setStatus('loading')
     setErrorMsg('')
 
-    const { error } = await supabase.from('hangar_requests').insert([{
-      contact_name:   form.contact_name,
-      contact_email:  form.contact_email,
-      contact_phone:  form.contact_phone  || null,
-      airport_code:   form.airport_code.toUpperCase().trim(),
-      airport_name:   form.airport_name,
-      city:           form.city           || null,
-      state:          form.state          || null,
-      aircraft_type:  form.aircraft_type  || null,
-      wingspan_ft:    form.wingspan_ft    ? Number(form.wingspan_ft)    : null,
-      door_width_ft:  form.door_width_ft  ? Number(form.door_width_ft)  : null,
-      door_height_ft: form.door_height_ft ? Number(form.door_height_ft) : null,
-      monthly_budget: form.monthly_budget ? Number(form.monthly_budget) : null,
-      duration:       form.duration       || null,
-      move_in_date:   form.move_in_date   || null,
-      notes:          form.notes          || null,
-      status:         'active',
-    }])
+    // Step 1: Save request with pending_payment status
+    const { data: request, error: insertError } = await supabase
+      .from('hangar_requests')
+      .insert([{
+        contact_name:   form.contact_name,
+        contact_email:  form.contact_email,
+        contact_phone:  form.contact_phone  || null,
+        airport_code:   form.airport_code.toUpperCase().trim(),
+        airport_name:   form.airport_name,
+        city:           form.city           || null,
+        state:          form.state          || null,
+        aircraft_type:  form.aircraft_type  || null,
+        wingspan_ft:    form.wingspan_ft    ? Number(form.wingspan_ft)    : null,
+        door_width_ft:  form.door_width_ft  ? Number(form.door_width_ft)  : null,
+        door_height_ft: form.door_height_ft ? Number(form.door_height_ft) : null,
+        monthly_budget: form.monthly_budget ? Number(form.monthly_budget) : null,
+        duration:       form.duration       || null,
+        move_in_date:   form.move_in_date   || null,
+        notes:          form.notes          || null,
+        is_priority:    isPriority,
+        status:         'pending_payment',
+      }])
+      .select('id')
+      .single()
 
-    if (error) {
-      setErrorMsg(error.message)
+    if (insertError || !request) {
+      setErrorMsg(insertError?.message ?? 'Failed to save request.')
       setStatus('error')
       return
     }
-    setStatus('success')
+
+    // Step 2: Create Stripe checkout session
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request_id: request.id, is_priority: isPriority }),
+    })
+
+    const { url, error: checkoutError } = await res.json()
+
+    if (checkoutError || !url) {
+      setErrorMsg(checkoutError ?? 'Failed to start checkout.')
+      setStatus('error')
+      return
+    }
+
+    // Step 3: Redirect to Stripe hosted checkout
+    window.location.href = url
   }
 
-  if (status === 'success') {
-    return (
-      <div style={{ maxWidth: '600px' }}>
-        <div style={{
-          backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
-          borderRadius: '12px', padding: '2.5rem', textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-          <h2 style={{ margin: '0 0 0.75rem', color: '#166534' }}>Request posted!</h2>
-          <p style={{ margin: '0 0 1.5rem', color: '#166534', lineHeight: 1.6 }}>
-            Your hangar request is now live. Hangar owners at{' '}
-            <strong>{form.airport_code.toUpperCase()}</strong> can see it and reply
-            directly to your email address.
-          </p>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/requests" style={{
-              padding: '0.6rem 1.25rem', backgroundColor: '#111827', color: 'white',
-              borderRadius: '6px', textDecoration: 'none', fontWeight: '600', fontSize: '0.875rem',
-            }}>
-              View all requests
-            </Link>
-            <button
-              onClick={() => { setForm(EMPTY); setStatus('idle') }}
-              style={{
-                padding: '0.6rem 1.25rem', backgroundColor: 'white', color: '#374151',
-                border: '1px solid #d1d5db', borderRadius: '6px',
-                fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer',
-              }}
-            >
-              Post another
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const price = isPriority ? '$29.99' : '$7.99'
 
   return (
     <div style={{ maxWidth: '640px' }}>
@@ -127,6 +123,15 @@ export default function NewRequestPage() {
           when they have matching space available.
         </p>
       </div>
+
+      {wasCancelled && (
+        <div style={{
+          backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px',
+          padding: '0.75rem 1rem', color: '#92400e', fontSize: '0.875rem', marginBottom: '1.25rem',
+        }}>
+          Payment was cancelled — your request was not posted. Fill out the form again to try.
+        </div>
+      )}
 
       {status === 'error' && (
         <div style={{
@@ -242,15 +247,90 @@ export default function NewRequestPage() {
           </Field>
         </Section>
 
-        <button type="submit" disabled={status === 'loading'} style={{
-          padding: '0.85rem', backgroundColor: '#111827', color: 'white',
-          border: 'none', borderRadius: '8px', fontSize: '1rem',
-          fontWeight: '700', cursor: 'pointer',
+        {/* Placement — Standard vs Priority */}
+        <div style={{
+          backgroundColor: 'white', border: '1px solid #e5e7eb',
+          borderRadius: '10px', padding: '1.25rem',
         }}>
-          {status === 'loading' ? 'Posting…' : 'Post Request'}
+          <h2 style={{ margin: '0 0 0.85rem', fontSize: '0.95rem', color: '#374151' }}>
+            Listing Placement
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            {/* Standard */}
+            <button
+              type="button"
+              onClick={() => setIsPriority(false)}
+              style={{
+                padding: '1rem', borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
+                border: `2px solid ${!isPriority ? '#6366f1' : '#e5e7eb'}`,
+                backgroundColor: !isPriority ? '#f5f3ff' : 'white',
+                transition: 'border-color 0.15s, background-color 0.15s',
+              }}
+            >
+              <div style={{ fontWeight: '700', color: '#111827', marginBottom: '0.25rem' }}>
+                Standard — $7.99
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5 }}>
+                Listed on the request board chronologically.
+              </div>
+            </button>
+
+            {/* High Priority */}
+            <button
+              type="button"
+              onClick={() => setIsPriority(true)}
+              style={{
+                padding: '1rem', borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
+                border: `2px solid ${isPriority ? '#f59e0b' : '#e5e7eb'}`,
+                backgroundColor: isPriority ? '#fffbeb' : 'white',
+                transition: 'border-color 0.15s, background-color 0.15s',
+                position: 'relative',
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: '-10px', right: '10px',
+                backgroundColor: '#f59e0b', color: 'white',
+                fontSize: '0.65rem', fontWeight: '800',
+                padding: '0.15rem 0.45rem', borderRadius: '999px',
+              }}>
+                POPULAR
+              </div>
+              <div style={{ fontWeight: '700', color: '#111827', marginBottom: '0.25rem' }}>
+                High-Priority — $29.99
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5 }}>
+                Pinned to the top with a ⚡ badge — seen first by every owner.
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={status === 'loading'}
+          style={{
+            padding: '0.85rem', backgroundColor: '#111827', color: 'white',
+            border: 'none', borderRadius: '8px', fontSize: '1rem',
+            fontWeight: '700', cursor: status === 'loading' ? 'default' : 'pointer',
+            opacity: status === 'loading' ? 0.7 : 1,
+          }}
+        >
+          {status === 'loading' ? 'Redirecting to payment…' : `Continue to Payment — ${price}`}
         </button>
+
+        <p style={{ margin: '-0.5rem 0 0', textAlign: 'center', fontSize: '0.78rem', color: '#9ca3af' }}>
+          Secure checkout via Stripe. Your request goes live immediately after payment.
+        </p>
       </form>
     </div>
+  )
+}
+
+export default function NewRequestPage() {
+  return (
+    <Suspense fallback={<div style={{ maxWidth: '640px' }}><p style={{ color: '#6b7280' }}>Loading…</p></div>}>
+      <NewRequestForm />
+    </Suspense>
   )
 }
 

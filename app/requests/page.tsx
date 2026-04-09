@@ -33,6 +33,7 @@ type Request = {
   duration: string | null
   move_in_date: string | null
   notes: string | null
+  is_priority: boolean
   created_at: string
 }
 
@@ -58,7 +59,12 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
   }
 
   const { data: requests } = await query
-  const safeRequests = (requests ?? []) as Request[]
+  // Priority requests float to the top
+  const safeRequests = ((requests ?? []) as Request[]).sort((a, b) => {
+    if (a.is_priority && !b.is_priority) return -1
+    if (!a.is_priority && b.is_priority) return 1
+    return 0
+  })
 
   return (
     <div style={{ maxWidth: '860px' }}>
@@ -148,13 +154,25 @@ function RequestCard({ req, userId }: { req: Request; userId: string | null }) {
 
   return (
     <div style={{
-      backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '10px',
+      backgroundColor: req.is_priority ? '#fffbeb' : 'white',
+      border: `1px solid ${req.is_priority ? '#fde68a' : '#e5e7eb'}`,
+      borderRadius: '10px',
       padding: '1.25rem', display: 'grid', gap: '0.85rem',
     }}>
       {/* Top row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            {req.is_priority && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                padding: '0.15rem 0.5rem', borderRadius: '999px',
+                backgroundColor: '#f59e0b', color: 'white',
+                fontSize: '0.68rem', fontWeight: '800',
+              }}>
+                ⚡ Priority
+              </span>
+            )}
             <span style={{
               fontSize: '1.05rem', fontWeight: '700', color: '#111827',
             }}>
