@@ -5,6 +5,7 @@ import ProfileMenu from '@/app/components/ProfileMenu'
 import ToastProvider from '@/app/components/ToastProvider'
 import ProgressBar from '@/app/components/ProgressBar'
 import SavedCountProvider from '@/app/components/SavedCountProvider'
+import NewsletterSignup from '@/app/components/NewsletterSignup'
 
 export const metadata = {
   title: 'Hangar Marketplace',
@@ -141,47 +142,63 @@ export default async function RootLayout({
           <footer style={{
             backgroundColor: '#111827',
             borderTop: '1px solid #1f2937',
-            padding: '1.25rem 2rem',
+            padding: '2rem 2rem 1.5rem',
           }}>
             <div style={{
               maxWidth: '1100px',
               margin: '0 auto',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '0.5rem',
             }}>
-              {/* Brand + copyright */}
-              <span style={{ color: '#6b7280', fontSize: '0.775rem' }}>
-                © {new Date().getFullYear()}{' '}
-                <span style={{ color: '#9ca3af', fontWeight: '600' }}>Hangar Marketplace</span>
-                {' '}· All rights reserved
-              </span>
 
-              {/* Contact info */}
+              {/* ── Top row: newsletter + nav columns ───────────────────── */}
               <div style={{
                 display: 'flex',
-                alignItems: 'center',
-                gap: '1.25rem',
+                gap: '3rem',
                 flexWrap: 'wrap',
+                marginBottom: '1.75rem',
+                alignItems: 'flex-start',
               }}>
-                <span style={{ color: '#4b5563', fontSize: '0.7rem', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: '600' }}>
-                  Contact us
-                </span>
-                <a
-                  href="tel:+19203858284"
-                  style={{ color: '#9ca3af', fontSize: '0.775rem', textDecoration: 'none' }}
-                >
-                  (920) 385-8284
-                </a>
-                <a
-                  href="mailto:andre.dosogne@outlook.com"
-                  style={{ color: '#9ca3af', fontSize: '0.775rem', textDecoration: 'none' }}
-                >
-                  andre.dosogne@outlook.com
-                </a>
+                {/* Newsletter */}
+                <div style={{ flex: '1 1 260px', minWidth: '220px' }}>
+                  <p style={{ margin: '0 0 0.75rem', color: '#e5e7eb', fontSize: '0.825rem', fontWeight: '700' }}>
+                    ✈ Hangar Marketplace
+                  </p>
+                  <p style={{ margin: '0 0 1rem', color: '#6b7280', fontSize: '0.75rem', lineHeight: 1.6 }}>
+                    The easiest way to find, list, and lease aviation hangar space across the US.
+                  </p>
+                  <NewsletterSignup source="footer_form" compact />
+                </div>
+
+                {/* Nav columns */}
+                <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
+                  <FooterCol title="Platform">
+                    <FooterLink href="/">Browse hangars</FooterLink>
+                    <FooterLink href="/submit">List a hangar</FooterLink>
+                    <FooterLink href="/requests">Hangar requests</FooterLink>
+                    <FooterLink href="/requests/new">Post a request</FooterLink>
+                  </FooterCol>
+                  <FooterCol title="Company">
+                    <FooterLink href="/privacy">Privacy Policy</FooterLink>
+                    <FooterLink href="/unsubscribe">Unsubscribe</FooterLink>
+                    <FooterLink href="/apply-broker">Broker verification</FooterLink>
+                  </FooterCol>
+                  <FooterCol title="Contact us">
+                    <a href="tel:+19203858284" style={footerContactStyle}>(920) 385-8284</a>
+                    <a href="mailto:andre.dosogne@outlook.com" style={footerContactStyle}>andre.dosogne@outlook.com</a>
+                  </FooterCol>
+                </div>
               </div>
+
+              {/* ── Bottom bar: copyright ────────────────────────────────── */}
+              <div style={{
+                borderTop: '1px solid #1f2937',
+                paddingTop: '1rem',
+              }}>
+                <span style={{ color: '#4b5563', fontSize: '0.72rem' }}>
+                  © {new Date().getFullYear()} Hangar Marketplace · All rights reserved ·{' '}
+                  <Link href="/privacy" style={{ color: '#4b5563', textDecoration: 'none' }}>Privacy Policy</Link>
+                </span>
+              </div>
+
             </div>
           </footer>
 
@@ -199,4 +216,33 @@ const navLinkStyle: React.CSSProperties = {
   padding: '0.4rem 0.65rem',
   borderRadius: '6px',
   transition: 'background-color 0.15s',
+}
+
+const footerContactStyle: React.CSSProperties = {
+  display: 'block',
+  color: '#9ca3af',
+  fontSize: '0.775rem',
+  textDecoration: 'none',
+  lineHeight: 1.8,
+}
+
+function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p style={{ margin: '0 0 0.6rem', color: '#4b5563', fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        {title}
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} style={{ color: '#9ca3af', fontSize: '0.775rem', textDecoration: 'none', lineHeight: 1.8 }}>
+      {children}
+    </Link>
+  )
 }
