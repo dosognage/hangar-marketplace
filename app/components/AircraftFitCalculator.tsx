@@ -8,6 +8,8 @@
  */
 
 import { useState } from 'react'
+import AircraftAutocomplete from './AircraftAutocomplete'
+import type { AircraftSpec } from '@/lib/aircraft-data'
 
 type Props = {
   doorWidth: number | null
@@ -24,10 +26,30 @@ function check(aircraft: number, hangar: number | null): Result {
 
 export default function AircraftFitCalculator({ doorWidth, doorHeight, hangarDepth }: Props) {
   const [open, setOpen] = useState(false)
+  const [aircraftName, setAircraftName] = useState('')
+  const [autoFilled, setAutoFilled] = useState(false)
   const [wingspan, setWingspan] = useState('')
   const [tailHeight, setTailHeight] = useState('')
   const [length, setLength] = useState('')
   const [checked, setChecked] = useState(false)
+
+  function handleAircraftSelect(spec: AircraftSpec) {
+    setAircraftName(spec.name)
+    setWingspan(String(spec.wingspan_ft))
+    setTailHeight(String(spec.height_ft))
+    setLength(String(spec.length_ft))
+    setAutoFilled(true)
+    setChecked(false)
+  }
+
+  function handleAircraftClear() {
+    setAircraftName('')
+    setAutoFilled(false)
+    setWingspan('')
+    setTailHeight('')
+    setLength('')
+    setChecked(false)
+  }
 
   const ws = parseFloat(wingspan)
   const th = parseFloat(tailHeight)
@@ -49,6 +71,8 @@ export default function AircraftFitCalculator({ doorWidth, doorHeight, hangarDep
   }
 
   function handleReset() {
+    setAircraftName('')
+    setAutoFilled(false)
     setWingspan('')
     setTailHeight('')
     setLength('')
@@ -100,8 +124,53 @@ export default function AircraftFitCalculator({ doorWidth, doorHeight, hangarDep
       {open && (
         <div style={{ padding: '0 1.25rem 1.25rem', borderTop: '1px solid #f3f4f6' }}>
           <p style={{ margin: '0.75rem 0 1rem', fontSize: '0.82rem', color: '#6b7280' }}>
-            Enter your aircraft's dimensions to check if it fits this hangar's opening and depth.
+            Search your aircraft type to auto-fill dimensions, or enter them manually below.
           </p>
+
+          {/* Aircraft type autocomplete */}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '600', color: '#374151', marginBottom: '0.3rem' }}>
+              Aircraft type
+            </label>
+            {autoFilled ? (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.4rem 0.75rem',
+                backgroundColor: '#f0fdf4', border: '1px solid #86efac',
+                borderRadius: '6px', fontSize: '0.82rem',
+              }}>
+                <span style={{ color: '#16a34a', fontWeight: '600' }}>✓ {aircraftName} — dimensions auto-filled</span>
+                <button
+                  onClick={handleAircraftClear}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#6b7280', padding: '0', fontSize: '0.85rem', lineHeight: 1,
+                  }}
+                  aria-label="Clear aircraft"
+                >✕</button>
+              </div>
+            ) : (
+              <AircraftAutocomplete
+                value={aircraftName}
+                onChange={(v) => {
+                  setAircraftName(v)
+                  // If user clears the name manually, reset autoFilled state
+                  if (!v) { setAutoFilled(false) }
+                }}
+                onSelect={handleAircraftSelect}
+                inputStyle={{
+                  width: '100%',
+                  padding: '0.45rem 0.6rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  color: '#111827',
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box' as const,
+                }}
+              />
+            )}
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
             <InputField
