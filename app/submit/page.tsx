@@ -228,18 +228,16 @@ export default function SubmitPage() {
               <input name="state" placeholder="FL" value={formData.state} onChange={handleChange} required style={inputStyle} />
             </Field>
           </TwoCol>
-          <TwoCol>
-            <Field label="Listing type *">
-              <select name="listing_type" value={formData.listing_type} onChange={handleChange} style={inputStyle}>
-                <option value="sale">For Sale — full hangar</option>
-                <option value="lease">For Lease — full hangar</option>
-                <option value="space">Space Available — partial hangar</option>
-              </select>
-            </Field>
-            <Field label="Ownership type *">
-              <input name="ownership_type" placeholder="Private / Municipal / Condo" value={formData.ownership_type} onChange={handleChange} required style={inputStyle} />
-            </Field>
-          </TwoCol>
+          <Field label="Listing type *">
+            <select name="listing_type" value={formData.listing_type} onChange={handleChange} style={inputStyle}>
+              <option value="sale">For Sale — full hangar</option>
+              <option value="lease">For Lease — full hangar</option>
+              <option value="space">Space Available — partial hangar</option>
+            </select>
+          </Field>
+          <Field label="Ownership type *">
+            <input name="ownership_type" placeholder="Private / Municipal / Condo" value={formData.ownership_type} onChange={handleChange} required style={inputStyle} />
+          </Field>
           {formData.listing_type === 'space' && (
             <div style={{
               backgroundColor: '#eff6ff', border: '1px solid #bfdbfe',
