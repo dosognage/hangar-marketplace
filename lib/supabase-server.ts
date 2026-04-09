@@ -14,15 +14,23 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-// The cookie name Supabase uses is derived from the project URL
-const PROJECT_REF = supabaseUrl.split('//')[1].split('.')[0]
-export const SESSION_COOKIE = `sb-${PROJECT_REF}-auth-token`
+/**
+ * Derive the session cookie name lazily inside the function so that
+ * the module-level code never calls .split() on a potentially-undefined
+ * env var during bundle evaluation, which crashed all server routes.
+ */
+function getSessionCookie(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!url) throw new Error('[supabase-server] Missing env var: NEXT_PUBLIC_SUPABASE_URL')
+  const projectRef = url.split('//')[1]?.split('.')[0] ?? 'local'
+  return `sb-${projectRef}-auth-token`
+}
 
 export async function createServerClient() {
-  const cookieStore = await cookies()
+  const supabaseUrl    = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const SESSION_COOKIE  = getSessionCookie()
+  const cookieStore     = await cookies()
 
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {

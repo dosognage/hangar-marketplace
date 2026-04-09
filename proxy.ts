@@ -14,10 +14,11 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PROJECT_REF = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  .split('//')[1]
-  .split('.')[0]
-const SESSION_COOKIE = `sb-${PROJECT_REF}-auth-token`
+function getSessionCookieName(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const ref = url.split('//')[1]?.split('.')[0] ?? 'local'
+  return `sb-${ref}-auth-token`
+}
 
 /** Decode a JWT payload without verifying the signature. */
 function decodeJWT(token: string): Record<string, unknown> | null {
@@ -32,6 +33,7 @@ function decodeJWT(token: string): Record<string, unknown> | null {
 
 /** Parse the session cookie and return the access_token JWT payload, or null. */
 function getSessionPayload(request: NextRequest): Record<string, unknown> | null {
+  const SESSION_COOKIE = getSessionCookieName()
   const raw = request.cookies.get(SESSION_COOKIE)?.value
   if (!raw) return null
   try {
