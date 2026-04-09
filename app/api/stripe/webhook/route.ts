@@ -30,8 +30,26 @@ export async function POST(req: NextRequest) {
       payment_status?: string
     }
 
-    const { request_id, is_priority, type } = session.metadata ?? {}
+    const { request_id, is_priority, type, listing_id, duration_days } = session.metadata ?? {}
 
+    // ── Listing sponsorship ──────────────────────────────────────────────────
+    if (type === 'listing_sponsor' && listing_id && session.payment_status === 'paid') {
+      const days = parseInt(duration_days ?? '30', 10)
+      const sponsoredUntil = new Date(Date.now() + days * 86_400_000).toISOString()
+
+      const { error: sponsorError } = await supabaseAdmin
+        .from('listings')
+        .update({ is_sponsored: true, sponsored_until: sponsoredUntil })
+        .eq('id', listing_id)
+
+      if (sponsorError) {
+        console.error('[webhook] Failed to activate sponsorship:', sponsorError.message)
+        return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+      }
+      console.log(`[webhook] Listing ${listing_id} sponsored for ${days} days (until ${sponsoredUntil})`)
+    }
+
+    // ── Hangar request activation ────────────────────────────────────────────
     if (type === 'hangar_request' && request_id && session.payment_status === 'paid') {
       // ── Activate the request ─────────────────────────────────────────────
       const { data: updatedRequest, error } = await supabaseAdmin

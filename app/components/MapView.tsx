@@ -11,10 +11,17 @@
  * Clicking a marker scrolls the matching card into view.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+
+export type MapBounds = {
+  north: number
+  south: number
+  east: number
+  west: number
+}
 
 // Fix Leaflet's default icon paths which break in webpack / Next.js
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,9 +55,27 @@ function makeIcon(color: 'blue' | 'green' | 'gold') {
   })
 }
 
-const ICON_SALE     = makeIcon('blue')
-const ICON_LEASE    = makeIcon('green')
-const ICON_HOVERED  = makeIcon('gold')
+function makeSponsoredIcon() {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="44" viewBox="0 0 32 44">
+      <path d="M16 0C7.16 0 0 7.16 0 16c0 10.67 16 28 16 28S32 26.67 32 16C32 7.16 24.84 0 16 0z"
+        fill="#6366f1" stroke="#4f46e5" stroke-width="1.5"/>
+      <circle cx="16" cy="16" r="7" fill="white" opacity="0.9"/>
+      <text x="16" y="20" text-anchor="middle" font-size="9" font-weight="bold" fill="#4f46e5">AD</text>
+    </svg>`
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: [32, 44],
+    iconAnchor: [16, 44],
+    popupAnchor: [0, -46],
+  })
+}
+
+const ICON_SALE      = makeIcon('blue')
+const ICON_LEASE     = makeIcon('green')
+const ICON_HOVERED   = makeIcon('gold')
+const ICON_SPONSORED = makeSponsoredIcon()
 
 export type MapListing = {
   id: string
@@ -63,12 +88,15 @@ export type MapListing = {
   monthly_lease: number | null
   latitude: number
   longitude: number
+  is_sponsored?: boolean
+  sponsored_until?: string | null
 }
 
 type Props = {
   listings: MapListing[]
   hoveredId: string | null
   onMarkerClick: (id: string) => void
+  onBoundsChange?: (bounds: MapBounds) => void
 }
 
 // Auto-fit the map bounds whenever listings change
@@ -96,7 +124,30 @@ function InvalidateSize() {
   return null
 }
 
-export default function MapView({ listings, hoveredId, onMarkerClick }: Props) {
+// Fires onBoundsChange whenever the user pans or zooms.
+function BoundsTracker({ onBoundsChange }: { onBoundsChange: (b: MapBounds) => void }) {
+  const map = useMap()
+  const cb = useCallback(() => {
+    const b = map.getBounds()
+    onBoundsChange({ north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() })
+  }, [map, onBoundsChange])
+
+  useEffect(() => {
+    map.on('moveend', cb)
+    map.on('zoomend', cb)
+    // Emit initial bounds after a short delay to let fitBounds settle
+    const id = setTimeout(cb, 400)
+    return () => {
+      map.off('moveend', cb)
+      map.off('zoomend', cb)
+      clearTimeout(id)
+    }
+  }, [map, cb])
+
+  return null
+}
+
+export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsChange }: Props) {
   // Only render Leaflet after the browser has finished its first paint.
   // This prevents "this.getPane().appendChild" and "container reused" errors.
   const [mounted, setMounted] = useState(false)
@@ -130,14 +181,20 @@ export default function MapView({ listings, hoveredId, onMarkerClick }: Props) {
 
       <BoundsUpdater listings={mapped} />
       <InvalidateSize />
+      {onBoundsChange && <BoundsTracker onBoundsChange={onBoundsChange} />}
 
       {mapped.map((listing) => {
         const isHovered = listing.id === hoveredId
+        const isSponsoredActive = listing.is_sponsored &&
+          listing.sponsored_until != null &&
+          new Date(listing.sponsored_until) > new Date()
         const icon = isHovered
           ? ICON_HOVERED
-          : listing.listing_type === 'lease'
-            ? ICON_LEASE
-            : ICON_SALE
+          : isSponsoredActive
+            ? ICON_SPONSORED
+            : listing.listing_type === 'lease'
+              ? ICON_LEASE
+              : ICON_SALE
 
         const price = listing.asking_price
           ? `$${listing.asking_price.toLocaleString()}`

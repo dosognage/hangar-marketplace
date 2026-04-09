@@ -10,10 +10,10 @@
  * Clicking a map marker scrolls the matching card into view and highlights it.
  */
 
-import { useState, useRef, useCallback, useEffect, useTransition } from 'react'
+import { useState, useRef, useCallback, useEffect, useTransition, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import type { MapListing } from './MapView'
+import type { MapListing, MapBounds } from './MapView'
 import { toggleSavedListing } from '@/app/actions/listings'
 import HeartIcon from './HeartIcon'
 import { Star } from 'lucide-react'
@@ -46,7 +46,22 @@ type Listing = Omit<MapListing, 'latitude' | 'longitude'> & {
   description: string | null
   is_featured: boolean
   featured_until: string | null
+  is_sponsored: boolean
+  sponsored_until: string | null
   listing_photos: Photo[]
+}
+
+// Helpers
+function isActiveFeatured(l: Listing) {
+  return l.is_featured && l.featured_until != null && new Date(l.featured_until) > new Date()
+}
+function isActiveSponsored(l: Listing) {
+  return l.is_sponsored && l.sponsored_until != null && new Date(l.sponsored_until) > new Date()
+}
+function inBounds(l: Listing, b: MapBounds | null) {
+  if (!b || l.latitude == null || l.longitude == null) return false
+  return l.latitude <= b.north && l.latitude >= b.south &&
+         l.longitude <= b.east && l.longitude >= b.west
 }
 
 type Props = {
@@ -72,11 +87,32 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   // Pagination: cards paginate, map always shows all
   const [currentPage, setCurrentPage] = useState(1)
+  // Current map viewport — used to geo-filter sponsored listings to top
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
 
-  const totalPages = Math.ceil(listings.length / PAGE_SIZE)
-  const pageStart  = (currentPage - 1) * PAGE_SIZE
-  const pageEnd    = pageStart + PAGE_SIZE
-  const pageListings = listings.slice(pageStart, pageEnd)
+  const handleBoundsChange = useCallback((b: MapBounds) => {
+    setMapBounds(b)
+  }, [])
+
+  // Sort: sponsored-in-viewport → admin-featured → rest (stable otherwise)
+  const sortedListings = useMemo(() => {
+    return [...listings].sort((a, b) => {
+      const aSponsored = isActiveSponsored(a) && inBounds(a, mapBounds)
+      const bSponsored = isActiveSponsored(b) && inBounds(b, mapBounds)
+      if (aSponsored && !bSponsored) return -1
+      if (!aSponsored && bSponsored) return 1
+      const aFeatured = isActiveFeatured(a)
+      const bFeatured = isActiveFeatured(b)
+      if (aFeatured && !bFeatured) return -1
+      if (!aFeatured && bFeatured) return 1
+      return 0
+    })
+  }, [listings, mapBounds])
+
+  const totalPages  = Math.ceil(sortedListings.length / PAGE_SIZE)
+  const pageStart   = (currentPage - 1) * PAGE_SIZE
+  const pageEnd     = pageStart + PAGE_SIZE
+  const pageListings = sortedListings.slice(pageStart, pageEnd)
 
   // All listings with coords → shown on map (ALL pages)
   const mappable = listings.filter(
@@ -177,6 +213,7 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
             listings={mappable}
             hoveredId={hoveredId}
             onMarkerClick={handleMarkerClick}
+            onBoundsChange={handleBoundsChange}
           />
         )}
       </div>
@@ -203,7 +240,7 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
         }}
       >
         <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#6b7280' }}>
-          {listings.length} listing{listings.length !== 1 ? 's' : ''}
+          {sortedListings.length} listing{sortedListings.length !== 1 ? 's' : ''}
           {totalPages > 1 && ` · page ${currentPage} of ${totalPages}`}
         </p>
 
@@ -213,9 +250,8 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
             (a, b) => a.display_order - b.display_order
           )
           const coverPath = sortedPhotos[0]?.storage_path ?? null
-          const isFeaturedActive = listing.is_featured &&
-            listing.featured_until != null &&
-            new Date(listing.featured_until) > new Date()
+          const isFeaturedActive  = isActiveFeatured(listing)
+          const isSponsoredActive = isActiveSponsored(listing)
 
           const price = listing.asking_price
             ? `$${listing.asking_price.toLocaleString()}`
@@ -242,8 +278,23 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
                   transition: 'border-color 0.15s, box-shadow 0.15s',
                   position: 'relative',
                 }}>
-                  {/* Featured badge */}
-                  {isFeaturedActive && (
+                  {/* Sponsored badge (paid — shown above featured) */}
+                  {isSponsoredActive && (
+                    <div style={{
+                      position: 'absolute', top: '8px', left: '8px', zIndex: 11,
+                      display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                      padding: '0.18rem 0.5rem', borderRadius: '999px',
+                      backgroundColor: '#6366f1', color: 'white',
+                      fontSize: '0.68rem', fontWeight: '700',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                      pointerEvents: 'none',
+                    }}>
+                      Sponsored
+                    </div>
+                  )}
+
+                  {/* Featured badge (admin) */}
+                  {isFeaturedActive && !isSponsoredActive && (
                     <div style={{
                       position: 'absolute', top: '8px', left: '8px', zIndex: 10,
                       display: 'inline-flex', alignItems: 'center', gap: '0.2rem',

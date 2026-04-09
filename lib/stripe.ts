@@ -19,3 +19,12 @@ export function getStripe(): Stripe {
 // Hangar request prices in cents
 export const REQUEST_STANDARD_CENTS  = 799    // $7.99
 export const REQUEST_PRIORITY_CENTS  = 2999   // $29.99
+
+// Sponsored listing tiers — paid by listing owner to pin to top of browse
+export const SPONSOR_TIERS = [
+  { days: 7,  cents: 2900,  label: '7 days',  price: '$29' },
+  { days: 30, cents: 7900,  label: '30 days', price: '$79' },
+  { days: 90, cents: 14900, label: '90 days', price: '$149' },
+] as const
+
+export type SponsorTier = typeof SPONSOR_TIERS[number]

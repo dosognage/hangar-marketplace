@@ -11,6 +11,7 @@ import ShareButton from '@/app/components/ShareButton'
 import SimilarListings from '@/app/components/SimilarListings'
 import type { Metadata } from 'next'
 import { Star } from 'lucide-react'
+import SponsorButton from '@/app/components/SponsorButton'
 
 type ListingPageProps = {
   params: Promise<{ id: string }>
@@ -80,6 +81,8 @@ type Listing = {
   description: string | null
   is_featured: boolean
   featured_until: string | null
+  is_sponsored: boolean
+  sponsored_until: string | null
   contact_name: string
   contact_email: string
   contact_phone: string | null
@@ -158,6 +161,20 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
                 : 'Contact for price'}
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Sponsored badge */}
+            {typedListing.is_sponsored &&
+              typedListing.sponsored_until &&
+              new Date(typedListing.sponsored_until) > new Date() && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                padding: '0.2rem 0.6rem', borderRadius: '999px',
+                backgroundColor: '#6366f1', color: 'white',
+                fontSize: '0.75rem', fontWeight: '700',
+              }}>
+                Sponsored
+              </span>
+            )}
+            {/* Featured badge (admin) */}
             {typedListing.is_featured &&
               typedListing.featured_until &&
               new Date(typedListing.featured_until) > new Date() && (
@@ -196,6 +213,14 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
           No photos provided for this listing
         </div>
       )}
+
+      {/* Sponsor CTA — shown to listing owners to boost visibility */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <SponsorButton
+          listingId={typedListing.id}
+          sponsoredUntil={typedListing.sponsored_until}
+        />
+      </div>
 
       {/* Details card — 2 columns on desktop, 1 on mobile (see globals.css .detail-grid) */}
       <div className="detail-grid">

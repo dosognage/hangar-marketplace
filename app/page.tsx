@@ -28,6 +28,8 @@ type Listing = {
   longitude: number | null
   is_featured: boolean
   featured_until: string | null
+  is_sponsored: boolean
+  sponsored_until: string | null
   listing_photos: Photo[]
 }
 
