@@ -11,6 +11,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { logout } from '@/app/actions/auth'
+import HeartIcon from './HeartIcon'
 
 type Props = {
   displayName: string
@@ -99,7 +100,8 @@ export default function ProfileMenu({ displayName, isAdmin, savedCount }: Props)
           {/* Links */}
           <div style={{ padding: '0.4rem 0' }}>
             <DropdownLink href="/saved">
-              ❤️ Saved listings
+              <HeartIcon filled={savedCount > 0} size={15} />
+              Saved listings
               {savedCount > 0 && (
                 <span style={{
                   marginLeft: 'auto',
@@ -115,8 +117,8 @@ export default function ProfileMenu({ displayName, isAdmin, savedCount }: Props)
                 </span>
               )}
             </DropdownLink>
-            <DropdownLink href="/dashboard">📋 My listings</DropdownLink>
-            {isAdmin && <DropdownLink href="/admin">⚙️ Admin</DropdownLink>}
+            <DropdownLink href="/dashboard">My listings</DropdownLink>
+            {isAdmin && <DropdownLink href="/admin">Admin</DropdownLink>}
           </div>
 
           {/* Logout */}

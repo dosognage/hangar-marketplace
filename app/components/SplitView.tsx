@@ -15,6 +15,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { MapListing } from './MapView'
 import { toggleSavedListing } from '@/app/actions/listings'
+import HeartIcon from './HeartIcon'
 
 // Load the map lazily — Leaflet requires a browser environment
 const MapView = dynamic(() => import('./MapView'), {
@@ -229,23 +230,23 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
                       top: '8px',
                       right: '8px',
                       zIndex: 10,
-                      background: 'rgba(255,255,255,0.85)',
+                      background: 'rgba(255,255,255,0.88)',
                       border: 'none',
                       borderRadius: '50%',
-                      width: '32px',
-                      height: '32px',
+                      width: '30px',
+                      height: '30px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '1.05rem',
                       cursor: pendingIds.has(listing.id) ? 'default' : 'pointer',
-                      opacity: pendingIds.has(listing.id) ? 0.6 : 1,
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-                      transition: 'opacity 0.15s, transform 0.1s',
+                      opacity: pendingIds.has(listing.id) ? 0.5 : 1,
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+                      transition: 'opacity 0.15s',
                       padding: 0,
+                      color: savedSet.has(listing.id) ? '#dc2626' : '#6b7280',
                     }}
                   >
-                    {savedSet.has(listing.id) ? '❤️' : '🤍'}
+                    <HeartIcon filled={savedSet.has(listing.id)} size={16} />
                   </button>
 
                   {/* Cover photo */}

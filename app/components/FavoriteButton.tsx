@@ -10,6 +10,7 @@
 
 import { useState, useTransition } from 'react'
 import { toggleSavedListing } from '@/app/actions/listings'
+import HeartIcon from './HeartIcon'
 
 type Props = {
   listingId: string
@@ -40,15 +41,14 @@ export default function FavoriteButton({ listingId, userId, initialSaved }: Prop
         border: 'none',
         padding: '0.25rem',
         cursor: isPending ? 'default' : 'pointer',
-        fontSize: '1.6rem',
-        lineHeight: 1,
         opacity: isPending ? 0.5 : 1,
         transition: 'opacity 0.15s',
         display: 'flex',
         alignItems: 'center',
+        color: saved ? '#dc2626' : '#9ca3af',
       }}
     >
-      {saved ? '❤️' : '🤍'}
+      <HeartIcon filled={saved} size={22} />
     </button>
   )
 }
