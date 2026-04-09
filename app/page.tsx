@@ -44,6 +44,7 @@ type Listing = {
   featured_until: string | null
   is_sponsored: boolean
   sponsored_until: string | null
+  is_sample: boolean
   listing_photos: Photo[]
 }
 
