@@ -10,10 +10,11 @@
  * Clicking a map marker scrolls the matching card into view and highlights it.
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useTransition } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { MapListing } from './MapView'
+import { toggleSavedListing } from '@/app/actions/listings'
 
 // Load the map lazily — Leaflet requires a browser environment
 const MapView = dynamic(() => import('./MapView'), {
@@ -45,12 +46,18 @@ type Listing = Omit<MapListing, 'latitude' | 'longitude'> & {
 type Props = {
   listings: Listing[]
   supabaseUrl: string
+  savedIds: string[]
+  userId: string | null
 }
 
 const PAGE_SIZE = 12
 
-export default function SplitView({ listings, supabaseUrl }: Props) {
+export default function SplitView({ listings, supabaseUrl, savedIds, userId }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  // Optimistic saved set — starts from server-fetched IDs
+  const [savedSet, setSavedSet] = useState<Set<string>>(() => new Set(savedIds))
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set())
+  const [, startTransition] = useTransition()
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const panelRef = useRef<HTMLDivElement | null>(null)
   // Mobile: toggle between the card list and the map
@@ -68,6 +75,30 @@ export default function SplitView({ listings, supabaseUrl }: Props) {
     (l): l is Listing & { latitude: number; longitude: number } =>
       l.latitude != null && l.longitude != null
   )
+
+  function handleHeart(e: React.MouseEvent, listingId: string) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (pendingIds.has(listingId)) return
+
+    const currentlySaved = savedSet.has(listingId)
+    // Optimistic update
+    setSavedSet(prev => {
+      const next = new Set(prev)
+      currentlySaved ? next.delete(listingId) : next.add(listingId)
+      return next
+    })
+    setPendingIds(prev => new Set(prev).add(listingId))
+
+    startTransition(async () => {
+      await toggleSavedListing(listingId, currentlySaved)
+      setPendingIds(prev => {
+        const next = new Set(prev)
+        next.delete(listingId)
+        return next
+      })
+    })
+  }
 
   function goToPage(page: number) {
     setCurrentPage(page)
@@ -186,7 +217,37 @@ export default function SplitView({ listings, supabaseUrl }: Props) {
                     : '0 1px 4px rgba(0,0,0,0.07)',
                   overflow: 'hidden',
                   transition: 'border-color 0.15s, box-shadow 0.15s',
+                  position: 'relative',
                 }}>
+                  {/* Heart button overlay */}
+                  <button
+                    onClick={(e) => handleHeart(e, listing.id)}
+                    disabled={pendingIds.has(listing.id)}
+                    title={savedSet.has(listing.id) ? 'Remove from saved' : 'Save listing'}
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      zIndex: 10,
+                      background: 'rgba(255,255,255,0.85)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '32px',
+                      height: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.05rem',
+                      cursor: pendingIds.has(listing.id) ? 'default' : 'pointer',
+                      opacity: pendingIds.has(listing.id) ? 0.6 : 1,
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                      transition: 'opacity 0.15s, transform 0.1s',
+                      padding: 0,
+                    }}
+                  >
+                    {savedSet.has(listing.id) ? '❤️' : '🤍'}
+                  </button>
+
                   {/* Cover photo */}
                   {coverPath ? (
                     <img

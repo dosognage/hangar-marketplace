@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
+import { createServerClient } from '@/lib/supabase-server'
 import SearchFilters from '@/app/components/SearchFilters'
 import SplitView from '@/app/components/SplitView'
 
@@ -34,6 +35,18 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const { q, type, minPrice, maxPrice, minSqft } = await searchParams
+
+  // Get logged-in user + their saved listing IDs (server-side, cookie auth)
+  const serverSupabase = await createServerClient()
+  const { data: { user } } = await serverSupabase.auth.getUser()
+  let savedIds: string[] = []
+  if (user) {
+    const { data } = await serverSupabase
+      .from('saved_listings')
+      .select('listing_id')
+      .eq('user_id', user.id)
+    savedIds = (data ?? []).map((r: { listing_id: string }) => r.listing_id)
+  }
 
   const str = (v: string | string[] | undefined) =>
     Array.isArray(v) ? v[0] : v ?? ''
@@ -134,7 +147,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             No listings found. Try adjusting your filters.
           </div>
         ) : (
-          <SplitView listings={safeListings} supabaseUrl={SUPABASE_URL} />
+          <SplitView
+            listings={safeListings}
+            supabaseUrl={SUPABASE_URL}
+            savedIds={savedIds}
+            userId={user?.id ?? null}
+          />
         )}
       </div>
     </div>
