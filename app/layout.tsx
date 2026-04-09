@@ -70,10 +70,10 @@ export default async function RootLayout({
             >
               {/* Hangar icon: roofline + airplane */}
               <svg width="32" height="34" viewBox="0 0 32 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Roof — centered on x=16 */}
-                <path d="M3 13 L16 2 L29 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                {/* Airplane — centered on x=16, slightly larger */}
-                <path d="M27 26v-2.5L16 17V10.5a2 2 0 0 0-4 0V17L1 23.5V26l11-3.5V28l-2.5 2V32l4.5-1.5 4.5 1.5v-2L16 28v-5.5l11 3.5z" fill="white"/>
+                {/* Roof — explicitly centered: left=2, tip=16, right=30 */}
+                <path d="M2 14 L16 2 L30 14" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                {/* Airplane — centered on x=16 */}
+                <path d="M16 8.5a2 2 0 0 0-2 2V17L2 23.5V26l12-3.5V28l-2.5 2V32L16 30.5l4.5 1.5v-2L18 28v-5.5l12 3.5V23.5L18 17v-6.5a2 2 0 0 0-2-2z" fill="white"/>
               </svg>
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
                 <span style={{ color: 'white', fontWeight: '700', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
