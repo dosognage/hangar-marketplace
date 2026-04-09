@@ -17,27 +17,35 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // Read the session cookie to determine who (if anyone) is logged in.
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean)
-
-  const isAdmin = user?.email && adminEmails.includes(user.email.toLowerCase())
-
-  // Server-fetch the initial saved count so SSR renders the correct number.
-  // After hydration, SavedCountProvider keeps it live via React state — no
-  // refresh needed when the user saves/unsaves from any page.
+  // Wrap the Supabase auth check in try-catch so the layout never crashes
+  // during Next.js build-time prerender of system routes like /_not-found.
+  // Those routes have no request context (no cookies, env vars may be
+  // unavailable), so we fall back to the logged-out state gracefully.
+  let user: Awaited<ReturnType<Awaited<ReturnType<typeof createServerClient>>['auth']['getUser']>>['data']['user'] = null
+  let isAdmin = false
   let initialSavedCount = 0
-  if (user) {
-    const { count } = await supabase
-      .from('saved_listings')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-    initialSavedCount = count ?? 0
+
+  try {
+    const supabase = await createServerClient()
+    const { data: { user: u } } = await supabase.auth.getUser()
+    user = u
+
+    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+
+    isAdmin = Boolean(user?.email && adminEmails.includes(user.email.toLowerCase()))
+
+    if (user) {
+      const { count } = await supabase
+        .from('saved_listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+      initialSavedCount = count ?? 0
+    }
+  } catch {
+    // Build-time prerender: env vars / cookies not available → show logged-out nav
   }
 
   return (
