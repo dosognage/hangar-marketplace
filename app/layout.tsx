@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import './globals.css'
 import { createServerClient } from '@/lib/supabase-server'
-import LogoutButton from '@/app/components/LogoutButton'
+import ProfileMenu from '@/app/components/ProfileMenu'
 
 export const metadata = {
   title: 'Hangar Marketplace',
@@ -83,30 +83,19 @@ export default async function RootLayout({
               <Link href="/submit" style={navLinkStyle}>
                 List a Hangar
               </Link>
-              {user && (
-                <>
-                  <Link href="/dashboard" style={navLinkStyle}>
-                    My Listings
-                  </Link>
-                  <Link href="/saved" style={navLinkStyle}>
-                    Saved
-                  </Link>
-                  {isAdmin && (
-                    <Link href="/admin" style={navLinkStyle}>
-                      Admin
-                    </Link>
-                  )}
-                  <span className="nav-email" style={{ color: '#93c5fd', fontSize: '0.8rem', padding: '0 0.5rem' }}>
-                    {user.email}
-                  </span>
-                </>
-              )}
             </div>
 
-            {/* Auth buttons — far right on desktop, row 1 right on mobile */}
+            {/* Auth / profile — far right on desktop, row 1 right on mobile */}
             <div className="nav-auth">
               {user ? (
-                <LogoutButton />
+                <ProfileMenu
+                  displayName={
+                    (user.user_metadata?.full_name as string | undefined)
+                      ?.split(' ')[0]
+                    ?? user.email!.split('@')[0]
+                  }
+                  isAdmin={!!isAdmin}
+                />
               ) : (
                 <>
                   <Link href="/login" style={navLinkStyle}>
