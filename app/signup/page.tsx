@@ -115,6 +115,8 @@ const inputStyle: React.CSSProperties = {
   borderRadius: '6px',
   fontSize: '1rem',
   outline: 'none',
+  color: '#111827',
+  backgroundColor: 'white',
 }
 
 const buttonStyle: React.CSSProperties = {

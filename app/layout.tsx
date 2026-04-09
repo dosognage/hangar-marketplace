@@ -40,9 +40,9 @@ export default async function RootLayout({
       >
         <header
           style={{
-            backgroundColor: '#111827',
-            padding: '1rem 2rem',
-            borderBottom: '1px solid #e5e7eb',
+            backgroundColor: '#1a3a5c',
+            borderBottom: '1px solid #254e7a',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
           }}
         >
           <nav
@@ -50,23 +50,36 @@ export default async function RootLayout({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              maxWidth: '1100px',
+              maxWidth: '1200px',
               margin: '0 auto',
+              padding: '0 2rem',
+              height: '60px',
               flexWrap: 'wrap',
               gap: '0.75rem',
             }}
           >
-            {/* Brand */}
+            {/* Brand / Logo */}
             <Link
               href="/"
               style={{
-                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
                 textDecoration: 'none',
-                fontWeight: 'bold',
-                fontSize: '1.1rem',
               }}
             >
-              Hangar Marketplace
+              {/* Airplane icon */}
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2a1.5 1.5 0 0 0-1.5 1.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" fill="white"/>
+              </svg>
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+                <span style={{ color: 'white', fontWeight: '700', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+                  Hangar Marketplace
+                </span>
+                <span style={{ color: '#93c5fd', fontSize: '0.65rem', fontWeight: '500', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Aviation Properties
+                </span>
+              </div>
             </Link>
 
             {/* Nav links */}
@@ -75,7 +88,7 @@ export default async function RootLayout({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '1rem',
+                gap: '0.25rem',
                 flexWrap: 'wrap',
               }}
             >
@@ -97,7 +110,7 @@ export default async function RootLayout({
                       Admin
                     </Link>
                   )}
-                  <span className="nav-email" style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+                  <span className="nav-email" style={{ color: '#93c5fd', fontSize: '0.8rem', padding: '0 0.5rem' }}>
                     {user.email}
                   </span>
                   <LogoutButton />
@@ -111,10 +124,11 @@ export default async function RootLayout({
                     href="/signup"
                     style={{
                       ...navLinkStyle,
-                      backgroundColor: '#6366f1',
-                      padding: '0.3rem 0.85rem',
-                      borderRadius: '5px',
+                      backgroundColor: '#2563eb',
+                      padding: '0.4rem 1rem',
+                      borderRadius: '6px',
                       fontWeight: '600',
+                      marginLeft: '0.25rem',
                     }}
                   >
                     Sign up
@@ -134,7 +148,11 @@ export default async function RootLayout({
 }
 
 const navLinkStyle: React.CSSProperties = {
-  color: 'white',
+  color: '#e2e8f0',
   textDecoration: 'none',
-  fontSize: '0.9rem',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  padding: '0.4rem 0.65rem',
+  borderRadius: '6px',
+  transition: 'background-color 0.15s',
 }

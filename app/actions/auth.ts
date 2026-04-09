@@ -13,7 +13,7 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 
-export type AuthState = { error: string } | null
+export type AuthState = { error: string; email?: string } | null
 
 // ── Login ──────────────────────────────────────────────────────────────────
 
@@ -26,14 +26,14 @@ export async function login(
   const next = (formData.get('next') as string) || '/'
 
   if (!email || !password) {
-    return { error: 'Email and password are required.' }
+    return { error: 'Email and password are required.', email }
   }
 
   const supabase = await createServerClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    return { error: 'Invalid email or password. Please try again.' }
+    return { error: 'Invalid email or password. Please try again.', email }
   }
 
   redirect(next)

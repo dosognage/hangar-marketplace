@@ -187,6 +187,7 @@ const labelStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   padding: '0.5rem 0.75rem',
+  height: '38px',
   border: '1px solid #d1d5db',
   borderRadius: '6px',
   fontSize: '0.875rem',
@@ -195,6 +196,7 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
   width: '100%',
   boxSizing: 'border-box',
+  appearance: 'auto',
 }
 
 const searchButtonStyle: React.CSSProperties = {

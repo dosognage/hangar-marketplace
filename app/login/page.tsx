@@ -6,7 +6,7 @@
  * show errors without a full page reload.
  */
 
-import { useActionState } from 'react'
+import { useActionState, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
@@ -19,6 +19,9 @@ function LoginForm() {
   )
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/'
+
+  // Preserve the email the user typed so it stays in the field on error
+  const submittedEmail = state?.email ?? ''
 
   return (
     <div style={cardStyle}>
@@ -43,6 +46,8 @@ function LoginForm() {
             type="email"
             required
             placeholder="you@example.com"
+            defaultValue={submittedEmail}
+            key={submittedEmail}
             style={inputStyle}
           />
         </div>
@@ -112,6 +117,8 @@ const inputStyle: React.CSSProperties = {
   borderRadius: '6px',
   fontSize: '1rem',
   outline: 'none',
+  color: '#111827',
+  backgroundColor: 'white',
 }
 
 const buttonStyle: React.CSSProperties = {
