@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 type SearchFiltersProps = {
@@ -20,6 +20,7 @@ export default function SearchFilters({
 }: SearchFiltersProps) {
   const router = useRouter()
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
 
   // Count active filters (excluding the main search query)
   const activeFilterCount = [initialType, initialMinPrice, initialMaxPrice, initialMinSqft]
@@ -30,11 +31,11 @@ export default function SearchFilters({
     const data = new FormData(e.currentTarget)
     const params = new URLSearchParams()
 
-    const q         = (data.get('q') as string)?.trim()
-    const type      = data.get('type') as string
-    const minPrice  = (data.get('minPrice') as string)?.trim()
-    const maxPrice  = (data.get('maxPrice') as string)?.trim()
-    const minSqft   = (data.get('minSqft') as string)?.trim()
+    const q        = (data.get('q') as string)?.trim()
+    const type     = data.get('type') as string
+    const minPrice = (data.get('minPrice') as string)?.trim()
+    const maxPrice = (data.get('maxPrice') as string)?.trim()
+    const minSqft  = (data.get('minSqft') as string)?.trim()
 
     if (q)        params.set('q', q)
     if (type)     params.set('type', type)
@@ -48,51 +49,73 @@ export default function SearchFilters({
   }
 
   function handleClear() {
+    // Reset all inputs manually so controlled defaults are cleared
+    if (formRef.current) formRef.current.reset()
     router.push('/', { scroll: false })
     setFiltersOpen(false)
   }
 
+  const hasAnyFilter = Boolean(initialQ || initialType || initialMinPrice || initialMaxPrice || initialMinSqft)
+
   return (
-    <form onSubmit={handleSubmit} style={wrapperStyle}>
-      {/* ── Top row: always visible ─────────────────────────────────────── */}
-      <div style={topRowStyle}>
-        {/* Location search */}
+    <form ref={formRef} onSubmit={handleSubmit} style={wrapperStyle}>
+
+      {/* ── Row 1: Search input (full-width on mobile) ─────────────────── */}
+      <div className="sf-top-row">
         <input
           name="q"
-          type="text"
+          type="search"
           defaultValue={initialQ}
           placeholder="City, state, or airport code..."
-          style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+          className="sf-search-input"
+          style={inputStyle}
         />
 
-        {/* Filters toggle — only visible on mobile via CSS */}
-        <button
-          type="button"
-          className="filters-toggle-btn"
-          onClick={() => setFiltersOpen(o => !o)}
-          style={filtersToggleStyle}
-        >
-          Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-        </button>
+        {/* Action group — sits inline on desktop, wraps to new line on mobile */}
+        <div className="sf-action-group">
+          {/* Filters toggle — shows on mobile only (CSS) */}
+          <button
+            type="button"
+            className="sf-filters-btn"
+            onClick={() => setFiltersOpen(o => !o)}
+            aria-expanded={filtersOpen}
+          >
+            <svg
+              width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round"
+              style={{ flexShrink: 0 }}
+            >
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+              <line x1="11" y1="18" x2="13" y2="18" />
+            </svg>
+            Filters
+            {activeFilterCount > 0 && (
+              <span style={filterBadgeStyle}>{activeFilterCount}</span>
+            )}
+          </button>
 
-        {/* Search button */}
-        <button type="submit" style={searchButtonStyle}>
-          Search
-        </button>
-        <button type="button" onClick={handleClear} style={clearButtonStyle}>
-          Clear
-        </button>
+          <button type="submit" style={searchButtonStyle}>
+            Search
+          </button>
+
+          {hasAnyFilter && (
+            <button type="button" onClick={handleClear} style={clearButtonStyle}>
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ── Extra filters row: always visible on desktop, toggleable on mobile ── */}
+      {/* ── Row 2: Extra filters — always visible desktop, animated on mobile ── */}
       <div
-        className={filtersOpen ? 'extra-filters extra-filters--open' : 'extra-filters'}
-        style={extraFiltersStyle}
+        className={filtersOpen ? 'sf-extra-filters sf-extra-filters--open' : 'sf-extra-filters'}
       >
         {/* Listing type */}
         <div style={fieldGroupStyle}>
           <label style={labelStyle}>Listing Type</label>
-          <select name="type" defaultValue={initialType} style={inputStyle}>
+          <select name="type" defaultValue={initialType} style={selectStyle}>
             <option value="">All types</option>
             <option value="sale">For Sale</option>
             <option value="lease">For Lease</option>
@@ -138,6 +161,11 @@ export default function SearchFilters({
             style={inputStyle}
           />
         </div>
+
+        {/* Mobile-only: Apply button inside the filter panel */}
+        <button type="submit" className="sf-apply-btn" style={applyButtonStyle}>
+          Apply Filters
+        </button>
       </div>
     </form>
   )
@@ -156,84 +184,96 @@ const wrapperStyle: React.CSSProperties = {
   gap: '0.75rem',
 }
 
-const topRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  flexWrap: 'nowrap',
-}
-
-const extraFiltersStyle: React.CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '0.75rem',
-  alignItems: 'flex-end',
-}
-
-const fieldGroupStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.25rem',
-  minWidth: '130px',
-  flex: '1',
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: '0.7rem',
-  fontWeight: '600',
-  color: '#6b7280',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-}
-
 const inputStyle: React.CSSProperties = {
-  padding: '0.5rem 0.75rem',
-  height: '38px',
+  padding: '0.55rem 0.85rem',
+  height: '40px',
   border: '1px solid #d1d5db',
-  borderRadius: '6px',
-  fontSize: '0.875rem',
+  borderRadius: '8px',
+  fontSize: '0.9rem',
   color: '#111827',
   backgroundColor: '#f9fafb',
   outline: 'none',
   width: '100%',
   boxSizing: 'border-box',
+  fontFamily: 'Arial, sans-serif',
+}
+
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
   appearance: 'auto',
+  cursor: 'pointer',
+}
+
+const fieldGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.3rem',
+  minWidth: '130px',
+  flex: '1',
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: '0.68rem',
+  fontWeight: '700',
+  color: '#6b7280',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
 }
 
 const searchButtonStyle: React.CSSProperties = {
-  padding: '0.55rem 1.25rem',
+  padding: '0 1.25rem',
+  height: '40px',
   backgroundColor: '#111827',
   color: 'white',
   border: 'none',
-  borderRadius: '6px',
+  borderRadius: '8px',
   fontSize: '0.875rem',
   fontWeight: '600',
   cursor: 'pointer',
   whiteSpace: 'nowrap',
   flexShrink: 0,
+  fontFamily: 'Arial, sans-serif',
 }
 
 const clearButtonStyle: React.CSSProperties = {
-  padding: '0.55rem 0.75rem',
+  padding: '0 0.85rem',
+  height: '40px',
   backgroundColor: 'white',
   color: '#6b7280',
   border: '1px solid #d1d5db',
-  borderRadius: '6px',
+  borderRadius: '8px',
   fontSize: '0.875rem',
   cursor: 'pointer',
   whiteSpace: 'nowrap',
   flexShrink: 0,
+  fontFamily: 'Arial, sans-serif',
 }
 
-const filtersToggleStyle: React.CSSProperties = {
-  padding: '0.55rem 0.9rem',
-  backgroundColor: 'white',
-  color: '#374151',
-  border: '1px solid #d1d5db',
-  borderRadius: '6px',
+const filterBadgeStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '18px',
+  height: '18px',
+  borderRadius: '50%',
+  backgroundColor: '#1a3a5c',
+  color: 'white',
+  fontSize: '0.65rem',
+  fontWeight: '700',
+  lineHeight: 1,
+}
+
+const applyButtonStyle: React.CSSProperties = {
+  padding: '0 1.25rem',
+  height: '40px',
+  backgroundColor: '#1a3a5c',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
   fontSize: '0.875rem',
-  fontWeight: '500',
+  fontWeight: '600',
   cursor: 'pointer',
   whiteSpace: 'nowrap',
-  flexShrink: 0,
+  alignSelf: 'flex-end',
+  fontFamily: 'Arial, sans-serif',
 }

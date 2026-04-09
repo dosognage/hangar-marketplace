@@ -1,13 +1,11 @@
 'use client'
 
 /**
- * SplitView — Zillow-style layout
+ * SplitView — dual-mode layout
  *
- * Left panel  (420px): scrollable listing cards
- * Right panel (flex 1): sticky Leaflet map
- *
- * Hovering a card turns its map marker gold.
- * Clicking a map marker scrolls the matching card into view and highlights it.
+ * Desktop: 400px card panel on left, map fills right
+ * Mobile:  map fills full screen, floating search bar on top,
+ *          bottom sheet slides up to show cards (peek → open)
  */
 
 import { useState, useRef, useCallback, useEffect, useTransition, useMemo } from 'react'
@@ -19,6 +17,7 @@ import HeartIcon from './HeartIcon'
 import { Star } from 'lucide-react'
 import { useToast } from './ToastProvider'
 import { useSavedCount } from './SavedCountProvider'
+import MobileSearchBar from './MobileSearchBar'
 
 // Load the map lazily — Leaflet requires a browser environment
 const MapView = dynamic(() => import('./MapView'), {
@@ -69,13 +68,28 @@ type Props = {
   supabaseUrl: string
   savedIds: string[]
   userId: string | null
+  // Filter values passed through for the mobile floating search bar
+  initialQ?: string
+  initialType?: string
+  initialMinPrice?: string
+  initialMaxPrice?: string
+  initialMinSqft?: string
 }
 
 const PAGE_SIZE = 12
 
-export default function SplitView({ listings, supabaseUrl, savedIds, userId }: Props) {
+export default function SplitView({
+  listings,
+  supabaseUrl,
+  savedIds,
+  userId,
+  initialQ = '',
+  initialType = '',
+  initialMinPrice = '',
+  initialMaxPrice = '',
+  initialMinSqft = '',
+}: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
-  // Optimistic saved set — starts from server-fetched IDs
   const [savedSet, setSavedSet] = useState<Set<string>>(() => new Set(savedIds))
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set())
   const [, startTransition] = useTransition()
@@ -83,18 +97,22 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
   const { incrementSaved, decrementSaved } = useSavedCount()
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const panelRef = useRef<HTMLDivElement | null>(null)
-  // Mobile: toggle between the card list and the map
-  const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
-  // Pagination: cards paginate, map always shows all
+
+  // Mobile bottom sheet: false = peek (~220px), true = open (~68vh)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const touchStartY = useRef(0)
+
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1)
-  // Current map viewport — used to geo-filter sponsored listings to top
+
+  // Map viewport — used to geo-filter sponsored listings to top
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
 
   const handleBoundsChange = useCallback((b: MapBounds) => {
     setMapBounds(b)
   }, [])
 
-  // Sort: sponsored-in-viewport → admin-featured → rest (stable otherwise)
+  // Sort: sponsored-in-viewport → admin-featured → rest
   const sortedListings = useMemo(() => {
     return [...listings].sort((a, b) => {
       const aSponsored = isActiveSponsored(a) && inBounds(a, mapBounds)
@@ -114,7 +132,6 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
   const pageEnd     = pageStart + PAGE_SIZE
   const pageListings = sortedListings.slice(pageStart, pageEnd)
 
-  // All listings with coords → shown on map (ALL pages)
   const mappable = listings.filter(
     (l): l is Listing & { latitude: number; longitude: number } =>
       l.latitude != null && l.longitude != null
@@ -131,7 +148,6 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
     }
 
     const currentlySaved = savedSet.has(listingId)
-    // Optimistic update
     setSavedSet(prev => {
       const next = new Set(prev)
       currentlySaved ? next.delete(listingId) : next.add(listingId)
@@ -158,19 +174,21 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
 
   function goToPage(page: number) {
     setCurrentPage(page)
-    // Scroll the card panel back to the top
     if (panelRef.current) panelRef.current.scrollTop = 0
+    // Reset sheet to peek when changing page on mobile so user sees the map
+    setSheetOpen(false)
   }
 
   const handleMarkerClick = useCallback((id: string) => {
     setHoveredId(id)
+    setSheetOpen(true) // open sheet when a marker is tapped
     const el = cardRefs.current[id]
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
   }, [])
 
-  // Keyboard / focus: clear hover when user leaves the list panel
+  // Keyboard: clear hover on Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') setHoveredId(null)
@@ -179,19 +197,24 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Touch handlers for the sheet drag handle
+  function onHandleTouchStart(e: React.TouchEvent) {
+    touchStartY.current = e.touches[0].clientY
+  }
+  function onHandleTouchEnd(e: React.TouchEvent) {
+    const delta = e.changedTouches[0].clientY - touchStartY.current
+    if (delta < -30) setSheetOpen(true)   // swipe up → open
+    if (delta > 30)  setSheetOpen(false)  // swipe down → peek
+  }
+
   function photoUrl(path: string) {
     return `${supabaseUrl}/storage/v1/object/public/listing-photos/${path}`
   }
 
+  const listingCount = sortedListings.length
+
   return (
-    // Outer wrapper — fills all remaining space below the search bar.
-    // position:absolute + inset:0 lets Leaflet get a concrete pixel size
-    // without needing a hardcoded calc() that breaks when the search bar resizes.
-    <div style={{
-      position: 'absolute',
-      inset: 0,
-      overflow: 'hidden',
-    }}>
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
 
       {/* ── Full-bleed map (behind everything) ─────────────────────────── */}
       <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 0 }}>
@@ -204,9 +227,6 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
           }}>
             <span style={{ fontSize: '2rem' }}>🗺️</span>
             <p style={{ margin: 0 }}>No map coordinates yet.</p>
-            <p style={{ margin: 0, fontSize: '0.8rem' }}>
-              Coordinates are added automatically when new listings are submitted.
-            </p>
           </div>
         ) : (
           <MapView
@@ -218,11 +238,21 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
         )}
       </div>
 
-      {/* ── Floating listings panel (overlaid on left) ──────────────────── */}
-      {/* On mobile: hidden when mobileView === 'map', full-width when 'list' */}
+      {/* ── Mobile floating search bar (hidden on desktop via CSS) ──────── */}
+      <div className="mobile-search-bar-wrapper">
+        <MobileSearchBar
+          initialQ={initialQ}
+          initialType={initialType}
+          initialMinPrice={initialMinPrice}
+          initialMaxPrice={initialMaxPrice}
+          initialMinSqft={initialMinSqft}
+        />
+      </div>
+
+      {/* ── Cards panel — desktop: left sidebar / mobile: bottom sheet ──── */}
       <div
         ref={panelRef}
-        className="split-cards-panel"
+        className={`split-cards-panel${sheetOpen ? ' sheet-open' : ''}`}
         style={{
           position: 'absolute',
           top: 0,
@@ -233,17 +263,68 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
           backgroundColor: 'rgba(255,255,255,0.97)',
           boxShadow: '2px 0 12px rgba(0,0,0,0.15)',
           zIndex: 1000,
-          padding: '0.75rem',
-          display: mobileView === 'map' ? 'none' : 'flex',
+          display: 'flex',
           flexDirection: 'column',
           gap: '0.75rem',
+          padding: '0.75rem',
         }}
       >
-        <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#6b7280' }}>
-          {sortedListings.length} listing{sortedListings.length !== 1 ? 's' : ''}
+        {/* ── Bottom sheet drag handle — mobile only ─────────────────── */}
+        <div
+          className="sheet-drag-handle"
+          onClick={() => setSheetOpen(o => !o)}
+          onTouchStart={onHandleTouchStart}
+          onTouchEnd={onHandleTouchEnd}
+        >
+          <div className="sheet-handle-pill" />
+          <div className="sheet-handle-row">
+            <span className="sheet-handle-count">
+              {listingCount > 0
+                ? `${listingCount} hangar${listingCount !== 1 ? 's' : ''}`
+                : 'No hangars found'}
+            </span>
+            <svg
+              width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              className={`sheet-chevron${sheetOpen ? ' sheet-chevron--open' : ''}`}
+            >
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
+          </div>
+        </div>
+
+        {/* ── Desktop count line (hidden on mobile) ──────────────────── */}
+        <p className="desktop-count-line" style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#6b7280' }}>
+          {listingCount} listing{listingCount !== 1 ? 's' : ''}
           {totalPages > 1 && ` · page ${currentPage} of ${totalPages}`}
         </p>
 
+        {/* ── Empty state ─────────────────────────────────────────────── */}
+        {listingCount === 0 && (
+          <div style={{ padding: '2.5rem 1rem', textAlign: 'center' }}>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#d1d5db"
+                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <p style={{ fontSize: '1rem', fontWeight: '700', color: '#111827', margin: '0 0 0.4rem' }}>
+              No hangars found
+            </p>
+            <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 1.25rem' }}>
+              Try a different search or clear the filters.
+            </p>
+            <a href="/" style={{
+              display: 'inline-block', padding: '0.55rem 1.25rem', backgroundColor: '#111827',
+              color: 'white', borderRadius: '8px', textDecoration: 'none',
+              fontWeight: '600', fontSize: '0.875rem',
+            }}>
+              Clear all filters
+            </a>
+          </div>
+        )}
+
+        {/* ── Listing cards ───────────────────────────────────────────── */}
         {pageListings.map((listing) => {
           const isHovered = listing.id === hoveredId
           const sortedPhotos = [...(listing.listing_photos ?? [])].sort(
@@ -278,7 +359,7 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
                   transition: 'border-color 0.15s, box-shadow 0.15s',
                   position: 'relative',
                 }}>
-                  {/* Sponsored badge (paid — shown above featured) */}
+                  {/* Sponsored badge */}
                   {isSponsoredActive && (
                     <div style={{
                       position: 'absolute', top: '8px', left: '8px', zIndex: 11,
@@ -293,7 +374,7 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
                     </div>
                   )}
 
-                  {/* Featured badge (admin) */}
+                  {/* Featured badge */}
                   {isFeaturedActive && !isSponsoredActive && (
                     <div style={{
                       position: 'absolute', top: '8px', left: '8px', zIndex: 10,
@@ -308,29 +389,20 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
                     </div>
                   )}
 
-                  {/* Heart button overlay */}
+                  {/* Heart button */}
                   <button
                     onClick={(e) => handleHeart(e, listing.id)}
                     disabled={pendingIds.has(listing.id)}
                     title={savedSet.has(listing.id) ? 'Remove from saved' : 'Save listing'}
                     style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      zIndex: 10,
-                      background: 'rgba(255,255,255,0.88)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '30px',
-                      height: '30px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      position: 'absolute', top: '8px', right: '8px', zIndex: 10,
+                      background: 'rgba(255,255,255,0.88)', border: 'none',
+                      borderRadius: '50%', width: '30px', height: '30px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                       cursor: pendingIds.has(listing.id) ? 'default' : 'pointer',
                       opacity: pendingIds.has(listing.id) ? 0.5 : 1,
                       boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
-                      transition: 'opacity 0.15s',
-                      padding: 0,
+                      transition: 'opacity 0.15s', padding: 0,
                       color: savedSet.has(listing.id) ? '#dc2626' : '#6b7280',
                     }}
                   >
@@ -355,22 +427,20 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
                   )}
 
                   <div style={{ padding: '0.75rem' }}>
-                    {/* Price + badge */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <span style={{ fontWeight: '700', fontSize: '1rem', color: '#111827' }}>{price}</span>
                       <span style={badgeStyle(listing.listing_type)}>
-                        {listing.listing_type === 'sale' ? 'For Sale' : listing.listing_type === 'space' ? 'Space Available' : 'For Lease'}
+                        {listing.listing_type === 'sale' ? 'For Sale'
+                          : listing.listing_type === 'space' ? 'Space Available'
+                          : 'For Lease'}
                       </span>
                     </div>
-
                     <p style={{ margin: '0.3rem 0 0.1rem', fontWeight: '600', fontSize: '0.875rem', color: '#111827', lineHeight: 1.3 }}>
                       {listing.title}
                     </p>
                     <p style={{ margin: 0, fontSize: '0.775rem', color: '#6b7280' }}>
                       {listing.airport_code} · {listing.city}, {listing.state}
                     </p>
-
-                    {/* Specs row */}
                     <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                       {listing.square_feet && (
                         <span style={specStyle}>📐 {listing.square_feet.toLocaleString()} sq ft</span>
@@ -386,53 +456,29 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
           )
         })}
 
-        {/* ── Pagination controls ──────────────────────────────────────── */}
+        {/* ── Pagination ──────────────────────────────────────────────── */}
         {totalPages > 1 && (
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.35rem',
-            paddingTop: '0.5rem',
-            paddingBottom: '0.25rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: '0.35rem', paddingTop: '0.5rem', paddingBottom: '0.25rem',
             flexWrap: 'wrap',
           }}>
-            <button
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              style={pageNavStyle(currentPage === 1)}
-            >
+            <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}
+              style={pageNavStyle(currentPage === 1)}>
               ← Prev
             </button>
-
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => goToPage(page)}
-                style={pageNumStyle(page === currentPage)}
-              >
+              <button key={page} onClick={() => goToPage(page)} style={pageNumStyle(page === currentPage)}>
                 {page}
               </button>
             ))}
-
-            <button
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              style={pageNavStyle(currentPage === totalPages)}
-            >
+            <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}
+              style={pageNavStyle(currentPage === totalPages)}>
               Next →
             </button>
           </div>
         )}
       </div>
-
-      {/* ── Mobile toggle button (hidden on desktop via CSS) ─────────────── */}
-      <button
-        className="map-toggle-btn"
-        onClick={() => setMobileView(v => v === 'list' ? 'map' : 'list')}
-      >
-        {mobileView === 'list' ? '🗺️ Show Map' : '☰ Show Listings'}
-      </button>
 
     </div>
   )
@@ -463,11 +509,8 @@ const specStyle: React.CSSProperties = {
 
 function pageNavStyle(disabled: boolean): React.CSSProperties {
   return {
-    padding: '0.35rem 0.75rem',
-    fontSize: '0.8rem',
-    fontWeight: '600',
-    borderRadius: '6px',
-    border: '1px solid #d1d5db',
+    padding: '0.35rem 0.75rem', fontSize: '0.8rem', fontWeight: '600',
+    borderRadius: '6px', border: '1px solid #d1d5db',
     backgroundColor: disabled ? '#f3f4f6' : 'white',
     color: disabled ? '#9ca3af' : '#111827',
     cursor: disabled ? 'default' : 'pointer',
@@ -476,13 +519,9 @@ function pageNavStyle(disabled: boolean): React.CSSProperties {
 
 function pageNumStyle(active: boolean): React.CSSProperties {
   return {
-    width: '32px',
-    height: '32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '0.8rem',
-    fontWeight: active ? '700' : '400',
+    width: '32px', height: '32px', display: 'flex',
+    alignItems: 'center', justifyContent: 'center',
+    fontSize: '0.8rem', fontWeight: active ? '700' : '400',
     borderRadius: '6px',
     border: active ? '2px solid #6366f1' : '1px solid #d1d5db',
     backgroundColor: active ? '#eef2ff' : 'white',

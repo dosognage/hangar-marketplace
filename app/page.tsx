@@ -152,8 +152,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     // so the map can span the full viewport width
     <div style={{ margin: '-2rem', display: 'flex', flexDirection: 'column', height: 'calc(100dvh - var(--header-h, 60px))', overflow: 'hidden' }}>
 
-      {/* Search bar — constrained width, sits above the split */}
-      <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f8f8f8' }}>
+      {/* Search bar — desktop only; on mobile the floating bar in SplitView is used */}
+      <div className="desktop-search-bar" style={{ padding: '1rem 2rem', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f8f8f8' }}>
         <Suspense fallback={<div style={{ height: '60px' }} />}>
           <SearchFilters
             initialQ={qVal}
@@ -165,38 +165,19 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </Suspense>
       </div>
 
-      {/* Split view fills remaining height */}
+      {/* Split view fills remaining height — always rendered (handles empty state internally) */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
-        {safeListings.length === 0 ? (
-          <div style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db"
-                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </div>
-            <p style={{ fontSize: '1.1rem', fontWeight: '700', color: '#111827', margin: '0 0 0.4rem' }}>
-              No hangars found
-            </p>
-            <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0 0 1.5rem' }}>
-              Try a different search or clear the filters.
-            </p>
-            <a href="/" style={{
-              display: 'inline-block', padding: '0.6rem 1.25rem', backgroundColor: '#111827',
-              color: 'white', borderRadius: '6px', textDecoration: 'none',
-              fontWeight: '600', fontSize: '0.875rem',
-            }}>
-              Clear all filters
-            </a>
-          </div>
-        ) : (
-          <SplitView
-            listings={safeListings}
-            supabaseUrl={SUPABASE_URL}
-            savedIds={savedIds}
-            userId={user?.id ?? null}
-          />
-        )}
+        <SplitView
+          listings={safeListings}
+          supabaseUrl={SUPABASE_URL}
+          savedIds={savedIds}
+          userId={user?.id ?? null}
+          initialQ={qVal}
+          initialType={typeVal}
+          initialMinPrice={minPriceVal}
+          initialMaxPrice={maxPriceVal}
+          initialMinSqft={minSqftVal}
+        />
       </div>
     </div>
   )
