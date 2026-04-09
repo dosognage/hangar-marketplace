@@ -14,7 +14,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { sendEmail, welcomeEmail } from '@/lib/email'
 
-export type AuthState = { error: string; email?: string } | null
+export type AuthState = { error: string; email?: string; name?: string } | null
 
 // ── Login ──────────────────────────────────────────────────────────────────
 
@@ -52,13 +52,13 @@ export async function signup(
   const confirm = formData.get('confirmPassword') as string
 
   if (!name || !email || !password) {
-    return { error: 'All fields are required.' }
+    return { error: 'All fields are required.', name, email }
   }
   if (password.length < 8) {
-    return { error: 'Password must be at least 8 characters.' }
+    return { error: 'Password must be at least 8 characters.', name, email }
   }
   if (password !== confirm) {
-    return { error: 'Passwords do not match.' }
+    return { error: 'Passwords do not match.', name, email }
   }
 
   const supabase = await createServerClient()
@@ -71,9 +71,9 @@ export async function signup(
   if (error) {
     // Surface a friendlier message for the most common case
     if (error.message.toLowerCase().includes('already registered')) {
-      return { error: 'That email is already registered. Try logging in instead.' }
+      return { error: 'That email is already registered. Try logging in instead.', name, email }
     }
-    return { error: error.message }
+    return { error: error.message, name, email }
   }
 
   // Send welcome email (fire-and-forget, non-fatal)

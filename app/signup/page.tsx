@@ -31,6 +31,7 @@ export default function SignupPage() {
               type="text"
               required
               placeholder="Jane Smith"
+              defaultValue={state?.name ?? ''}
               style={inputStyle}
             />
           </div>
@@ -43,6 +44,7 @@ export default function SignupPage() {
               type="email"
               required
               placeholder="you@example.com"
+              defaultValue={state?.email ?? ''}
               style={inputStyle}
             />
           </div>
