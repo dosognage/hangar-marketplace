@@ -55,6 +55,13 @@ body {
   border-color: #6366f1;
 }
 
+/* Card hover used in server components (SimilarListings, BrokerProfile)
+   where onMouseEnter/onMouseLeave cannot be used */
+.hover-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #c7d2fe;
+}
+
 /* ── Header & nav ─────────────────────────────────────────────────────────── */
 
 /*

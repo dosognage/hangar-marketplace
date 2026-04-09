@@ -160,13 +160,13 @@ export default async function BrokerProfilePage({ params }: PageProps) {
             return (
               <Link key={listing.id} href={`/listing/${listing.id}`}
                 style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div style={{
-                  backgroundColor: 'white', border: '1px solid #e5e7eb',
-                  borderRadius: '8px', overflow: 'hidden',
-                  transition: 'box-shadow 0.15s, border-color 0.15s',
-                }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; (e.currentTarget as HTMLDivElement).style.borderColor = '#c7d2fe' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; (e.currentTarget as HTMLDivElement).style.borderColor = '#e5e7eb' }}
+                <div
+                  className="hover-card"
+                  style={{
+                    backgroundColor: 'white', border: '1px solid #e5e7eb',
+                    borderRadius: '8px', overflow: 'hidden',
+                    transition: 'box-shadow 0.15s, border-color 0.15s',
+                  }}
                 >
                   <div style={{ height: '160px', backgroundColor: '#f3f4f6', overflow: 'hidden' }}>
                     {cover ? (
