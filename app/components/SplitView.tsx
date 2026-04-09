@@ -16,6 +16,7 @@ import Link from 'next/link'
 import type { MapListing } from './MapView'
 import { toggleSavedListing } from '@/app/actions/listings'
 import HeartIcon from './HeartIcon'
+import { Star } from 'lucide-react'
 import { useToast } from './ToastProvider'
 import { useSavedCount } from './SavedCountProvider'
 
@@ -252,7 +253,7 @@ export default function SplitView({ listings, supabaseUrl, savedIds, userId }: P
                       boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
                       pointerEvents: 'none',
                     }}>
-                      ⭐ Featured
+                      <Star size={10} style={{ flexShrink: 0 }} /> Featured
                     </div>
                   )}
 

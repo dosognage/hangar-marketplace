@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import AcceptInviteButton from './AcceptInviteButton'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { Plane, X } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Accept Invitation — Hangar Marketplace' }
 
@@ -58,7 +59,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   // ── Revoked ──────────────────────────────────────────────────────────────
   if (member.status === 'removed') {
     return (
-      <Card icon="✕" iconColor="#f87171" title="Invitation revoked">
+      <Card icon={<X size={36} />} iconColor="#f87171" title="Invitation revoked">
         <p style={bodyStyle}>This invitation has been revoked by the account owner.</p>
         <Link href="/" style={linkBtnStyle}>Go to Hangar Marketplace</Link>
       </Card>
@@ -70,7 +71,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     const loginUrl  = `/login?returnTo=/invite/${token}`
     const signupUrl = `/signup?returnTo=/invite/${token}`
     return (
-      <Card icon="✈" iconColor="#2563eb" title={`You're invited to join ${org.name}`}>
+      <Card icon={<Plane size={36} />} iconColor="#2563eb" title={`You're invited to join ${org.name}`}>
         <p style={bodyStyle}>
           You've been invited to join <strong>{org.name}</strong> on Hangar Marketplace.
           Sign in or create an account to accept.
@@ -110,7 +111,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 function Card({
   icon, iconColor, title, children,
 }: {
-  icon: string; iconColor: string; title: string; children: React.ReactNode
+  icon: React.ReactNode; iconColor: string; title: string; children: React.ReactNode
 }) {
   return (
     <div style={{
@@ -123,7 +124,7 @@ function Card({
       overflow: 'hidden',
     }}>
       <div style={{ backgroundColor: '#1a3a5c', padding: '1.5rem 2rem' }}>
-        <p style={{ margin: 0, color: 'white', fontWeight: '700', fontSize: '1rem' }}>✈ Hangar Marketplace</p>
+        <p style={{ margin: 0, color: 'white', fontWeight: '700', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Plane size={14} /> Hangar Marketplace</p>
       </div>
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <div style={{ fontSize: '2.25rem', color: iconColor, marginBottom: '0.75rem' }}>{icon}</div>

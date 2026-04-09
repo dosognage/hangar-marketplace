@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import AircraftAutocomplete from '@/app/components/AircraftAutocomplete'
 import type { AircraftSpec } from '@/lib/aircraft-data'
+import { Zap } from 'lucide-react'
 
 const DURATIONS = ['Month-to-month', '3 months', '6 months', '1 year', 'Permanent']
 
@@ -317,7 +318,7 @@ function NewRequestForm() {
                 High-Priority — $29.99
               </div>
               <div style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5 }}>
-                Pinned to the top with a ⚡ badge — seen first by every owner.
+                Pinned to the top with a priority badge — seen first by every owner.
               </div>
             </button>
           </div>

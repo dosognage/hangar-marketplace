@@ -6,6 +6,7 @@ import ToastProvider from '@/app/components/ToastProvider'
 import ProgressBar from '@/app/components/ProgressBar'
 import SavedCountProvider from '@/app/components/SavedCountProvider'
 import NewsletterSignup from '@/app/components/NewsletterSignup'
+import { Plane } from 'lucide-react'
 
 export const metadata = {
   title: 'Hangar Marketplace',
@@ -168,8 +169,8 @@ export default async function RootLayout({
               }}>
                 {/* Newsletter */}
                 <div style={{ flex: '1 1 260px', minWidth: '220px' }}>
-                  <p style={{ margin: '0 0 0.75rem', color: '#e5e7eb', fontSize: '0.825rem', fontWeight: '700' }}>
-                    ✈ Hangar Marketplace
+                  <p style={{ margin: '0 0 0.75rem', color: '#e5e7eb', fontSize: '0.825rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Plane size={14} />{' '}Hangar Marketplace
                   </p>
                   <p style={{ margin: '0 0 1rem', color: '#6b7280', fontSize: '0.75rem', lineHeight: 1.6 }}>
                     The easiest way to find, list, and lease aviation hangar space across the US.

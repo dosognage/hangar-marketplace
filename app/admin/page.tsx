@@ -12,6 +12,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import ApproveRejectButtons from './ApproveRejectButtons'
 import BrokerApplicationButtons from './BrokerApplicationButtons'
+import { Star, ClipboardList, Building2 } from 'lucide-react'
 
 type Listing = {
   id: string
@@ -106,7 +107,7 @@ export default async function AdminPage() {
           border: '1px solid #fde68a', fontWeight: '600',
           fontSize: '0.825rem', textDecoration: 'none', whiteSpace: 'nowrap',
         }}>
-          ⭐ Manage Featured
+          <Star size={14} style={{ flexShrink: 0 }} /> Manage Featured
         </a>
       </div>
 
@@ -114,7 +115,7 @@ export default async function AdminPage() {
       {pendingApps.length > 0 && (
         <div style={{ marginBottom: '2.5rem' }}>
           <h2 style={{ fontSize: '1rem', color: '#374151', margin: '0 0 0.75rem' }}>
-            🏢 Broker Applications
+            <Building2 size={15} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.35rem' }} /> Broker Applications
           </h2>
           <div style={{ display: 'grid', gap: '1rem' }}>
             {pendingApps.map((app: BrokerApp) => (
@@ -159,7 +160,7 @@ export default async function AdminPage() {
 
       {/* ── Listing Reviews ───────────────────────────────────────────────── */}
       <h2 style={{ fontSize: '1rem', color: '#374151', margin: '0 0 0.75rem' }}>
-        📋 Pending Listings
+        <ClipboardList size={15} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.35rem' }} /> Pending Listings
       </h2>
 
       {!listings || listings.length === 0 ? (

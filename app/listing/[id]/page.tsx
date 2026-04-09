@@ -10,6 +10,7 @@ import FuelPrices from '@/app/components/FuelPrices'
 import ShareButton from '@/app/components/ShareButton'
 import SimilarListings from '@/app/components/SimilarListings'
 import type { Metadata } from 'next'
+import { Star } from 'lucide-react'
 
 type ListingPageProps = {
   params: Promise<{ id: string }>
@@ -166,7 +167,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
                 backgroundColor: '#f59e0b', color: 'white',
                 fontSize: '0.75rem', fontWeight: '700',
               }}>
-                ⭐ Featured
+                <Star size={12} style={{ flexShrink: 0 }} /> Featured
               </span>
             )}
             <span style={badgeStyle(typedListing.listing_type)}>

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Mail } from 'lucide-react'
 
 /**
  * Shown after signup when Supabase requires email confirmation.
@@ -15,7 +16,7 @@ export default function ConfirmPage() {
         padding: '2.5rem',
         boxShadow: '0 4px 16px rgba(0,0,0,0.07)',
       }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✉️</div>
+        <div style={{ marginBottom: '1rem', color: '#2563eb' }}><Mail size={48} strokeWidth={1.5} /></div>
         <h1 style={{ marginTop: 0 }}>Check your email</h1>
         <p style={{ color: '#6b7280', lineHeight: 1.6 }}>
           We sent a confirmation link to your email address. Click the link to

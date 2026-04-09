@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@/lib/supabase-server'
 import ReplyButton from './ReplyButton'
 import type { Metadata } from 'next'
+import { Zap, Plane, ArrowLeftRight, DoorOpen, DollarSign, Calendar } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Hangar Requests | Hangar Marketplace',
@@ -170,7 +171,7 @@ function RequestCard({ req, userId }: { req: Request; userId: string | null }) {
                 backgroundColor: '#f59e0b', color: 'white',
                 fontSize: '0.68rem', fontWeight: '800',
               }}>
-                ⚡ Priority
+                <Zap size={10} style={{ flexShrink: 0 }} /> Priority
               </span>
             )}
             <span style={{
@@ -191,15 +192,15 @@ function RequestCard({ req, userId }: { req: Request; userId: string | null }) {
 
       {/* Specs grid */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        {req.aircraft_type && <Chip icon="✈" label={req.aircraft_type} />}
-        {req.wingspan_ft && <Chip icon="↔" label={`${req.wingspan_ft}′ wingspan`} />}
+        {req.aircraft_type && <Chip icon={<Plane size={12} />} label={req.aircraft_type} />}
+        {req.wingspan_ft && <Chip icon={<ArrowLeftRight size={12} />} label={`${req.wingspan_ft}′ wingspan`} />}
         {(req.door_width_ft || req.door_height_ft) && (
-          <Chip icon="🚪" label={`Door ≥ ${req.door_width_ft ?? '?'}′ W × ${req.door_height_ft ?? '?'}′ H`} />
+          <Chip icon={<DoorOpen size={12} />} label={`Door ≥ ${req.door_width_ft ?? '?'}′ W × ${req.door_height_ft ?? '?'}′ H`} />
         )}
-        {req.monthly_budget && <Chip icon="💰" label={`$${req.monthly_budget.toLocaleString()}/mo budget`} color="#166534" bg="#f0fdf4" border="#bbf7d0" />}
-        {req.duration && <Chip icon="📅" label={req.duration} />}
+        {req.monthly_budget && <Chip icon={<DollarSign size={12} />} label={`$${req.monthly_budget.toLocaleString()}/mo budget`} color="#166534" bg="#f0fdf4" border="#bbf7d0" />}
+        {req.duration && <Chip icon={<Calendar size={12} />} label={req.duration} />}
         {req.move_in_date && (
-          <Chip icon="📆" label={`Move-in ${new Date(req.move_in_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`} />
+          <Chip icon={<Calendar size={12} />} label={`Move-in ${new Date(req.move_in_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`} />
         )}
       </div>
 
@@ -214,7 +215,7 @@ function RequestCard({ req, userId }: { req: Request; userId: string | null }) {
 }
 
 function Chip({ icon, label, color = '#374151', bg = '#f3f4f6', border = '#e5e7eb' }: {
-  icon: string; label: string; color?: string; bg?: string; border?: string
+  icon: React.ReactNode; label: string; color?: string; bg?: string; border?: string
 }) {
   return (
     <span style={{

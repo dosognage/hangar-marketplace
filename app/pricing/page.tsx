@@ -14,6 +14,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Plane, Zap, Home, ClipboardList, TrendingDown, RefreshCw } from 'lucide-react'
 
 type Cadence = 'annual' | 'monthly'
 
@@ -197,7 +198,7 @@ export default function PricingPage() {
         marginBottom: '2.5rem',
       }}>
         <OneTimeCard
-          icon="✈"
+          icon={<Plane size={28} />}
           title="Standard Request"
           audience="Transient & weekend pilots"
           price={ONE_TIME_PRICE}
@@ -214,7 +215,7 @@ export default function PricingPage() {
           ctaHref="/requests/new"
         />
         <OneTimeCard
-          icon="⚡"
+          icon={<Zap size={28} />}
           title="High-Priority Request"
           audience="Day-of & 48-hour urgent needs"
           price={PRIORITY_PRICE}
@@ -265,22 +266,22 @@ export default function PricingPage() {
           gap: '1.5rem',
         }}>
           <HowItWorksItem
-            icon="🏠"
+            icon={<Home size={28} />}
             title="Listing is always free"
             body="Hangar owners and brokers list their space at no cost. The marketplace is free to supply."
           />
           <HowItWorksItem
-            icon="📋"
+            icon={<ClipboardList size={28} />}
             title="Requests have a fee"
             body="Posting a hangar request — telling the market what you need — is where fees apply. This keeps the board high-quality and noise-free."
           />
           <HowItWorksItem
-            icon="📉"
+            icon={<TrendingDown size={28} />}
             title="Volume lowers your per-request cost"
             body={`A one-time request costs $${ONE_TIME_PRICE}. A Professional subscription brings that down to ~$3.99 per request across 100 posts.`}
           />
           <HowItWorksItem
-            icon="🔄"
+            icon={<RefreshCw size={28} />}
             title="60-day refresh is always free"
             body="If your request hasn't been filled after 60 days, we'll notify you to refresh it. Refreshing keeps you active — at no extra charge."
           />
@@ -423,7 +424,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function OneTimeCard({
   icon, title, audience, price, priceNote, accentColor, urgent = false, features, cta, ctaHref,
 }: {
-  icon: string
+  icon: React.ReactNode
   title: string
   audience: string
   price: number
@@ -456,10 +457,10 @@ function OneTimeCard({
           padding: '0.2rem 0.6rem',
           borderRadius: '9999px',
         }}>
-          ⚡ High Priority
+          <Zap size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.2rem' }} />High Priority
         </span>
       )}
-      <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{icon}</div>
+      <div style={{ marginBottom: '0.5rem', color: accentColor }}>{icon}</div>
       <h3 style={{ margin: '0 0 0.2rem', fontSize: '1rem', fontWeight: '700', color: '#111827' }}>{title}</h3>
       <p style={{ margin: '0 0 1rem', fontSize: '0.775rem', color: '#6b7280' }}>{audience}</p>
 
@@ -619,10 +620,10 @@ function SubscriptionCard({ tier, cadence }: { tier: typeof TIERS[number]; caden
   )
 }
 
-function HowItWorksItem({ icon, title, body }: { icon: string; title: string; body: string }) {
+function HowItWorksItem({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
     <div>
-      <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{icon}</div>
+      <div style={{ marginBottom: '0.5rem', color: '#374151' }}>{icon}</div>
       <h3 style={{ margin: '0 0 0.35rem', fontSize: '0.875rem', fontWeight: '700', color: '#111827' }}>{title}</h3>
       <p style={{ margin: 0, fontSize: '0.825rem', color: '#6b7280', lineHeight: 1.6 }}>{body}</p>
     </div>

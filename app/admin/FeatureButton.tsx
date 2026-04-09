@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Star } from 'lucide-react'
 
 type Props = {
   listingId: string
@@ -44,7 +45,7 @@ export default function FeatureButton({ listingId, isFeatured, featuredUntil }: 
           backgroundColor: '#fef3c7', color: '#92400e',
           fontSize: '0.75rem', fontWeight: '700',
         }}>
-          ⭐ Featured {expiryLabel ? `· ${expiryLabel}` : ''}
+          <Star size={11} style={{ flexShrink: 0 }} /> Featured {expiryLabel ? `· ${expiryLabel}` : ''}
         </span>
         <button
           onClick={() => toggle(false)}
@@ -88,7 +89,7 @@ export default function FeatureButton({ listingId, isFeatured, featuredUntil }: 
           backgroundColor: '#fef3c7', color: '#92400e', cursor: 'pointer',
         }}
       >
-        {loading ? '…' : '⭐ Feature'}
+        {loading ? '…' : <><Star size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.25rem' }} />Feature</>}
       </button>
     </div>
   )

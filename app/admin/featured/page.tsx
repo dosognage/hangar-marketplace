@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import FeatureButton from '@/app/admin/FeatureButton'
+import { Star } from 'lucide-react'
 
 type Listing = {
   id: string
@@ -76,7 +77,7 @@ export default async function AdminFeaturedPage() {
         <div>
           <h1 style={{ margin: '0 0 0.25rem' }}>Featured Listings</h1>
           <p style={{ color: '#6b7280', margin: 0, fontSize: '0.875rem' }}>
-            Featured listings appear at the top of browse results with a ⭐ badge.
+            Featured listings appear at the top of browse results with a star badge.
           </p>
         </div>
         <Link href="/admin" style={{
@@ -89,7 +90,7 @@ export default async function AdminFeaturedPage() {
 
       {/* Currently featured */}
       <h2 style={{ fontSize: '0.95rem', color: '#374151', margin: '0 0 0.75rem' }}>
-        ⭐ Currently Featured ({featured.length})
+        <Star size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.35rem' }} /> Currently Featured ({featured.length})
       </h2>
       {featured.length === 0 ? (
         <div style={{
