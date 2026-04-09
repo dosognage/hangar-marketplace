@@ -150,7 +150,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   return (
     // Negative margin breaks out of the layout's max-width / padding
     // so the map can span the full viewport width
-    <div style={{ margin: '-2rem', display: 'flex', flexDirection: 'column', height: 'calc(100dvh - var(--header-h, 60px))', overflow: 'hidden' }}>
+    <div className="home-fullbleed" style={{ margin: '-2rem', display: 'flex', flexDirection: 'column', height: 'calc(100dvh - var(--header-h, 60px))', overflow: 'hidden' }}>
 
       {/* Search bar — desktop only; on mobile the floating bar in SplitView is used */}
       <div className="desktop-search-bar" style={{ padding: '1rem 2rem', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f8f8f8' }}>

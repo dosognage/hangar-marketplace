@@ -328,6 +328,20 @@ body {
    On mobile the 400px left-panel becomes a bottom sheet.
    .sheet-open toggles it from peek (~220px) to open (~68vh).               */
 @media (max-width: 640px) {
+  /* Break out of the <main> max-width:1100px container completely.
+     Use fixed positioning anchored below the sticky header so the map/sheet
+     fills the true full-viewport width with no right-side gap.              */
+  .home-fullbleed {
+    position: fixed !important;
+    top: var(--header-h, 60px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+
   /* Show floating search bar on mobile */
   .mobile-search-bar-wrapper {
     display: block;
