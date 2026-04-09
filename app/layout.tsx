@@ -108,6 +108,9 @@ export default async function RootLayout({
                   <Link href="/dashboard" style={navLinkStyle}>
                     My Listings
                   </Link>
+                  <Link href="/saved" style={navLinkStyle}>
+                    Saved
+                  </Link>
                   {isAdmin && (
                     <Link href="/admin" style={navLinkStyle}>
                       Admin

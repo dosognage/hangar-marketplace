@@ -2,9 +2,47 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import ContactForm from '@/app/components/ContactForm'
+import FavoriteButton from '@/app/components/FavoriteButton'
+import type { Metadata } from 'next'
 
 type ListingPageProps = {
   params: Promise<{ id: string }>
+}
+
+// ── Dynamic SEO metadata ───────────────────────────────────────────────────
+export async function generateMetadata({ params }: ListingPageProps): Promise<Metadata> {
+  const { id } = await params
+  const { data: listing } = await supabase
+    .from('listings')
+    .select('title, airport_name, airport_code, city, state, asking_price, monthly_lease, description')
+    .eq('id', id)
+    .single()
+
+  if (!listing) {
+    return { title: 'Listing Not Found | Hangar Marketplace' }
+  }
+
+  const price = listing.asking_price
+    ? `$${listing.asking_price.toLocaleString()}`
+    : listing.monthly_lease
+      ? `$${listing.monthly_lease.toLocaleString()}/mo`
+      : 'Contact for price'
+
+  const title = `${listing.title} | ${listing.airport_code} | Hangar Marketplace`
+  const description = listing.description
+    ? listing.description.slice(0, 155)
+    : `${listing.title} at ${listing.airport_name} (${listing.airport_code}) in ${listing.city}, ${listing.state}. ${price}.`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      siteName: 'Hangar Marketplace',
+    },
+  }
 }
 
 type Photo = {
@@ -82,17 +120,20 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
             {typedListing.airport_name} ({typedListing.airport_code}) · {typedListing.city}, {typedListing.state}
           </p>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{ margin: '0 0 0.25rem', fontWeight: '800', fontSize: '1.4rem', color: '#111827' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+          <p style={{ margin: 0, fontWeight: '800', fontSize: '1.4rem', color: '#111827' }}>
             {typedListing.asking_price
               ? `$${typedListing.asking_price.toLocaleString()}`
               : typedListing.monthly_lease
                 ? `$${typedListing.monthly_lease.toLocaleString()}/mo`
                 : 'Contact for price'}
           </p>
-          <span style={badgeStyle(typedListing.listing_type)}>
-            {typedListing.listing_type === 'sale' ? 'For Sale' : 'For Lease'}
-          </span>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <span style={badgeStyle(typedListing.listing_type)}>
+              {typedListing.listing_type === 'sale' ? 'For Sale' : 'For Lease'}
+            </span>
+            <FavoriteButton listingId={typedListing.id} />
+          </div>
         </div>
       </div>
 

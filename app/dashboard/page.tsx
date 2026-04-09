@@ -9,6 +9,7 @@
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
+import DeleteListingButton from '@/app/components/DeleteListingButton'
 
 type Listing = {
   id: string
@@ -144,20 +145,41 @@ export default async function DashboardPage() {
                   </p>
                 </div>
 
-                {listing.status === 'approved' && (
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {listing.status === 'approved' && (
+                    <Link
+                      href={`/listing/${listing.id}`}
+                      style={{
+                        fontSize: '0.8rem',
+                        color: '#6366f1',
+                        textDecoration: 'none',
+                        fontWeight: '500',
+                        whiteSpace: 'nowrap',
+                        padding: '0.35rem 0.85rem',
+                        border: '1px solid #c7d2fe',
+                        borderRadius: '6px',
+                      }}
+                    >
+                      View live →
+                    </Link>
+                  )}
                   <Link
-                    href={`/listing/${listing.id}`}
+                    href={`/listing/${listing.id}/edit`}
                     style={{
-                      fontSize: '0.875rem',
-                      color: '#6366f1',
+                      fontSize: '0.8rem',
+                      color: '#374151',
                       textDecoration: 'none',
                       fontWeight: '500',
                       whiteSpace: 'nowrap',
+                      padding: '0.35rem 0.85rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
                     }}
                   >
-                    View live →
+                    Edit
                   </Link>
-                )}
+                  <DeleteListingButton listingId={listing.id} />
+                </div>
               </div>
             )
           })}
