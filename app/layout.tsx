@@ -3,6 +3,7 @@ import './globals.css'
 import { createServerClient } from '@/lib/supabase-server'
 import ProfileMenu from '@/app/components/ProfileMenu'
 import ToastProvider from '@/app/components/ToastProvider'
+import ProgressBar from '@/app/components/ProgressBar'
 
 export const metadata = {
   title: 'Hangar Marketplace',
@@ -91,6 +92,9 @@ export default async function RootLayout({
               <Link href="/" style={navLinkStyle}>
                 Browse
               </Link>
+              <Link href="/requests" style={navLinkStyle}>
+                Requests
+              </Link>
               <Link href="/submit" style={navLinkStyle}>
                 List a Hangar
               </Link>
@@ -132,6 +136,7 @@ export default async function RootLayout({
           </nav>
         </header>
 
+        <ProgressBar />
         <ToastProvider>
           <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem' }}>
             {children}
