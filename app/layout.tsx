@@ -7,6 +7,8 @@ import ProgressBar from '@/app/components/ProgressBar'
 import SavedCountProvider from '@/app/components/SavedCountProvider'
 import NewsletterSignup from '@/app/components/NewsletterSignup'
 import MobileMenu from '@/app/components/MobileMenu'
+import BugReportProvider from '@/app/components/BugReportProvider'
+import BugReportButton from '@/app/components/BugReportButton'
 import { Plane } from 'lucide-react'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
@@ -90,6 +92,10 @@ export default async function RootLayout({
         }}
       >
         {/*
+          BugReportProvider wraps everything so its log capture runs on
+          every page. The floating BugReportButton is rendered at the
+          bottom so it sits above all other content in the stacking order.
+
           SavedCountProvider wraps the ENTIRE body so that both:
             • ProfileMenu (in the header) — reads the live count
             • SplitView / FavoriteButton (in pages) — writes to it
@@ -98,6 +104,7 @@ export default async function RootLayout({
           ToastProvider is nested inside so toasts can appear on top of
           everything, including the progress bar.
         */}
+        <BugReportProvider>
         <SavedCountProvider initialCount={initialSavedCount}>
           <ProgressBar />
 
@@ -246,6 +253,11 @@ export default async function RootLayout({
           </footer>
 
         </SavedCountProvider>
+
+          {/* Bug report floating button — renders on every page */}
+          <BugReportButton userEmail={user?.email ?? null} />
+
+        </BugReportProvider>
       </body>
     </html>
   )

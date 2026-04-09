@@ -5,6 +5,11 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -105,6 +110,13 @@ body {
   align-items: center;
   gap: 0.25rem;
   flex-shrink: 0;
+}
+
+/* ── Bug report button: hide text label on small screens ─────────────────── */
+@media (max-width: 480px) {
+  .bug-btn-label {
+    display: none;
+  }
 }
 
 /* ── Mobile nav: hamburger layout ─────────────────────────────────────────── */
