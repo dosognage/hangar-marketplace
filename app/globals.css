@@ -24,3 +24,115 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Prevent Leaflet popup close button from inheriting global button styles */
+.leaflet-popup-close-button {
+  font-size: 16px !important;
+  padding: 4px 8px !important;
+}
+
+.listing-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: white;
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.listing-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #6366f1;
+}
+
+/* ── Responsive nav ───────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .nav-email {
+    display: none !important;
+  }
+  .nav-links {
+    gap: 0.5rem !important;
+  }
+}
+
+/* ── Detail page two-column grid ─────────────────────────────────────────── */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 640px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Search filter bar ───────────────────────────────────────────────────── */
+
+/* "Filters" toggle button: hidden on desktop, visible on mobile */
+.filters-toggle-btn {
+  display: none;
+}
+
+/* Extra filters row: always shown on desktop */
+.extra-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+  .filters-toggle-btn {
+    display: block;
+  }
+
+  /* Hide extra filters by default on mobile; show when toggled open */
+  .extra-filters {
+    display: none;
+  }
+  .extra-filters--open {
+    display: flex;
+  }
+}
+
+/* ── Mobile map/list toggle button ──────────────────────────────────────── */
+.map-toggle-btn {
+  display: none;
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.75rem;
+  border-radius: 999px;
+  font-size: 0.925rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  pointer-events: all;
+}
+
+/* ── SplitView: full-screen cards panel on mobile ─────────────────────────
+   On desktop the panel is a 400px overlay. On mobile it goes full-width.   */
+@media (max-width: 768px) {
+  .map-toggle-btn {
+    display: block;
+  }
+  .split-cards-panel {
+    width: 100% !important;
+    box-shadow: none !important;
+  }
+}
+
+/* ── Submit / form pages: comfortable touch targets ──────────────────────── */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important; /* prevents iOS auto-zoom */
+  }
+}
