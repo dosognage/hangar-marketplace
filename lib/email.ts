@@ -337,6 +337,48 @@ export function listingRejectedEmail(opts: {
   }
 }
 
+/** Sent to listing owners 3 days before their sponsorship expires. */
+export function sponsorshipExpiryEmail(opts: {
+  ownerName: string
+  listingTitle: string
+  listingId: string
+  expiresAt: string
+}): { subject: string; html: string } {
+  const { ownerName, listingTitle, listingId, expiresAt } = opts
+  const listingUrl = `${SITE_URL}/listing/${listingId}`
+  const expiresLabel = new Date(expiresAt).toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  })
+  return {
+    subject: `Your sponsored listing expires in 3 days — "${listingTitle}"`,
+    html: layout(`
+      <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Your sponsorship is expiring soon</h1>
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 12px;">Hi ${ownerName},</p>
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
+        Your sponsored listing <strong>${listingTitle}</strong> is pinned to the top of search results until
+        <strong>${expiresLabel}</strong>. After that, it will return to the standard listing order.
+      </p>
+
+      <div style="border:1px solid #c7d2fe;border-radius:8px;padding:16px 20px;background:#eef2ff;margin-bottom:24px;">
+        <p style="margin:0;font-size:14px;color:#4338ca;font-weight:600;">
+          Renew now to keep your listing at the top
+        </p>
+        <p style="margin:6px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">
+          Sponsorship keeps your listing visible to pilots actively searching in your area — renewal takes less than a minute.
+        </p>
+      </div>
+
+      ${btn('Renew sponsorship →', listingUrl, '#6366f1')}
+      &nbsp;&nbsp;
+      ${btn('View your listing', listingUrl, '#111827')}
+
+      <p style="margin-top:28px;color:#9ca3af;font-size:13px;line-height:1.6;">
+        Questions? Reply to this email or call us at <a href="tel:9203858284" style="color:#6b7280;">(920) 385-8284</a>.
+      </p>
+    `),
+  }
+}
+
 /** Monthly newsletter — dynamic content driven by recent listings. */
 export function newsletterEmail(opts: {
   unsubUrl: string

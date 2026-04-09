@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import DeleteListingButton from '@/app/components/DeleteListingButton'
+import ManageBillingButton from '@/app/components/ManageBillingButton'
 
 type Listing = {
   id: string
@@ -25,6 +26,9 @@ type Listing = {
   monthly_lease: number | null
   status: string
   created_at: string
+  is_sponsored: boolean
+  sponsored_until: string | null
+  stripe_customer_id: string | null
 }
 
 type Inquiry = {
@@ -55,7 +59,7 @@ export default async function DashboardPage() {
   // Fetch this user's listings
   const { data: listings, error } = await supabase
     .from('listings')
-    .select('id, title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, status, created_at')
+    .select('id, title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, status, created_at, is_sponsored, sponsored_until, stripe_customer_id')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
@@ -69,6 +73,34 @@ export default async function DashboardPage() {
       .in('listing_id', listingIds)
       .order('created_at', { ascending: false })
     inquiries = (inqData ?? []) as Inquiry[]
+  }
+
+  // Fetch active hangar requests at the airports of approved listings
+  type HangarRequest = {
+    id: string
+    contact_name: string
+    airport_code: string
+    airport_name: string
+    aircraft_type: string | null
+    wingspan_ft: number | null
+    monthly_budget: number | null
+    duration: string | null
+    move_in_date: string | null
+    is_priority: boolean
+    created_at: string
+  }
+  let nearbyRequests: HangarRequest[] = []
+  const approvedListings = (listings ?? []).filter((l: Listing) => l.status === 'approved')
+  if (approvedListings.length > 0) {
+    const airportCodes = [...new Set(approvedListings.map((l: Listing) => l.airport_code))]
+    const { data: reqData } = await supabase
+      .from('hangar_requests')
+      .select('id, contact_name, airport_code, airport_name, aircraft_type, wingspan_ft, monthly_budget, duration, move_in_date, is_priority, created_at')
+      .eq('status', 'active')
+      .in('airport_code', airportCodes)
+      .order('created_at', { ascending: false })
+      .limit(20)
+    nearbyRequests = (reqData ?? []) as HangarRequest[]
   }
 
   const displayName = user.user_metadata?.full_name ?? user.email ?? 'Seller'
@@ -135,6 +167,11 @@ export default async function DashboardPage() {
           {listings.map((listing: Listing) => {
             const s = STATUS_LABELS[listing.status] ?? STATUS_LABELS.pending
             const listingInquiries = inquiries.filter((i: Inquiry) => i.listing_id === listing.id)
+            const now = new Date()
+            const isSponsored = listing.is_sponsored && listing.sponsored_until && new Date(listing.sponsored_until) > now
+            const sponsoredUntilLabel = isSponsored && listing.sponsored_until
+              ? new Date(listing.sponsored_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : null
 
             return (
               <div
@@ -165,6 +202,15 @@ export default async function DashboardPage() {
                       }}>
                         {s.label}
                       </span>
+                      {isSponsored && (
+                        <span style={{
+                          padding: '0.15rem 0.6rem', borderRadius: '999px',
+                          fontSize: '0.75rem', fontWeight: '600',
+                          backgroundColor: '#eef2ff', color: '#4338ca',
+                        }}>
+                          Sponsored · until {sponsoredUntilLabel}
+                        </span>
+                      )}
                       {listingInquiries.length > 0 && (
                         <span style={{
                           padding: '0.15rem 0.6rem', borderRadius: '999px',
@@ -194,6 +240,20 @@ export default async function DashboardPage() {
                       }}>
                         View live →
                       </Link>
+                    )}
+                    {listing.status === 'approved' && !isSponsored && (
+                      <Link href={`/listing/${listing.id}#sponsor`} style={{
+                        fontSize: '0.8rem', color: '#6366f1', textDecoration: 'none',
+                        fontWeight: '500', whiteSpace: 'nowrap',
+                        padding: '0.35rem 0.85rem',
+                        border: '1px solid #c7d2fe', borderRadius: '6px',
+                        backgroundColor: 'white',
+                      }}>
+                        Sponsor →
+                      </Link>
+                    )}
+                    {listing.stripe_customer_id && (
+                      <ManageBillingButton listingId={listing.id} />
                     )}
                     <Link href={`/listing/${listing.id}/edit`} style={{
                       fontSize: '0.8rem', color: '#374151', textDecoration: 'none',
@@ -243,6 +303,88 @@ export default async function DashboardPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Hangar requests at your airports */}
+      {nearbyRequests.length > 0 && (
+        <div style={{ marginTop: '3rem' }}>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.15rem' }}>
+              Hangar Requests at Your Airports
+            </h2>
+            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem' }}>
+              Pilots actively looking for space at airports where you have a live listing.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gap: '0.875rem' }}>
+            {nearbyRequests.map((req: HangarRequest) => (
+              <div
+                key={req.id}
+                style={{
+                  backgroundColor: 'white',
+                  border: `1px solid ${req.is_priority ? '#fbbf24' : '#e5e7eb'}`,
+                  borderRadius: '10px',
+                  padding: '1rem 1.25rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#111827' }}>
+                      {req.contact_name}
+                    </span>
+                    <span style={{
+                      padding: '0.1rem 0.5rem', borderRadius: '999px',
+                      fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase' as const,
+                      backgroundColor: '#dbeafe', color: '#1e40af',
+                    }}>
+                      {req.airport_code}
+                    </span>
+                    {req.is_priority && (
+                      <span style={{
+                        padding: '0.1rem 0.5rem', borderRadius: '999px',
+                        fontSize: '0.7rem', fontWeight: '700',
+                        backgroundColor: '#fef3c7', color: '#92400e',
+                      }}>
+                        Priority
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: 0, color: '#6b7280', fontSize: '0.825rem' }}>
+                    {req.airport_name}
+                    {req.aircraft_type && ` · ${req.aircraft_type}`}
+                    {req.wingspan_ft && ` · ${req.wingspan_ft}′ wingspan`}
+                    {req.monthly_budget && ` · $${req.monthly_budget.toLocaleString()}/mo budget`}
+                    {req.duration && ` · ${req.duration}`}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <Link
+                    href={`/requests?airport=${req.airport_code}`}
+                    style={{
+                      fontSize: '0.8rem', color: '#6366f1', textDecoration: 'none',
+                      fontWeight: '500', whiteSpace: 'nowrap',
+                      padding: '0.35rem 0.85rem', border: '1px solid #c7d2fe', borderRadius: '6px',
+                    }}
+                  >
+                    View request →
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#9ca3af' }}>
+            <Link href="/requests" style={{ color: '#6366f1', textDecoration: 'none' }}>
+              Browse all active requests →
+            </Link>
+          </p>
         </div>
       )}
     </div>

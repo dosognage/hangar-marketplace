@@ -16,17 +16,41 @@ type Props = {
   listingId: string
   /** If the listing is currently sponsored, show expiry instead of the picker */
   sponsoredUntil?: string | null
+  /** If the listing has a Stripe customer, show Manage billing link */
+  hasStripeCustomer?: boolean
 }
 
-export default function SponsorButton({ listingId, sponsoredUntil }: Props) {
+export default function SponsorButton({ listingId, sponsoredUntil, hasStripeCustomer }: Props) {
   const [open, setOpen] = useState(false)
   const [selectedDays, setSelectedDays] = useState<number>(30)
   const [loading, setLoading] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   const isActive = sponsoredUntil != null && new Date(sponsoredUntil) > new Date()
   const expiresLabel = isActive && sponsoredUntil
     ? new Date(sponsoredUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : null
+
+  async function openBillingPortal() {
+    setPortalLoading(true)
+    try {
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listing_id: listingId }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error ?? 'Could not open billing portal. Please try again.')
+        setPortalLoading(false)
+      }
+    } catch {
+      alert('Network error. Please try again.')
+      setPortalLoading(false)
+    }
+  }
 
   async function startCheckout() {
     setLoading(true)
@@ -52,19 +76,36 @@ export default function SponsorButton({ listingId, sponsoredUntil }: Props) {
   // ── Currently sponsored ──────────────────────────────────────────────────
   if (isActive) {
     return (
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-        padding: '0.45rem 0.85rem',
-        backgroundColor: '#eef2ff', border: '1px solid #c7d2fe',
-        borderRadius: '8px', fontSize: '0.82rem',
-      }}>
-        <span style={{
-          width: '8px', height: '8px', borderRadius: '50%',
-          backgroundColor: '#6366f1', flexShrink: 0,
-        }} />
-        <span style={{ color: '#4338ca', fontWeight: '600' }}>
-          Sponsored · expires {expiresLabel}
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+          padding: '0.45rem 0.85rem',
+          backgroundColor: '#eef2ff', border: '1px solid #c7d2fe',
+          borderRadius: '8px', fontSize: '0.82rem',
+        }}>
+          <span style={{
+            width: '8px', height: '8px', borderRadius: '50%',
+            backgroundColor: '#6366f1', flexShrink: 0,
+          }} />
+          <span style={{ color: '#4338ca', fontWeight: '600' }}>
+            Sponsored · expires {expiresLabel}
+          </span>
+        </div>
+        {hasStripeCustomer && (
+          <button
+            onClick={openBillingPortal}
+            disabled={portalLoading}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+              padding: '0.45rem 0.85rem',
+              backgroundColor: 'white', border: '1px solid #d1d5db',
+              borderRadius: '8px', fontSize: '0.82rem', fontWeight: '500',
+              color: '#374151', cursor: portalLoading ? 'default' : 'pointer',
+            }}
+          >
+            {portalLoading ? 'Opening…' : 'Manage billing →'}
+          </button>
+        )}
       </div>
     )
   }

@@ -107,53 +107,28 @@ body {
   flex-shrink: 0;
 }
 
-/* ── Mobile nav: two-row layout ──────────────────────────────────────────── */
+/* ── Mobile nav: hamburger layout ─────────────────────────────────────────── */
 @media (max-width: 640px) {
   :root {
-    --header-h: 108px;
+    --header-h: 60px;
   }
 
   .nav-inner {
-    flex-wrap: wrap;
-    padding: 0.5rem 1rem;
-    min-height: unset;
-    gap: 0;
-    align-items: center;
-    justify-content: space-between;
+    padding: 0 1rem;
+    min-height: 60px;
   }
 
-  /* Row 1: logo (left) | auth (right) — use CSS order to pull auth up */
-  .nav-logo {
-    order: 1;
-    flex: 1;
-  }
-
-  .nav-auth {
-    order: 2;
-    flex-shrink: 0;
-  }
-
-  /* Row 2: scrollable nav links */
+  /* Hide the desktop link row on mobile — MobileMenu drawer handles this */
   .nav-links {
-    order: 3;
-    flex: none;
-    width: 100%;
-    flex-wrap: nowrap;
-    gap: 0;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 0.35rem;
-    padding-bottom: 0.35rem;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    display: none !important;
   }
-  .nav-links::-webkit-scrollbar { display: none; }
 
-  /* Tighter link padding on mobile */
-  .nav-links a {
-    font-size: 0.8rem !important;
-    padding: 0.3rem 0.55rem !important;
-    white-space: nowrap;
+  /* Show hamburger button on mobile */
+  .mobile-hamburger {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    order: 3;
   }
 
   .nav-email {
@@ -240,5 +215,28 @@ body {
 @media (max-width: 640px) {
   input, select, textarea {
     font-size: 16px !important; /* prevents iOS auto-zoom */
+  }
+}
+
+/* ── Footer responsive ───────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .footer-cols {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+/* ── Dashboard card actions wrap on narrow screens ──────────────────────── */
+@media (max-width: 480px) {
+  .dashboard-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ── Listing detail page: full-width on small screens ───────────────────── */
+@media (max-width: 640px) {
+  main > div {
+    max-width: 100% !important;
   }
 }

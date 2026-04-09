@@ -6,6 +6,7 @@ import ToastProvider from '@/app/components/ToastProvider'
 import ProgressBar from '@/app/components/ProgressBar'
 import SavedCountProvider from '@/app/components/SavedCountProvider'
 import NewsletterSignup from '@/app/components/NewsletterSignup'
+import MobileMenu from '@/app/components/MobileMenu'
 import { Plane } from 'lucide-react'
 
 export const metadata = {
@@ -109,6 +110,9 @@ export default async function RootLayout({
                 <Link href="/submit" style={navLinkStyle}>List a Hangar</Link>
                 <Link href="/pricing" style={navLinkStyle}>Pricing</Link>
               </div>
+
+              {/* Mobile hamburger — only visible on mobile via CSS */}
+              <MobileMenu />
 
               {/* Auth / profile */}
               <div className="nav-auth">

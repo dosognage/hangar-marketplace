@@ -83,6 +83,7 @@ type Listing = {
   featured_until: string | null
   is_sponsored: boolean
   sponsored_until: string | null
+  stripe_customer_id: string | null
   contact_name: string
   contact_email: string
   contact_phone: string | null
@@ -215,10 +216,11 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
       )}
 
       {/* Sponsor CTA — shown to listing owners to boost visibility */}
-      <div style={{ marginBottom: '1.5rem' }}>
+      <div id="sponsor" style={{ marginBottom: '1.5rem' }}>
         <SponsorButton
           listingId={typedListing.id}
           sponsoredUntil={typedListing.sponsored_until}
+          hasStripeCustomer={!!typedListing.stripe_customer_id}
         />
       </div>
 

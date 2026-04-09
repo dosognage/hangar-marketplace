@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
 
@@ -42,9 +43,10 @@ const EMPTY_FORM = {
 const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
 
 export default function SubmitPage() {
+  const router = useRouter()
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [photos, setPhotos] = useState<File[]>([])
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [status, setStatus] = useState<{ type: 'error'; message: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
 
@@ -164,13 +166,8 @@ export default function SubmitPage() {
         }
       }
 
-      // ── Done ────────────────────────────────────────────────────────────
-      setStatus({
-        type: 'success',
-        message: `Listing submitted with ${photoRecords.length} photo${photoRecords.length !== 1 ? 's' : ''}! It will go live once reviewed by our team.`,
-      })
-      setFormData(EMPTY_FORM)
-      setPhotos([])
+      // ── Done — redirect to success page ─────────────────────────────────
+      router.push(`/submit/success?photos=${photoRecords.length}`)
     } catch (err: unknown) {
       setStatus({
         type: 'error',
@@ -197,9 +194,9 @@ export default function SubmitPage() {
           padding: '1rem',
           borderRadius: '8px',
           marginBottom: '1.5rem',
-          backgroundColor: status.type === 'success' ? '#f0fdf4' : '#fef2f2',
-          border: `1px solid ${status.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
-          color: status.type === 'success' ? '#166534' : '#dc2626',
+          backgroundColor: '#fef2f2',
+          border: '1px solid #fecaca',
+          color: '#dc2626',
         }}>
           {status.message}
         </div>

@@ -34,9 +34,11 @@ export async function POST(req: NextRequest) {
         duration_days?: string
       }
       payment_status?: string
+      customer?: string | null
     }
 
     const { request_id, is_priority, type, listing_id, duration_days } = session.metadata ?? {}
+    const stripeCustomerId = session.customer ?? null
 
     // ── Listing sponsorship ──────────────────────────────────────────────────
     if (type === 'listing_sponsor' && listing_id && session.payment_status === 'paid') {
@@ -45,7 +47,11 @@ export async function POST(req: NextRequest) {
 
       const { error: sponsorError } = await supabaseAdmin
         .from('listings')
-        .update({ is_sponsored: true, sponsored_until: sponsoredUntil })
+        .update({
+          is_sponsored: true,
+          sponsored_until: sponsoredUntil,
+          ...(stripeCustomerId ? { stripe_customer_id: stripeCustomerId } : {}),
+        })
         .eq('id', listing_id)
 
       if (sponsorError) {
