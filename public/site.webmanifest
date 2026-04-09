@@ -1,0 +1,13 @@
+{
+  "name": "Hangar Marketplace",
+  "short_name": "Hangar MKT",
+  "description": "Find & list airplane hangars for sale or lease",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#1a3a5c",
+  "theme_color": "#1a3a5c",
+  "icons": [
+    { "src": "/favicon-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/favicon-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

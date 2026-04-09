@@ -22,6 +22,20 @@ export const metadata = {
   },
   description: 'Search hundreds of aircraft hangars for sale, lease, and rent across the US. List your hangar free. Find space at your airport today.',
   keywords: ['airplane hangar', 'hangar for sale', 'hangar for lease', 'aircraft hangar rental', 't-hangar', 'aviation property', 'hangar space'],
+  icons: {
+    icon: [
+      { url: '/favicon.svg',       type: 'image/svg+xml' },
+      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    other: [
+      { rel: 'mask-icon', url: '/favicon.svg', color: '#1a3a5c' },
+    ],
+  },
+  manifest: '/site.webmanifest',
   openGraph: {
     siteName: 'Hangar Marketplace',
     type: 'website',
