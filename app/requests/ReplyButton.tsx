@@ -34,13 +34,13 @@ export default function ReplyButton({ requestId, contactName, userId }: Props) {
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
-        addToast(d.error ?? 'Failed to send — try again', 'error')
+        addToast(d.error ?? 'Failed to send. Try again.', 'error')
         return
       }
       setSent(true)
       addToast(`Reply sent to ${contactName}!`, 'success')
     } catch {
-      addToast('Network error — check your connection', 'error')
+      addToast('Network error. Check your connection.', 'error')
     } finally {
       setLoading(false)
     }

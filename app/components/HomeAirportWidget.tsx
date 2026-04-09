@@ -43,10 +43,10 @@ const CAT_COLOR: Record<FlightCat, string> = {
 }
 
 const CAT_LABEL: Record<FlightCat, string> = {
-  VFR:     'VFR — Visual Flight Rules',
-  MVFR:    'MVFR — Marginal VFR',
-  IFR:     'IFR — Instrument Flight Rules',
-  LIFR:    'LIFR — Low IFR',
+  VFR:     'VFR: Visual Flight Rules',
+  MVFR:    'MVFR: Marginal VFR',
+  IFR:     'IFR: Instrument Flight Rules',
+  LIFR:    'LIFR: Low IFR',
   UNKNOWN: 'Weather data unavailable',
 }
 

@@ -106,7 +106,7 @@ export default async function SettingsPage() {
                   {item.label}
                 </span>
                 <span style={{ fontSize: '0.78rem', color: '#6b7280', marginLeft: '0.3rem' }}>
-                  — {item.desc}
+                  : {item.desc}
                 </span>
               </div>
             </div>

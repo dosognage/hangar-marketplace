@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
 
         <p style="margin: 0; line-height: 1.6; color: #6b7280; font-size: 14px;">
           The seller will reply directly to your email address (${buyerEmail}).
-          Keep an eye on your inbox — and check your spam folder if you don't hear back within a day or two.
+          Keep an eye on your inbox, and check your spam folder if you don't hear back within a day or two.
         </p>
 
         <p style="margin-top: 24px; color: #9ca3af; font-size: 12px;">
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
 
   const [sellerRes, buyerRes] = await Promise.all([
     send(sellerEmail, `New inquiry about: ${listingTitle}`, sellerHtml),
-    send(buyerEmail, `Your message was sent — ${listingTitle}`, buyerHtml),
+    send(buyerEmail, `Your message was sent: ${listingTitle}`, buyerHtml),
   ])
 
   if (!sellerRes.ok) {

@@ -22,7 +22,7 @@ export default function ReGeocodeButton() {
       setSummary(`✓ ${data.updated} updated · ${data.skipped} already correct · ${data.failed} failed`)
     } catch {
       setStatus('error')
-      setSummary('Network error — try again.')
+      setSummary('Network error. Try again.')
     }
   }
 

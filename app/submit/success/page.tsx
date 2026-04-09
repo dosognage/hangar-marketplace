@@ -52,7 +52,7 @@ export default async function SubmitSuccessPage({ searchParams }: Props) {
         </p>
 
         {[
-          { icon: <ClipboardList size={18} />, title: 'Review', desc: 'Our team reviews your listing for accuracy and completeness — usually within 24 hours.' },
+          { icon: <ClipboardList size={18} />, title: 'Review', desc: 'Our team reviews your listing for accuracy and completeness, usually within 24 hours.' },
           { icon: <CheckCircle size={18} />, title: 'Approval email', desc: "You'll get an email the moment your listing goes live on Hangar Marketplace." },
           { icon: <Search size={18} />, title: 'Pilots find you', desc: 'Pilots searching at your airport will see your listing immediately after approval.' },
         ].map((step, i) => (

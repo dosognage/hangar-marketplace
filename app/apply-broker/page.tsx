@@ -103,7 +103,7 @@ export default function ApplyBrokerPage() {
         <h1 style={{ margin: '0 0 0.4rem' }}>Apply for Broker Verification</h1>
         <p style={{ margin: 0, color: '#6b7280', lineHeight: 1.6 }}>
           Verified brokers get a public profile page, a verified badge on their listings,
-          and are featured in broker search. Submit your license details below — our team
+          and are featured in broker search. Submit your license details below. Our team
           reviews every application before approval.
         </p>
       </div>

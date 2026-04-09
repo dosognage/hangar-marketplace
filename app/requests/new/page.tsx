@@ -143,7 +143,7 @@ function NewRequestForm() {
           backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px',
           padding: '0.75rem 1rem', color: '#92400e', fontSize: '0.875rem', marginBottom: '1.25rem',
         }}>
-          Payment was cancelled — your request was not posted. Fill out the form again to try.
+          Payment was cancelled. Your request was not posted. Fill out the form again to try.
         </div>
       )}
 
@@ -175,7 +175,7 @@ function NewRequestForm() {
             </Field>
           </TwoCol>
           <p style={{ margin: '0.1rem 0 0', fontSize: '0.78rem', color: '#9ca3af' }}>
-            Your email is only shared with owners who respond — it's not publicly displayed.
+            Your email is only shared with owners who respond. It's not publicly displayed.
           </p>
         </Section>
 
@@ -228,7 +228,7 @@ function NewRequestForm() {
               onChange={handleChange} placeholder="12" min="0" style={inputStyle} />
           </Field>
           <p style={{ margin: '-0.3rem 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>
-            Door dimensions are auto-suggested when you pick an aircraft — feel free to adjust.
+            Door dimensions are auto-suggested when you pick an aircraft. Feel free to adjust.
           </p>
         </Section>
 
@@ -287,7 +287,7 @@ function NewRequestForm() {
               }}
             >
               <div style={{ fontWeight: '700', color: '#111827', marginBottom: '0.25rem' }}>
-                Standard — $7.99
+                Standard ($7.99)
               </div>
               <div style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5 }}>
                 Listed on the request board chronologically.
@@ -315,10 +315,10 @@ function NewRequestForm() {
                 POPULAR
               </div>
               <div style={{ fontWeight: '700', color: '#111827', marginBottom: '0.25rem' }}>
-                High-Priority — $29.99
+                High-Priority ($29.99)
               </div>
               <div style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5 }}>
-                Pinned to the top with a priority badge — seen first by every owner.
+                Pinned to the top with a priority badge, seen first by every owner.
               </div>
             </button>
           </div>
@@ -334,7 +334,7 @@ function NewRequestForm() {
             opacity: status === 'loading' ? 0.7 : 1,
           }}
         >
-          {status === 'loading' ? 'Redirecting to payment…' : `Continue to Payment — ${price}`}
+          {status === 'loading' ? 'Redirecting to payment…' : `Continue to Payment (${price})`}
         </button>
 
         <p style={{ margin: '-0.5rem 0 0', textAlign: 'center', fontSize: '0.78rem', color: '#9ca3af' }}>

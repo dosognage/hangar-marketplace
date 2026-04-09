@@ -26,7 +26,7 @@ export default function BlogPage() {
           The Hangar Marketplace Blog
         </h1>
         <p style={{ margin: 0, color: '#6b7280', fontSize: '1rem', lineHeight: 1.6 }}>
-          Practical guides and advice for general aviation pilots — finding hangar space, understanding leases, and making the most of your airport.
+          Practical guides and advice for general aviation pilots: finding hangar space, understanding leases, and making the most of your airport.
         </p>
       </div>
 

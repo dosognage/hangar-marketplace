@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Hangar Marketplace',
+  title: 'Privacy Policy | Hangar Marketplace',
   description: 'How Hangar Marketplace collects, uses, and protects your personal information.',
 }
 
@@ -32,12 +32,12 @@ export default function PrivacyPage() {
       <Section title="2. Information we collect">
         <p>We collect information in the following ways:</p>
         <ul style={listStyle}>
-          <li><strong>Account information</strong> — name and email address when you create an account or sign in via a third-party provider.</li>
-          <li><strong>Listing information</strong> — details you provide when submitting a hangar listing or hangar request (airport, dimensions, pricing, contact details).</li>
-          <li><strong>Payment information</strong> — when you make a purchase, payment is processed by Stripe. We do not store card numbers or full payment details on our servers. We retain a Stripe customer ID and transaction records.</li>
-          <li><strong>Marketing consent</strong> — email address, timestamp, IP address, and source page when you subscribe to marketing emails. This data is retained as proof of consent as required by GDPR and CASL.</li>
-          <li><strong>Usage data</strong> — pages visited, browser type, device type, and referring URL, collected via standard server logs and analytics.</li>
-          <li><strong>Cookies</strong> — session cookies used for authentication. We do not use third-party tracking or advertising cookies.</li>
+          <li><strong>Account information</strong>: name and email address when you create an account or sign in via a third-party provider.</li>
+          <li><strong>Listing information</strong>: details you provide when submitting a hangar listing or hangar request (airport, dimensions, pricing, contact details).</li>
+          <li><strong>Payment information</strong>: when you make a purchase, payment is processed by Stripe. We do not store card numbers or full payment details on our servers. We retain a Stripe customer ID and transaction records.</li>
+          <li><strong>Marketing consent</strong>: email address, timestamp, IP address, and source page when you subscribe to marketing emails. This data is retained as proof of consent as required by GDPR and CASL.</li>
+          <li><strong>Usage data</strong>: pages visited, browser type, device type, and referring URL, collected via standard server logs and analytics.</li>
+          <li><strong>Cookies</strong>: session cookies used for authentication. We do not use third-party tracking or advertising cookies.</li>
         </ul>
       </Section>
 
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
           <li>To provide, operate, and improve the {SITE_NAME} platform.</li>
           <li>To process payments and manage subscriptions via Stripe.</li>
           <li>To send transactional emails (listing confirmations, inquiry notifications, request replies).</li>
-          <li>To send marketing emails approximately once per month — only where you have given explicit consent and only until you unsubscribe.</li>
+          <li>To send marketing emails approximately once per month, only where you have given explicit consent and only until you unsubscribe.</li>
           <li>To detect fraud and maintain the security of our platform.</li>
           <li>To comply with legal obligations.</li>
         </ul>
@@ -55,10 +55,10 @@ export default function PrivacyPage() {
       <Section title="4. Legal bases for processing (GDPR)">
         <p>If you are located in the European Economic Area (EEA) or United Kingdom, we process your personal data under the following legal bases:</p>
         <ul style={listStyle}>
-          <li><strong>Contract</strong> — processing necessary to provide the services you have requested.</li>
-          <li><strong>Legitimate interests</strong> — fraud prevention, platform security, and analytics to improve our service.</li>
-          <li><strong>Consent</strong> — marketing emails, which you may withdraw at any time by clicking "Unsubscribe" in any email or contacting us directly.</li>
-          <li><strong>Legal obligation</strong> — where required by applicable law.</li>
+          <li><strong>Contract</strong>: processing necessary to provide the services you have requested.</li>
+          <li><strong>Legitimate interests</strong>: fraud prevention, platform security, and analytics to improve our service.</li>
+          <li><strong>Consent</strong>: marketing emails, which you may withdraw at any time by clicking "Unsubscribe" in any email or contacting us directly.</li>
+          <li><strong>Legal obligation</strong>: where required by applicable law.</li>
         </ul>
       </Section>
 
@@ -82,10 +82,10 @@ export default function PrivacyPage() {
       <Section title="6. Data sharing and third parties">
         <p>We share your data only as follows:</p>
         <ul style={listStyle}>
-          <li><strong>Stripe</strong> — payment processing. Stripe's privacy policy is at <a href="https://stripe.com/privacy" style={linkStyle} target="_blank" rel="noreferrer">stripe.com/privacy</a>.</li>
-          <li><strong>Supabase</strong> — our database and authentication provider, hosted in the United States.</li>
-          <li><strong>Resend</strong> — our transactional and marketing email provider.</li>
-          <li><strong>Vercel</strong> — our hosting provider, which may process server logs.</li>
+          <li><strong>Stripe</strong>: payment processing. Stripe's privacy policy is at <a href="https://stripe.com/privacy" style={linkStyle} target="_blank" rel="noreferrer">stripe.com/privacy</a>.</li>
+          <li><strong>Supabase</strong>: our database and authentication provider, hosted in the United States.</li>
+          <li><strong>Resend</strong>: our transactional and marketing email provider.</li>
+          <li><strong>Vercel</strong>: our hosting provider, which may process server logs.</li>
         </ul>
         <p>
           We do not sell, rent, or trade your personal information to third parties for their

@@ -225,7 +225,7 @@ export default function BugReportButton({ userEmail }: Props) {
                 <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
                   <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✓</div>
                   <p style={{ margin: '0 0 0.4rem', fontWeight: '700', fontSize: '1rem', color: '#166534' }}>
-                    Report received — thank you!
+                    Report received. Thank you!
                   </p>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: '#6b7280', lineHeight: 1.5 }}>
                     We&apos;ve been notified and will look into it.
@@ -256,7 +256,7 @@ export default function BugReportButton({ userEmail }: Props) {
                   {/* Contact email */}
                   <div style={{ marginBottom: '1rem' }}>
                     <label htmlFor="bug-email" style={LABEL_STYLE}>
-                      Your email <span style={{ color: '#9ca3af', fontWeight: '400' }}>(optional — we&apos;ll follow up if needed)</span>
+                      Your email <span style={{ color: '#9ca3af', fontWeight: '400' }}>(optional, we&apos;ll follow up if needed)</span>
                     </label>
                     <input
                       id="bug-email"

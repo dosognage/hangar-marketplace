@@ -154,7 +154,7 @@ export default function PricingPage() {
           Pay only for what you post
         </h1>
         <p style={{ margin: '0 auto', maxWidth: '540px', fontSize: '1rem', color: '#6b7280', lineHeight: 1.7 }}>
-          Listing your hangar is always free. Fees apply to hangar <strong>requests</strong> —
+          Listing your hangar is always free. Fees apply to hangar <strong>requests</strong>—
           priced to scale from a pilot needing a spot for the night all the way up to a
           corporate dispatcher managing dozens of aircraft.
         </p>
@@ -189,7 +189,7 @@ export default function PricingPage() {
 
       {/* ── One-time cards ─────────────────────────────────────────────────── */}
       <div style={{ marginBottom: '1rem' }}>
-        <SectionLabel>Pay-per-request — no subscription needed</SectionLabel>
+        <SectionLabel>Pay-per-request (no subscription needed)</SectionLabel>
       </div>
       <div style={{
         display: 'grid',
@@ -208,8 +208,8 @@ export default function PricingPage() {
             'Single hangar request at any airport',
             'Visible on the request board immediately',
             'Email notification when an owner replies',
-            '60-day active window — free to refresh',
-            'No account required — email only',
+            '60-day active window (free to refresh)',
+            'No account required (email only)',
           ]}
           cta="Post a request"
           ctaHref="/requests/new"
@@ -224,7 +224,7 @@ export default function PricingPage() {
           urgent
           features={[
             'Everything in Standard, plus:',
-            '"Urgent" badge — pinned to top of board',
+            '"Urgent" badge (pinned to top of board)',
             'Push notifications to nearby hangar owners',
             'Ideal for diversions, last-minute charters',
             'Response window tracked & displayed',
@@ -236,7 +236,7 @@ export default function PricingPage() {
 
       {/* ── Subscription tier cards ────────────────────────────────────────── */}
       <div style={{ marginBottom: '1rem' }}>
-        <SectionLabel>Subscription plans — best value for frequent flyers & commercial operators</SectionLabel>
+        <SectionLabel>Subscription plans (best value for frequent flyers & commercial operators)</SectionLabel>
       </div>
       <div style={{
         display: 'grid',
@@ -273,7 +273,7 @@ export default function PricingPage() {
           <HowItWorksItem
             icon={<ClipboardList size={28} />}
             title="Requests have a fee"
-            body="Posting a hangar request — telling the market what you need — is where fees apply. This keeps the board high-quality and noise-free."
+            body="Posting a hangar request (telling the market what you need) is where fees apply. This keeps the board high-quality and noise-free."
           />
           <HowItWorksItem
             icon={<TrendingDown size={28} />}
@@ -283,14 +283,14 @@ export default function PricingPage() {
           <HowItWorksItem
             icon={<RefreshCw size={28} />}
             title="60-day refresh is always free"
-            body="If your request hasn't been filled after 60 days, we'll notify you to refresh it. Refreshing keeps you active — at no extra charge."
+            body="If your request hasn't been filled after 60 days, we'll notify you to refresh it. Refreshing keeps you active at no extra charge."
           />
         </div>
       </div>
 
       {/* ── Per-request cost comparison table ─────────────────────────────── */}
       <h2 style={{ margin: '0 0 1rem', fontSize: '1.15rem', fontWeight: '700', color: '#111827' }}>
-        Cost per request — at a glance
+        Cost per request (at a glance)
       </h2>
       <div style={{ overflowX: 'auto', marginBottom: '3rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
@@ -343,16 +343,16 @@ export default function PricingPage() {
           Yes. You can change your plan at any time through the billing portal. Upgrades take effect immediately; downgrades take effect at your next renewal date. Unused requests do not roll over between billing periods.
         </Faq>
         <Faq q="What counts as a 'request'?">
-          Each hangar space request you post counts as one request against your allocation. Refreshing an existing request (at the 60-day mark) does not consume an additional request — only new posts do.
+          Each hangar space request you post counts as one request against your allocation. Refreshing an existing request (at the 60-day mark) does not consume an additional request, only new posts do.
         </Faq>
         <Faq q="Can multiple dispatchers share one account?">
           Growth and above include multiple team seats. Enterprise includes unlimited seats, making it the right choice for full dispatch teams or flight departments where several people manage requests.
         </Faq>
         <Faq q="Is there a free trial?">
-          Listing a hangar is completely free — no trial needed. For requests, we don't offer a free trial, but a one-time Standard request at $7.99 lets you test the platform before committing to a subscription.
+          Listing a hangar is completely free (no trial needed). For requests, we don't offer a free trial, but a one-time Standard request at $7.99 lets you test the platform before committing to a subscription.
         </Faq>
         <Faq q="How do I cancel?">
-          You can cancel your subscription at any time through the billing portal — no penalty, no phone call required. Your subscription remains active until the end of the paid period.
+          You can cancel your subscription at any time through the billing portal (no penalty, no phone call required). Your subscription remains active until the end of the paid period.
         </Faq>
         <Faq q="Do you offer NET-30 or custom invoicing for enterprise accounts?">
           Yes. Enterprise plans can be invoiced monthly or quarterly on NET-30 terms. Contact us at <a href="mailto:andre.dosogne@outlook.com" style={{ color: '#2563eb' }}>andre.dosogne@outlook.com</a> to set this up.
@@ -395,7 +395,7 @@ export default function PricingPage() {
             fontSize: '0.875rem',
             fontWeight: '600',
           }}>
-            Post a request — from $7.99
+            Post a request (from $7.99)
           </Link>
         </div>
       </div>

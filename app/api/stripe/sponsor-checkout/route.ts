@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
           currency: 'usd',
           unit_amount: tier.cents,
           product_data: {
-            name: `Sponsored Listing — ${listing.airport_code} (${tier.label})`,
+            name: `Sponsored Listing at ${listing.airport_code} (${tier.label})`,
             description: `"${listing.title}" will be pinned to the top of browse results for viewers in the ${listing.city}, ${listing.state} area for ${tier.label}.`,
           },
         },

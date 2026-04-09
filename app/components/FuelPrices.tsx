@@ -38,14 +38,14 @@ function getFuelAvailability(info: AirportInfo): FuelAvailability {
     return {
       has100LL: false,
       hasJetA:  true,
-      note: 'Military airports primarily supply Jet-A for military use. Civilian fuel access varies — contact the base ops.',
+      note: 'Military airports primarily supply Jet-A for military use. Civilian fuel access varies. Contact the base ops.',
     }
   }
   if (isCommercial) {
     return {
       has100LL: false,
       hasJetA:  true,
-      note: 'Commercial airports typically carry Jet-A. 100LL availability varies — contact the FBO.',
+      note: 'Commercial airports typically carry Jet-A. 100LL availability varies. Contact the FBO.',
     }
   }
   if (isLarge) {
@@ -58,7 +58,7 @@ function getFuelAvailability(info: AirportInfo): FuelAvailability {
   return {
     has100LL: true,
     hasJetA:  false,
-    note: 'Small non-towered airports typically carry 100LL. Jet-A is less common — confirm with the FBO.',
+    note: 'Small non-towered airports typically carry 100LL. Jet-A is less common. Confirm with the FBO.',
   }
 }
 
@@ -154,7 +154,7 @@ export default function FuelPrices({ airportCode }: Props) {
 
           {error && (
             <p style={{ margin: '0.75rem 0', fontSize: '0.875rem', color: '#dc2626' }}>
-              {error} — check <AirNavFuelLink code={airportCode} /> for details.
+              {error}. Check <AirNavFuelLink code={airportCode} /> for details.
             </p>
           )}
 

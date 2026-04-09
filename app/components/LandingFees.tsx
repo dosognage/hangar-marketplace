@@ -117,7 +117,7 @@ export default function LandingFees({ airportCode, airportName }: Props) {
 
           {error && (
             <p style={{ margin: '0.75rem 0', fontSize: '0.875rem', color: '#dc2626' }}>
-              {error} — check <AirNavLink code={airportCode} /> for details.
+              {error}. Check <AirNavLink code={airportCode} /> for details.
             </p>
           )}
 

@@ -237,7 +237,7 @@ export default function AdminListingsManager({ initialListings }: { initialListi
 
                 {/* Meta row */}
                 <div style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.6rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <span>✈️ {listing.airport_code} — {listing.city}, {listing.state}</span>
+                  <span>✈️ {listing.airport_code} · {listing.city}, {listing.state}</span>
                   <span>📋 {TYPE_LABELS[listing.listing_type] ?? listing.listing_type}</span>
                   {listing.ownership_type && <span>🏛 {listing.ownership_type}</span>}
                   {listing.square_feet && <span>📐 {listing.square_feet.toLocaleString()} sq ft</span>}
@@ -315,7 +315,7 @@ export default function AdminListingsManager({ initialListings }: { initialListi
 
                   {/* Status feedback */}
                   {statusDone && <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600 }}>✓ Saved</span>}
-                  {statusError && <span style={{ fontSize: '0.78rem', color: '#dc2626', fontWeight: 600 }}>Error — try again</span>}
+                  {statusError && <span style={{ fontSize: '0.78rem', color: '#dc2626', fontWeight: 600 }}>Error. Try again.</span>}
 
                   {/* Delete */}
                   <div style={{ marginLeft: 'auto' }}>

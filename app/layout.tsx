@@ -18,7 +18,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Hangar Marketplace — Find & List Airplane Hangars for Sale or Lease',
+    default: 'Hangar Marketplace | Find & List Airplane Hangars for Sale or Lease',
     template: '%s | Hangar Marketplace',
   },
   description: 'Search hundreds of aircraft hangars for sale, lease, and rent across the US. List your hangar free. Find space at your airport today.',
@@ -42,13 +42,13 @@ export const metadata = {
     type: 'website',
     locale: 'en_US',
     url: SITE_URL,
-    title: 'Hangar Marketplace — Find & List Airplane Hangars',
+    title: 'Hangar Marketplace | Find & List Airplane Hangars',
     description: 'Search hundreds of aircraft hangars for sale, lease, and rent across the US.',
     images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'Hangar Marketplace' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Hangar Marketplace — Find & List Airplane Hangars',
+    title: 'Hangar Marketplace | Find & List Airplane Hangars',
     description: 'Search hundreds of aircraft hangars for sale, lease, and rent across the US.',
     images: ['/og-default.png'],
   },

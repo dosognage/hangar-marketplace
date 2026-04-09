@@ -91,7 +91,7 @@ export default function SaveSearchWidget({ query, listingType, maxPrice, minSqft
 
       {status === 'error' && (
         <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: '#dc2626' }}>
-          Something went wrong — please try again.
+          Something went wrong. Please try again.
         </p>
       )}
 
@@ -132,7 +132,7 @@ export default function SaveSearchWidget({ query, listingType, maxPrice, minSqft
         </button>
       </form>
       <p style={{ margin: '0.5rem 0 0', fontSize: '0.72rem', color: '#9ca3af' }}>
-        One email per new match. Unsubscribe any time — link in every email.
+        One email per new match. Unsubscribe any time (link in every email).
       </p>
     </div>
   )

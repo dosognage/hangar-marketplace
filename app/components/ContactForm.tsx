@@ -65,7 +65,7 @@ export default function ContactForm({ listingId, listingTitle, sellerName, selle
       setForm({ name: '', email: '', phone: '', message: '' })
       addToast('Message sent to seller!', 'success')
     } catch {
-      setErrorMsg('Network error — please check your connection and try again.')
+      setErrorMsg('Network error. Please check your connection and try again.')
       setStatus('error')
     }
   }
@@ -83,7 +83,7 @@ export default function ContactForm({ listingId, listingTitle, sellerName, selle
           <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✅</div>
           <h3 style={{ margin: '0 0 0.5rem', color: '#166534' }}>Message sent!</h3>
           <p style={{ margin: 0, color: '#166534', fontSize: '0.9rem' }}>
-            Your message has been sent to {sellerName}. Check your inbox — you should
+            Your message has been sent to {sellerName}. Check your inbox. You should
             also receive a confirmation email shortly.
           </p>
           <button
@@ -103,7 +103,7 @@ export default function ContactForm({ listingId, listingTitle, sellerName, selle
         Contact {sellerName}
       </h2>
       <p style={{ margin: '0 0 1.25rem', color: '#6b7280', fontSize: '0.875rem' }}>
-        Send a message directly — the seller will reply to your email address.
+        Send a message directly. The seller will reply to your email address.
       </p>
 
       {status === 'error' && (

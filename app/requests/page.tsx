@@ -74,7 +74,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
         <div>
           <h1 style={{ margin: '0 0 0.3rem' }}>Hangar Requests</h1>
           <p style={{ margin: 0, color: '#6b7280', fontSize: '0.925rem', lineHeight: 1.5 }}>
-            Pilots looking for hangar space — if you have room, reach out.
+            Pilots looking for hangar space. If you have room, reach out.
           </p>
         </div>
         <Link href="/requests/new" style={{
@@ -180,7 +180,7 @@ function RequestCard({ req, userId }: { req: Request; userId: string | null }) {
               {req.airport_code}
             </span>
             <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-              {req.airport_name}{req.city ? ` — ${req.city}, ${req.state}` : ''}
+              {req.airport_name}{req.city ? `, ${req.city}, ${req.state}` : ''}
             </span>
           </div>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#9ca3af' }}>

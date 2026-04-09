@@ -227,9 +227,9 @@ export default function SubmitPage() {
           </TwoCol>
           <Field label="Listing type *">
             <select name="listing_type" value={formData.listing_type} onChange={handleChange} style={inputStyle}>
-              <option value="sale">For Sale — full hangar</option>
-              <option value="lease">For Lease — full hangar</option>
-              <option value="space">Space Available — partial hangar</option>
+              <option value="sale">For Sale (full hangar)</option>
+              <option value="lease">For Lease (full hangar)</option>
+              <option value="space">Space Available (partial hangar)</option>
             </select>
           </Field>
           <Field label="Ownership type *">

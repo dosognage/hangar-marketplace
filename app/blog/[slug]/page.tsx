@@ -141,7 +141,7 @@ export default async function BlogPostPage({ params }: Props) {
           Find or list a hangar on Hangar Marketplace
         </p>
         <p style={{ margin: '0 0 1rem', fontSize: '0.875rem', color: '#6b7280', lineHeight: 1.5 }}>
-          Search available hangars by airport, state, size, and price — or list yours for free.
+          Search available hangars by airport, state, size, and price, or list yours for free.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <Link href="/" style={{ padding: '0.55rem 1.1rem', backgroundColor: '#6366f1', color: 'white', borderRadius: '6px', textDecoration: 'none', fontWeight: '600', fontSize: '0.875rem' }}>

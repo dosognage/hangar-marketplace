@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
         body: JSON.stringify({
           from: FROM_ADDRESS,
           to: [recipient],
-          subject: `${listings.length} new hangar${listings.length !== 1 ? 's' : ''} match your alert${filterDesc ? ` — ${filterDesc}` : ''}`,
+          subject: `${listings.length} new hangar${listings.length !== 1 ? 's' : ''} match your alert${filterDesc ? `: ${filterDesc}` : ''}`,
           html,
         }),
       })

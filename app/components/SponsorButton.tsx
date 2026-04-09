@@ -189,7 +189,7 @@ export default function SponsorButton({ listingId, sponsoredUntil, hasStripeCust
           fontSize: '0.875rem', cursor: loading ? 'default' : 'pointer',
         }}
       >
-        {loading ? 'Redirecting to checkout…' : `Pay ${SPONSOR_TIERS.find(t => t.days === selectedDays)?.price} — Sponsor for ${SPONSOR_TIERS.find(t => t.days === selectedDays)?.label}`}
+        {loading ? 'Redirecting to checkout…' : `Sponsor for ${SPONSOR_TIERS.find(t => t.days === selectedDays)?.label} (${SPONSOR_TIERS.find(t => t.days === selectedDays)?.price})`}
       </button>
 
       <p style={{ margin: '0.6rem 0 0', fontSize: '0.72rem', color: '#9ca3af', textAlign: 'center' }}>

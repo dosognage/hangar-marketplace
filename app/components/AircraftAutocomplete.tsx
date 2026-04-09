@@ -114,7 +114,7 @@ export default function AircraftAutocomplete({ value, onChange, onSelect, inputS
         }}>
           <span>✓</span>
           <span>
-            Dimensions auto-filled — wingspan {selectedSpec.wingspan_ft} ft,
+            Dimensions auto-filled: wingspan {selectedSpec.wingspan_ft} ft,
             length {selectedSpec.length_ft} ft,
             height {selectedSpec.height_ft} ft
           </span>

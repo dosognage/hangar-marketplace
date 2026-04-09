@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const airportName = sample?.airport_name ?? `${code} Airport`
   const location = sample ? `${sample.city}, ${sample.state}` : 'United States'
 
-  const title = `Hangars at ${airportName} (${code}) — For Sale & Lease | Hangar Marketplace`
+  const title = `Hangars at ${airportName} (${code}): For Sale & Lease | Hangar Marketplace`
   const description = `Browse aircraft hangars for sale, lease, and rent at ${airportName} (${code}) in ${location}. T-hangars, box hangars, and shared hangar space. View photos and contact owners directly.`
 
   return {
@@ -93,7 +93,7 @@ export default async function AirportHangarsPage({ params }: Props) {
       <div style={{ maxWidth: '700px', margin: '3rem auto', textAlign: 'center', padding: '0 1rem' }}>
         <h1 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>Hangars at {airportName} ({code})</h1>
         <p style={{ color: '#6b7280', marginBottom: '2rem', lineHeight: 1.6 }}>
-          No hangars are currently listed at {code}. If you have hangar space here, list it free — or post a request to let owners know you&apos;re looking.
+          No hangars are currently listed at {code}. If you have hangar space here, list it free, or post a request to let owners know you&apos;re looking.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/submit" style={{ padding: '0.65rem 1.35rem', backgroundColor: '#111827', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', fontSize: '0.9rem' }}>

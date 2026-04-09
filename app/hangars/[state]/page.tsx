@@ -92,7 +92,7 @@ export default async function StateHangarsPage({ params }: Props) {
 
   // Group by airport for display
   const byAirport = typedListings.reduce<Record<string, Listing[]>>((acc, l) => {
-    const key = `${l.airport_code} — ${l.airport_name}`
+    const key = `${l.airport_code} · ${l.airport_name}`
     if (!acc[key]) acc[key] = []
     acc[key].push(l)
     return acc
@@ -133,7 +133,7 @@ export default async function StateHangarsPage({ params }: Props) {
         <p style={{ margin: '0 0 1rem', color: '#6b7280', fontSize: '1rem', lineHeight: 1.6 }}>
           {typedListings.length > 0
             ? `${typedListings.length} hangar${typedListings.length !== 1 ? 's' : ''} available across ${airports.length} airport${airports.length !== 1 ? 's' : ''} in ${stateName}.${forSale ? ` ${forSale} for sale.` : ''}${forLease ? ` ${forLease} for lease or rent.` : ''}`
-            : `No hangars currently listed in ${stateName} — check back soon or post a hangar request to let owners know you're looking.`
+            : `No hangars currently listed in ${stateName}. Check back soon or post a hangar request to let owners know you're looking.`
           }
         </p>
 
@@ -240,7 +240,7 @@ export default async function StateHangarsPage({ params }: Props) {
       <div style={{ marginTop: '3rem', padding: '1.5rem', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
         <h2 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: '#111827' }}>Looking for hangar space in {stateName}?</h2>
         <p style={{ margin: '0 0 1rem', fontSize: '0.875rem', color: '#6b7280', lineHeight: 1.6 }}>
-          Post a free hangar request to let owners at {stateName} airports know you&apos;re looking — they&apos;ll reach out when space opens up.
+          Post a free hangar request to let owners at {stateName} airports know you&apos;re looking. They&apos;ll reach out when space opens up.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <Link href="/requests/new" style={{ padding: '0.5rem 1rem', backgroundColor: '#111827', color: 'white', borderRadius: '6px', textDecoration: 'none', fontWeight: '600', fontSize: '0.825rem' }}>

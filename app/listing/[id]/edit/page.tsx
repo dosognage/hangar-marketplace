@@ -132,9 +132,9 @@ export default function EditListingPage() {
             onChange={e => setListingType(e.target.value)}
             style={inputStyle}
           >
-            <option value="sale">For Sale — full hangar</option>
-            <option value="lease">For Lease — full hangar</option>
-            <option value="space">Space Available — partial hangar</option>
+            <option value="sale">For Sale (full hangar)</option>
+            <option value="lease">For Lease (full hangar)</option>
+            <option value="space">Space Available (partial hangar)</option>
           </select>
         </Field>
 

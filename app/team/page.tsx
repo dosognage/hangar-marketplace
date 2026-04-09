@@ -6,7 +6,7 @@ import { getOrCreateOrg, SEAT_LIMITS, TIER_LABELS } from '@/lib/team'
 import TeamManager from './TeamManager'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Team — Hangar Marketplace' }
+export const metadata: Metadata = { title: 'Team | Hangar Marketplace' }
 
 export default async function TeamPage() {
   const supabase = await createServerClient()

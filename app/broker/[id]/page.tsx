@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { data } = await supabase.from('broker_profiles').select('full_name, brokerage').eq('id', id).single()
   if (!data) return { title: 'Broker Not Found | Hangar Marketplace' }
   return {
-    title: `${data.full_name} — ${data.brokerage} | Hangar Marketplace`,
+    title: `${data.full_name}, ${data.brokerage} | Hangar Marketplace`,
     description: `View ${data.full_name}'s verified broker profile and hangar listings on Hangar Marketplace.`,
   }
 }
@@ -137,7 +137,7 @@ export default async function BrokerProfilePage({ params }: PageProps) {
           backgroundColor: 'white', border: '1px dashed #d1d5db', borderRadius: '10px',
           padding: '3rem', textAlign: 'center', color: '#6b7280',
         }}>
-          <p style={{ margin: 0 }}>No active listings right now — check back soon.</p>
+          <p style={{ margin: 0 }}>No active listings right now. Check back soon.</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>

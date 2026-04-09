@@ -139,7 +139,7 @@ export default function AircraftFitCalculator({ doorWidth, doorHeight, hangarDep
                 backgroundColor: '#f0fdf4', border: '1px solid #86efac',
                 borderRadius: '6px', fontSize: '0.82rem',
               }}>
-                <span style={{ color: '#16a34a', fontWeight: '600' }}>✓ {aircraftName} — dimensions auto-filled</span>
+                <span style={{ color: '#16a34a', fontWeight: '600' }}>✓ {aircraftName}: dimensions auto-filled</span>
                 <button
                   onClick={handleAircraftClear}
                   style={{
@@ -242,7 +242,7 @@ export default function AircraftFitCalculator({ doorWidth, doorHeight, hangarDep
               border: `1px solid ${anyFail ? '#fecaca' : '#bbf7d0'}`,
             }}>
               <p style={{ margin: '0 0 0.6rem', fontWeight: '700', fontSize: '0.9rem', color: anyFail ? '#dc2626' : '#16a34a' }}>
-                {anyFail ? '✗ Does not fit' : allPass ? '✓ Fits!' : '⚠ Partially fits — verify dimensions with seller'}
+                {anyFail ? '✗ Does not fit' : allPass ? '✓ Fits!' : '⚠ Partially fits. Verify dimensions with seller.'}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                 {wingspan && <ResultRow label="Wingspan" aircraft={ws} hangar={doorWidth} result={wingResult} unit="ft door width" />}

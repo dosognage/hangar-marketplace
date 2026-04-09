@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
             currency: 'usd',
             unit_amount: unitAmount,
             product_data: {
-              name: `${priceLabel} Hangar Request — ${request.airport_code}`,
+              name: `${priceLabel} Hangar Request at ${request.airport_code}`,
               description: is_priority
                 ? 'Your request will be pinned to the top of the board with a Priority badge.'
                 : 'Your request will be listed on the hangar request board.',

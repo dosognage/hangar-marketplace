@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: ListingPageProps): Promise<Me
     listing.listing_type === 'sale'  ? 'For Sale' :
     listing.listing_type === 'space' ? 'Space Available' : 'For Lease'
 
-  const title = `${listing.title} — Hangar ${listingLabel} at ${listing.airport_code} | Hangar Marketplace`
+  const title = `${listing.title}: Hangar ${listingLabel} at ${listing.airport_code} | Hangar Marketplace`
   const description = listing.description
     ? listing.description.slice(0, 160)
     : `${listing.title} at ${listing.airport_name} (${listing.airport_code}) in ${listing.city}, ${listing.state}. ${listingLabel}${listing.square_feet ? ` · ${listing.square_feet.toLocaleString()} sq ft` : ''} · ${price}. View details and contact the owner on Hangar Marketplace.`
@@ -237,7 +237,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
               This is a sample listing
             </p>
             <p style={{ margin: 0, color: '#78350f', fontSize: '0.85rem', lineHeight: 1.5 }}>
-              It exists to show you what a real hangar listing looks like — photos, specs, pricing, and more.
+              It exists to show you what a real hangar listing looks like: photos, specs, pricing, and more.
               Real listings from verified owners will appear just like this.{' '}
               <Link href="/submit" style={{ color: '#92400e', fontWeight: '600' }}>
                 List your hangar free →

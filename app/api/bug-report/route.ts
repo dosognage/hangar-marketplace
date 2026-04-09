@@ -141,7 +141,7 @@ function buildEmail(payload: BugReportPayload): { subject: string; html: string 
                   <td>
                     <p style="margin:0;color:white;font-size:18px;font-weight:700;">⚠ Bug Report</p>
                     <p style="margin:3px 0 0;color:#93c5fd;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">
-                      Hangar Marketplace — Technical Issue
+                      Hangar Marketplace: Technical Issue
                     </p>
                   </td>
                   <td align="right">
