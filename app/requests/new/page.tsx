@@ -165,21 +165,21 @@ export default function NewRequestPage() {
           <TwoCol>
             <Field label="Airport code *">
               <input name="airport_code" value={form.airport_code} onChange={handleChange}
-                required placeholder="KGVL" maxLength={6} style={inputStyle} />
+                required placeholder="KPAE" maxLength={6} style={inputStyle} />
             </Field>
             <Field label="Airport name *">
               <input name="airport_name" value={form.airport_name} onChange={handleChange}
-                required placeholder="Gainesville Regional" style={inputStyle} />
+                required placeholder="Paine Field" style={inputStyle} />
             </Field>
           </TwoCol>
           <TwoCol>
             <Field label="City">
               <input name="city" value={form.city} onChange={handleChange}
-                placeholder="Gainesville" style={inputStyle} />
+                placeholder="Everett" style={inputStyle} />
             </Field>
             <Field label="State">
               <input name="state" value={form.state} onChange={handleChange}
-                placeholder="FL" maxLength={2} style={inputStyle} />
+                placeholder="WA" maxLength={2} style={inputStyle} />
             </Field>
           </TwoCol>
         </Section>

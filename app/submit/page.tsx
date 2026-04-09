@@ -210,22 +210,22 @@ export default function SubmitPage() {
         {/* ── Basic Info ──────────────────────────────────────────────── */}
         <Section title="Basic Info">
           <Field label="Listing title *">
-            <input name="title" placeholder="e.g. 60×60 T-Hangar at KGVL" value={formData.title} onChange={handleChange} required style={inputStyle} />
+            <input name="title" placeholder="e.g. 60×60 T-Hangar at KPAE" value={formData.title} onChange={handleChange} required style={inputStyle} />
           </Field>
           <TwoCol>
             <Field label="Airport name *">
-              <input name="airport_name" placeholder="Gainesville Regional Airport" value={formData.airport_name} onChange={handleChange} required style={inputStyle} />
+              <input name="airport_name" placeholder="Paine Field" value={formData.airport_name} onChange={handleChange} required style={inputStyle} />
             </Field>
             <Field label="Airport code *">
-              <input name="airport_code" placeholder="KGVL" value={formData.airport_code} onChange={handleChange} required style={inputStyle} />
+              <input name="airport_code" placeholder="KPAE" value={formData.airport_code} onChange={handleChange} required style={inputStyle} />
             </Field>
           </TwoCol>
           <TwoCol>
             <Field label="City *">
-              <input name="city" placeholder="Gainesville" value={formData.city} onChange={handleChange} required style={inputStyle} />
+              <input name="city" placeholder="Everett" value={formData.city} onChange={handleChange} required style={inputStyle} />
             </Field>
             <Field label="State *">
-              <input name="state" placeholder="FL" value={formData.state} onChange={handleChange} required style={inputStyle} />
+              <input name="state" placeholder="WA" value={formData.state} onChange={handleChange} required style={inputStyle} />
             </Field>
           </TwoCol>
           <Field label="Listing type *">
