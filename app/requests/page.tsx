@@ -93,11 +93,11 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <label style={labelStyle}>Airport code</label>
-          <input name="airport" defaultValue={airport ?? ''} placeholder="KGVL" style={filterInput} />
+          <input name="airport" defaultValue={airport ?? ''} placeholder="KPAE" style={filterInput} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <label style={labelStyle}>State</label>
-          <input name="state" defaultValue={state ?? ''} placeholder="FL" style={filterInput} />
+          <input name="state" defaultValue={state ?? ''} placeholder="WA" style={filterInput} />
         </div>
         <button type="submit" style={filterBtn('#111827', 'white')}>Search</button>
         {(airport || state) && (
