@@ -9,6 +9,7 @@ import NewsletterSignup from '@/app/components/NewsletterSignup'
 import MobileMenu from '@/app/components/MobileMenu'
 import BugReportProvider from '@/app/components/BugReportProvider'
 import BugReportButton from '@/app/components/BugReportButton'
+import HomeAirportWidget from '@/app/components/HomeAirportWidget'
 import { Plane } from 'lucide-react'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
@@ -151,6 +152,10 @@ export default async function RootLayout({
 
               {/* Auth / profile */}
               <div className="nav-auth">
+                {/* Home airport weather widget — only shown when logged in + airport set */}
+                {user && user.user_metadata?.home_airport && (
+                  <HomeAirportWidget icao={user.user_metadata.home_airport as string} />
+                )}
                 {user ? (
                   <ProfileMenu
                     displayName={
