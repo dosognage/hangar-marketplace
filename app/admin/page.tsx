@@ -8,6 +8,7 @@
 export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import BrokerApplicationButtons from './BrokerApplicationButtons'
@@ -148,7 +149,7 @@ export default async function AdminPage() {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <ReGeocodeButton />
-          <a href="/broker/dashboard" style={{
+          <Link href="/broker/dashboard" style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             padding: '0.45rem 0.9rem', borderRadius: '7px',
             backgroundColor: '#dbeafe', color: '#1e40af',
@@ -156,8 +157,8 @@ export default async function AdminPage() {
             fontSize: '0.825rem', textDecoration: 'none', whiteSpace: 'nowrap',
           }}>
             <Building2 size={14} style={{ flexShrink: 0 }} /> Broker Dashboard
-          </a>
-          <a href="/admin/featured" style={{
+          </Link>
+          <Link href="/admin/featured" style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             padding: '0.45rem 0.9rem', borderRadius: '7px',
             backgroundColor: '#eef2ff', color: '#4338ca',
@@ -165,7 +166,7 @@ export default async function AdminPage() {
             fontSize: '0.825rem', textDecoration: 'none', whiteSpace: 'nowrap',
           }}>
             <Star size={14} style={{ flexShrink: 0 }} /> Manage Featured
-          </a>
+          </Link>
         </div>
       </div>
 

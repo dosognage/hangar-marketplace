@@ -13,7 +13,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import type { MapListing, MapBounds } from './MapView'
+import type { MapBounds } from './MapView'
 import { useRouter } from 'next/navigation'
 
 const MapView = dynamic(() => import('./MapView'), {
@@ -97,11 +97,6 @@ function formatPrice(l: HomeListing) {
   return 'Contact for price'
 }
 
-function inBounds(l: HomeListing, b: MapBounds | null) {
-  if (!b || l.latitude == null || l.longitude == null) return false
-  return l.latitude <= b.north && l.latitude >= b.south &&
-         l.longitude <= b.east && l.longitude >= b.west
-}
 
 export default function HomesSplitView({
   listings,
@@ -113,7 +108,7 @@ export default function HomesSplitView({
 }: Props) {
   const router = useRouter()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
-  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
+  const [, setMapBounds] = useState<MapBounds | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [sheetOpen, setSheetOpen] = useState(false)
   const touchStartY = useRef(0)
