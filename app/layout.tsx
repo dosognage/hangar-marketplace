@@ -160,6 +160,7 @@ export default async function RootLayout({
               <div className="nav-links">
                 <Link href="/" style={navLinkStyle}>Browse</Link>
                 <Link href="/requests" style={navLinkStyle}>Requests</Link>
+                <Link href="/brokers" style={navLinkStyle}>Brokers</Link>
                 <Link href="/submit" style={navLinkStyle}>List a Hangar</Link>
                 <Link href="/blog" style={navLinkStyle}>Blog</Link>
                 <Link href="/pricing" style={navLinkStyle}>Pricing</Link>
