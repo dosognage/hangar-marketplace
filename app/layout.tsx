@@ -181,6 +181,8 @@ export default async function RootLayout({
                       ?? user.email!.split('@')[0]
                     }
                     isAdmin={!!isAdmin}
+                    isBroker={user.user_metadata?.is_broker === true}
+                    brokerProfileId={user.user_metadata?.broker_profile_id as string | undefined}
                   />
                 ) : (
                   <>

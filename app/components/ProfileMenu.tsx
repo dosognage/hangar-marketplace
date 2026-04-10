@@ -17,9 +17,11 @@ import { useSavedCount } from './SavedCountProvider'
 type Props = {
   displayName: string
   isAdmin: boolean
+  isBroker?: boolean
+  brokerProfileId?: string
 }
 
-export default function ProfileMenu({ displayName, isAdmin }: Props) {
+export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProfileId }: Props) {
   const { savedCount } = useSavedCount()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -135,7 +137,18 @@ export default function ProfileMenu({ displayName, isAdmin }: Props) {
               </svg>
               Team
             </DropdownLink>
-            <DropdownLink href="/apply-broker">Apply as broker</DropdownLink>
+            {isBroker && brokerProfileId ? (
+              <>
+                <DropdownLink href="/broker/dashboard">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5"/>
+                  </svg>
+                  My broker profile
+                </DropdownLink>
+              </>
+            ) : (
+              <DropdownLink href="/apply-broker">Apply as broker</DropdownLink>
+            )}
             {isAdmin && <DropdownLink href="/admin">Admin</DropdownLink>}
           </div>
 
