@@ -42,10 +42,11 @@ export default async function BrokersPage({ searchParams }: PageProps) {
   const qVal     = (Array.isArray(q)     ? q[0]     : q     ?? '').trim()
   const stateVal = (Array.isArray(state) ? state[0] : state ?? '').trim().toUpperCase()
 
-  // Fetch all broker profiles with their listings (for active count)
+  // Fetch all visible broker profiles with their listings (for active count)
   let query = supabase
     .from('broker_profiles')
     .select('id, full_name, brokerage, license_state, avatar_url, bio, created_at, listings(id, status)')
+    .eq('is_hidden', false)
     .order('created_at', { ascending: false })
 
   if (stateVal) {

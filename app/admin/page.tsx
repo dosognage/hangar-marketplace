@@ -14,6 +14,7 @@ import BrokerApplicationButtons from './BrokerApplicationButtons'
 import ReGeocodeButton from './RegeoCodeButton'
 import AdminListingsManager from './AdminListingsManager'
 import AdminUsersManager, { type AdminUser } from './AdminUsersManager'
+import AdminBrokersManager, { type AdminBrokerProfile } from './AdminBrokersManager'
 import { Star, Building2, Users } from 'lucide-react'
 
 type BrokerApp = {
@@ -74,15 +75,29 @@ export default async function AdminPage() {
     if (row.user_id) countByUser[row.user_id] = (countByUser[row.user_id] ?? 0) + 1
   }
 
-  // Broker profiles keyed by user_id (to get profile id for links)
+  // Broker profiles — full detail for admin broker panel + keyed by user_id for users table
   const { data: brokerProfiles } = await supabaseAdmin
     .from('broker_profiles')
-    .select('id, user_id')
+    .select('id, user_id, full_name, brokerage, license_state, is_hidden, avatar_url, created_at')
+    .order('created_at', { ascending: false })
 
   const brokerProfileByUser: Record<string, string> = {}
   for (const bp of brokerProfiles ?? []) {
     if (bp.user_id) brokerProfileByUser[bp.user_id] = bp.id
   }
+
+  // Shape into AdminBrokerProfile[] with listing counts
+  const adminBrokers: AdminBrokerProfile[] = (brokerProfiles ?? []).map(bp => ({
+    id:            bp.id,
+    user_id:       bp.user_id,
+    full_name:     bp.full_name,
+    brokerage:     bp.brokerage,
+    license_state: bp.license_state,
+    is_hidden:     bp.is_hidden ?? false,
+    avatar_url:    bp.avatar_url ?? null,
+    created_at:    bp.created_at,
+    listing_count: countByUser[bp.user_id ?? ''] ?? 0,
+  }))
 
   // Shape into AdminUser[]
   const adminUsers: AdminUser[] = authUsers.map(u => ({
@@ -195,6 +210,14 @@ export default async function AdminPage() {
         All Listings
       </h2>
       <AdminListingsManager initialListings={allListings ?? []} />
+
+      {/* ── Broker Profiles ───────────────────────────────────────────────── */}
+      <h2 style={{ fontSize: '1rem', color: '#374151', margin: '2.5rem 0 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <Building2 size={15} style={{ display: 'inline', verticalAlign: 'middle' }} /> Broker Profiles
+      </h2>
+      <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '1.25rem' }}>
+        <AdminBrokersManager brokers={adminBrokers} />
+      </div>
 
       {/* ── Users ─────────────────────────────────────────────────────────── */}
       <h2 style={{ fontSize: '1rem', color: '#374151', margin: '2.5rem 0 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
