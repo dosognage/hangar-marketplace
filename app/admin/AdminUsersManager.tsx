@@ -7,7 +7,7 @@
  * Filtering happens entirely client-side since the list is fetched server-side.
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 
 export type AdminUser = {
   id: string
@@ -25,9 +25,45 @@ type Props = {
   users: AdminUser[]
 }
 
-export default function AdminUsersManager({ users }: Props) {
-  const [query, setQuery] = useState('')
+type DeleteState =
+  | { phase: 'idle' }
+  | { phase: 'confirm'; user: AdminUser }
+  | { phase: 'deleting'; userId: string }
+  | { phase: 'error'; message: string }
+
+export default function AdminUsersManager({ users: initialUsers }: Props) {
+  const [users, setUsers]   = useState<AdminUser[]>(initialUsers)
+  const [query, setQuery]   = useState('')
   const [filter, setFilter] = useState<'all' | 'broker' | 'has_listings' | 'no_listings'>('all')
+  const [del, setDel]       = useState<DeleteState>({ phase: 'idle' })
+
+  const handleDeleteClick = useCallback((user: AdminUser) => {
+    setDel({ phase: 'confirm', user })
+  }, [])
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (del.phase !== 'confirm') return
+    const { user } = del
+    setDel({ phase: 'deleting', userId: user.id })
+
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Delete failed')
+
+      // Remove from local state so the row disappears immediately
+      setUsers(prev => prev.filter(u => u.id !== user.id))
+      setDel({ phase: 'idle' })
+    } catch (err) {
+      setDel({ phase: 'error', message: err instanceof Error ? err.message : 'Unknown error' })
+    }
+  }, [del])
+
+  const handleDeleteCancel = useCallback(() => setDel({ phase: 'idle' }), [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -50,6 +86,71 @@ export default function AdminUsersManager({ users }: Props) {
 
   return (
     <div>
+      {/* ── Delete confirmation modal ──────────────────────────────────────── */}
+      {(del.phase === 'confirm' || del.phase === 'deleting' || del.phase === 'error') && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          backgroundColor: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1rem',
+        }}>
+          <div style={{
+            backgroundColor: 'white', borderRadius: '12px',
+            padding: '2rem', maxWidth: '420px', width: '100%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          }}>
+            {del.phase === 'error' ? (
+              <>
+                <h3 style={{ margin: '0 0 0.75rem', color: '#dc2626' }}>Delete failed</h3>
+                <p style={{ margin: '0 0 1.5rem', color: '#374151', fontSize: '0.9rem' }}>{del.message}</p>
+                <button onClick={handleDeleteCancel} style={cancelBtnStyle}>Close</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⚠️</div>
+                <h3 style={{ margin: '0 0 0.5rem', color: '#111827' }}>Delete this user?</h3>
+                {del.phase === 'confirm' && (
+                  <p style={{ margin: '0 0 0.5rem', fontWeight: '600', color: '#374151', fontSize: '0.95rem' }}>
+                    {del.user.display_name ?? del.user.email}
+                  </p>
+                )}
+                {del.phase === 'confirm' && (
+                  <p style={{ margin: '0 0 0.25rem', color: '#6b7280', fontSize: '0.85rem' }}>
+                    {del.user.email}
+                  </p>
+                )}
+                <p style={{ margin: '0.75rem 0 1.5rem', color: '#6b7280', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                  This permanently deletes their account, all listings, photos, saved searches, and broker data.
+                  <strong style={{ color: '#dc2626' }}> This cannot be undone.</strong>
+                </p>
+                <div style={{ display: 'flex', gap: '0.65rem', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={handleDeleteCancel}
+                    disabled={del.phase === 'deleting'}
+                    style={cancelBtnStyle}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirm}
+                    disabled={del.phase === 'deleting'}
+                    style={{
+                      padding: '0.55rem 1.1rem', borderRadius: '7px',
+                      backgroundColor: del.phase === 'deleting' ? '#fca5a5' : '#dc2626',
+                      color: 'white', border: 'none',
+                      fontSize: '0.875rem', fontWeight: '700', cursor: del.phase === 'deleting' ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {del.phase === 'deleting' ? 'Deleting…' : 'Yes, delete permanently'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+    <div /* inner wrapper */>
       {/* Summary bar */}
       <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         {[
@@ -204,7 +305,7 @@ export default function AdminUsersManager({ users }: Props) {
 
                 {/* Actions */}
                 <td style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                     {u.is_broker && u.broker_profile_id && (
                       <a
                         href={`/broker/${u.broker_profile_id}`}
@@ -233,6 +334,19 @@ export default function AdminUsersManager({ users }: Props) {
                     >
                       Listings
                     </a>
+                    <button
+                      onClick={() => handleDeleteClick(u)}
+                      title="Delete user"
+                      style={{
+                        padding: '0.3rem 0.55rem', borderRadius: '5px',
+                        background: 'white', color: '#dc2626',
+                        border: '1px solid #fecaca',
+                        fontSize: '0.75rem', fontWeight: '600',
+                        cursor: 'pointer', lineHeight: 1,
+                      }}
+                    >
+                      🗑
+                    </button>
                   </div>
                 </td>
 
@@ -241,6 +355,14 @@ export default function AdminUsersManager({ users }: Props) {
           </tbody>
         </table>
       </div>
-    </div>
+    </div> {/* end inner wrapper */}
+    </div> {/* end outer wrapper */}
   )
+}
+
+const cancelBtnStyle: React.CSSProperties = {
+  padding: '0.55rem 1.1rem', borderRadius: '7px',
+  backgroundColor: 'white', color: '#374151',
+  border: '1px solid #d1d5db',
+  fontSize: '0.875rem', fontWeight: '600', cursor: 'pointer',
 }
