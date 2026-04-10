@@ -3,6 +3,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createServerClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
+import { sendEmail, listingSubmittedEmail } from '@/lib/email'
 
 export type ListingFormData = {
   title: string
@@ -81,6 +82,19 @@ export async function createListing(data: ListingFormData): Promise<{ id: string
 
   if (error || !listing) {
     throw new Error(error?.message ?? 'Failed to save listing.')
+  }
+
+  // Send submission confirmation email (non-fatal if it fails)
+  // Brokers get auto-approved so skip the "under review" email for them
+  if (!isBroker) {
+    const emailData = listingSubmittedEmail({
+      name:        data.contact_name,
+      title:       data.title,
+      airportCode: data.airport_code,
+    })
+    await sendEmail({ to: data.contact_email, ...emailData }).catch(e =>
+      console.error('[createListing] submission email failed:', e)
+    )
   }
 
   return { id: listing.id }

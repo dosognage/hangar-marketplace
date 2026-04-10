@@ -289,6 +289,39 @@ export function newRequestAtAirportEmail(opts: {
   }
 }
 
+/** Sent to a user immediately after their listing is submitted for review. */
+export function listingSubmittedEmail(opts: {
+  name: string
+  title: string
+  airportCode: string
+}): { subject: string; html: string } {
+  const { name, title, airportCode } = opts
+  return {
+    subject: `We received your listing — "${title}"`,
+    html: layout(`
+      <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Listing received ✅</h1>
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 12px;">Hi ${name},</p>
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
+        Thanks for submitting your hangar listing at <strong>${airportCode}</strong> — we got it!
+        Our team will review <strong>${title}</strong> and you'll receive another email once it's approved and live.
+        This usually takes less than 24 hours.
+      </p>
+      <div style="border:1px solid #d1fae5;border-radius:8px;padding:16px 20px;background:#ecfdf5;margin-bottom:24px;">
+        <p style="margin:0;font-size:14px;color:#065f46;font-weight:600;">What happens next?</p>
+        <p style="margin:6px 0 0;font-size:13px;color:#6b7280;line-height:1.6;">
+          We'll review your listing for accuracy and completeness. If anything looks off,
+          we'll reach out. Once approved, your listing goes live immediately and buyers can contact you directly.
+        </p>
+      </div>
+      ${btn('View your dashboard →', `${SITE_URL}/dashboard`, '#111827')}
+      <p style="margin-top:24px;color:#9ca3af;font-size:13px;line-height:1.6;">
+        Questions? Reply to this email or reach us at
+        <a href="mailto:hello@hangarmarketplace.com" style="color:#2563eb;">hello@hangarmarketplace.com</a>.
+      </p>
+    `),
+  }
+}
+
 /** Sent to a user when their listing is approved. */
 export function listingApprovedEmail(opts: {
   name: string
