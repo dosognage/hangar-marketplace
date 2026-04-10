@@ -212,7 +212,7 @@ export default function MessageBell({
                           {otherName}
                         </span>
                         <span style={{ fontSize: '0.7rem', color: '#9ca3af', flexShrink: 0, marginLeft: '0.5rem' }}>
-                          {c.latest_message ? timeAgo(c.latest_message.created_at) : timeAgo(c.created_at)}
+                          {timeAgo(c.latest_message?.created_at ?? c.last_message_at)}
                         </span>
                       </div>
                       {c.latest_message && (
