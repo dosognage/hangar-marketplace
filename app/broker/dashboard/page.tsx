@@ -7,6 +7,7 @@
 
 export const dynamic = 'force-dynamic'
 
+import React from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
@@ -157,12 +158,46 @@ export default async function BrokerDashboardPage() {
 
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        {[
-          { label: 'Total views', value: totalViews.toLocaleString(), icon: '👁', color: '#dbeafe', text: '#1e40af' },
-          { label: 'Total inquiries', value: totalInquiries.toLocaleString(), icon: '💬', color: '#dcfce7', text: '#166534' },
-          { label: 'Live listings', value: liveCount.toLocaleString(), icon: '✅', color: '#eff6ff', text: '#1e40af' },
-          { label: 'Pending review', value: pendingCount.toLocaleString(), icon: '⏳', color: '#fef3c7', text: '#92400e' },
-        ].map(stat => (
+        {([
+          {
+            label: 'Total views', value: totalViews.toLocaleString(),
+            color: '#dbeafe', iconColor: '#1e40af', text: '#1e40af',
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            ),
+          },
+          {
+            label: 'Total inquiries', value: totalInquiries.toLocaleString(),
+            color: '#dcfce7', iconColor: '#166534', text: '#166534',
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            ),
+          },
+          {
+            label: 'Live listings', value: liveCount.toLocaleString(),
+            color: '#eff6ff', iconColor: '#1e40af', text: '#1e40af',
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ),
+          },
+          {
+            label: 'Pending review', value: pendingCount.toLocaleString(),
+            color: '#fef3c7', iconColor: '#92400e', text: '#92400e',
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            ),
+          },
+        ] as Array<{ label: string; value: string; color: string; iconColor: string; text: string; icon: React.ReactNode }>).map(stat => (
           <div key={stat.label} style={{
             backgroundColor: 'white', border: '1px solid #e5e7eb',
             borderRadius: '12px', padding: '1.25rem',
@@ -172,7 +207,7 @@ export default async function BrokerDashboardPage() {
               width: '44px', height: '44px', borderRadius: '10px',
               backgroundColor: stat.color, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.3rem',
+              color: stat.iconColor,
             }}>
               {stat.icon}
             </div>
