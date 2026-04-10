@@ -113,13 +113,30 @@ export default async function BrokerProfilePage({ params }: PageProps) {
 
           {/* Contact buttons */}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            {currentUser && currentUser.id !== (broker as { user_id?: string }).user_id && (
+            {currentUser && currentUser.id !== (broker as { user_id?: string }).user_id ? (
               <MessageButton
                 brokerProfileId={broker.id}
                 brokerName={broker.full_name}
                 currentUserId={currentUser.id}
               />
-            )}
+            ) : !currentUser ? (
+              <a
+                href={`/signup?redirect=/broker/${broker.id}`}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
+                  padding: '0.6rem 1.25rem',
+                  backgroundColor: '#6366f1', color: 'white',
+                  border: 'none', borderRadius: '8px',
+                  fontWeight: '600', fontSize: '0.875rem',
+                  textDecoration: 'none', cursor: 'pointer',
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Sign in to message
+              </a>
+            ) : null}
             {broker.phone && (
               <a href={`tel:${broker.phone}`} style={contactBtnStyle}>
                 📞 {broker.phone}

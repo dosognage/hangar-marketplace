@@ -5,6 +5,8 @@ import { slugToState, slugToStateName, STATE_NAMES } from '@/lib/states'
 import type { Metadata } from 'next'
 import type { MetadataRoute } from 'next'
 
+export const dynamic = 'force-dynamic'
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
