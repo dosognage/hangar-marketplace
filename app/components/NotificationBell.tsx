@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+import { supabase } from '@/lib/supabase'
 
 type Notification = {
   id: string
@@ -50,10 +50,6 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
 
   // Realtime: increment unread count when new notification arrives
   useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    )
     const channel = supabase
       .channel('notifications-bell')
       .on('postgres_changes', {
