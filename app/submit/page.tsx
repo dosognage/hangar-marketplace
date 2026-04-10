@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
+import { createListing } from '@/app/actions/listing'
 
 // Leaflet must be loaded client-side only
 const AirportMap = dynamic(() => import('@/app/components/AirportMap'), { ssr: false })
@@ -102,47 +103,14 @@ export default function SubmitPage() {
     setLoading(true)
 
     try {
-      // ── Step 1: Insert the listing ──────────────────────────────────────
+      // ── Step 1: Insert the listing (server action — bypasses RLS) ──────
       setUploadProgress('Saving listing…')
 
-      // Verified brokers get auto-approved and their listings linked to their profile
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      const isBroker = currentUser?.user_metadata?.is_broker === true
-      const brokerProfileId = currentUser?.user_metadata?.broker_profile_id as string | undefined
-
-      const { data: listing, error: listingError } = await supabase
-        .from('listings')
-        .insert([{
-          title: formData.title,
-          airport_name: formData.airport_name,
-          airport_code: formData.airport_code,
-          city: formData.city,
-          state: formData.state,
-          listing_type: formData.listing_type,
-          ownership_type: formData.ownership_type,
-          asking_price: formData.listing_type === 'sale' && formData.asking_price ? Number(formData.asking_price) : null,
-          monthly_lease: IS_RENTAL(formData.listing_type) && formData.monthly_lease ? Number(formData.monthly_lease) : null,
-          square_feet: formData.square_feet ? Number(formData.square_feet) : null,
-          door_width: formData.door_width ? Number(formData.door_width) : null,
-          door_height: formData.door_height ? Number(formData.door_height) : null,
-          hangar_depth: formData.hangar_depth ? Number(formData.hangar_depth) : null,
-          description: formData.description || null,
-          contact_name: formData.contact_name,
-          contact_email: formData.contact_email,
-          contact_phone: formData.contact_phone || null,
-          status: isBroker ? 'approved' : 'pending',
-          broker_profile_id: isBroker && brokerProfileId ? brokerProfileId : null,
-          hangar_lat: hangarLat,
-          hangar_lng: hangarLng,
-        }])
-        .select('id')
-        .single()
-
-      if (listingError || !listing) {
-        throw new Error(listingError?.message ?? 'Failed to save listing.')
-      }
-
-      const listingId = listing.id
+      const { id: listingId } = await createListing({
+        ...formData,
+        hangar_lat: hangarLat,
+        hangar_lng: hangarLng,
+      })
 
       // ── Step 1b: Geocode city + state → lat/lng ─────────────────────────
       // Uses OpenStreetMap's Nominatim (free, no API key needed).
