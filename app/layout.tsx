@@ -2,6 +2,7 @@ import Link from 'next/link'
 import './globals.css'
 import { createServerClient } from '@/lib/supabase-server'
 import ProfileMenu from '@/app/components/ProfileMenu'
+import NotificationBell from '@/app/components/NotificationBell'
 import ToastProvider from '@/app/components/ToastProvider'
 import ProgressBar from '@/app/components/ProgressBar'
 import SavedCountProvider from '@/app/components/SavedCountProvider'
@@ -73,6 +74,7 @@ export default async function RootLayout({
   let initialSavedCount = 0
   let hasTeam = false
   let pendingApplications = 0
+  let initialUnreadNotifications = 0
 
   try {
     const supabase = await createServerClient()
@@ -98,6 +100,13 @@ export default async function RootLayout({
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
       hasTeam = (orgCount ?? 0) > 0
+
+      const { count: notifCount } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false)
+      initialUnreadNotifications = notifCount ?? 0
     }
 
     if (isAdmin) {
@@ -189,6 +198,9 @@ export default async function RootLayout({
                 {user && user.user_metadata?.home_airport && (
                   <HomeAirportWidget icao={user.user_metadata.home_airport as string} />
                 )}
+                {user ? (
+                  <NotificationBell initialUnread={initialUnreadNotifications} />
+                ) : null}
                 {user ? (
                   <ProfileMenu
                     displayName={

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createNotification } from '@/lib/notifications'
 
 const RESEND_API = 'https://api.resend.com/emails'
 
@@ -191,6 +193,27 @@ export async function POST(req: NextRequest) {
     }])
   } catch {
     console.warn('Inquiry logging skipped — run the SQL migration to enable it.')
+  }
+
+  // ── In-app notification to listing owner ────────────────────────────────
+  try {
+    const { data: listingRow } = await supabaseAdmin
+      .from('listings')
+      .select('user_id')
+      .eq('id', listingId)
+      .maybeSingle()
+
+    if (listingRow?.user_id) {
+      await createNotification({
+        userId: listingRow.user_id,
+        type:   'inquiry',
+        title:  `New inquiry on "${listingTitle}"`,
+        body:   `${buyerName}: ${message.slice(0, 80)}${message.length > 80 ? '…' : ''}`,
+        link:   `/dashboard`,
+      })
+    }
+  } catch {
+    // non-fatal
   }
 
   return NextResponse.json({ success: true })

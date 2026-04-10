@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, listingApprovedEmail, listingRejectedEmail, newListingAtAirportEmail } from '@/lib/email'
+import { createNotification } from '@/lib/notifications'
 
 async function requireAdmin(req: NextRequest) {
   const supabase = await createServerClient()
@@ -32,7 +33,7 @@ export async function PATCH(request: NextRequest) {
     // Fetch the listing (need airport_code + listing_type for seeker alerts)
     const { data: listing } = await supabaseAdmin
       .from('listings')
-      .select('id, title, contact_name, contact_email, airport_code, airport_name, listing_type, price')
+      .select('id, title, user_id, contact_name, contact_email, airport_code, airport_name, listing_type, price')
       .eq('id', id)
       .single()
 
@@ -57,6 +58,21 @@ export async function PATCH(request: NextRequest) {
       await sendEmail({ to: listing.contact_email, ...sellerEmailData }).catch(e =>
         console.error('[admin/listings] seller email failed:', e)
       )
+
+      // In-app notification to listing owner
+      if (listing.user_id) {
+        await createNotification({
+          userId: listing.user_id,
+          type:   isApproved ? 'listing_approved' : 'listing_rejected',
+          title:  isApproved
+            ? `Your listing "${listing.title}" is live!`
+            : `Your listing "${listing.title}" was not approved`,
+          body:   isApproved
+            ? 'Buyers can now find and contact you through your listing.'
+            : 'Please review our listing guidelines and resubmit.',
+          link:   isApproved ? `/listing/${listing.id}` : `/dashboard`,
+        }).catch(e => console.error('[admin/listings] notification failed:', e))
+      }
 
       // ── 2. If approved: notify seekers with active requests at this airport ──
       if (isApproved && listing.airport_code) {

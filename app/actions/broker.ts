@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createServerClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { sendEmail, brokerApprovedEmail, brokerRejectedEmail } from '@/lib/email'
+import { createNotification } from '@/lib/notifications'
 
 function isAdmin(email: string | undefined): boolean {
   const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
@@ -175,6 +176,15 @@ export async function approveBrokerApplication(applicationId: string, userId: st
   } catch (err) {
     console.error('[approveBroker] Welcome email failed:', err)
   }
+
+  // In-app notification
+  await createNotification({
+    userId: userId,
+    type:   'broker_approved',
+    title:  'You\'re now a verified broker! 🏅',
+    body:   'Your broker profile is live. Listings you submit go live immediately.',
+    link:   '/broker/dashboard',
+  }).catch(e => console.error('[approveBroker] notification failed:', e))
 
   revalidatePath('/admin')
   revalidatePath('/broker')
