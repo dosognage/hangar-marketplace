@@ -45,7 +45,7 @@ export default function ApplyBrokerSuccessPage() {
           </p>
           {[
             'We verify your real estate license with your state commission',
-            'You'll receive an email confirmation once approved',
+            "You'll receive an email confirmation once approved",
             'Your public broker profile goes live immediately',
             'Listings you submit go live without waiting for review',
           ].map((step, i) => (

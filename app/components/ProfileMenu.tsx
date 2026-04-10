@@ -102,7 +102,7 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
 
           {/* Links */}
           <div style={{ padding: '0.4rem 0' }}>
-            <DropdownLink href="/saved">
+            <DropdownLink href="/saved" onClose={() => setOpen(false)}>
               <HeartIcon filled={false} size={15} />
               Saved listings
               {savedCount > 0 && (
@@ -120,7 +120,7 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
                 </span>
               )}
             </DropdownLink>
-            <DropdownLink href="/dashboard">
+            <DropdownLink href="/dashboard" onClose={() => setOpen(false)}>
               {/* Hangar icon */}
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M2 12 C2 7 6 3 12 3 C18 3 22 7 22 12" />
@@ -129,14 +129,14 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
               </svg>
               My listings
             </DropdownLink>
-            <DropdownLink href="/settings">
+            <DropdownLink href="/settings" onClose={() => setOpen(false)}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
               Settings
             </DropdownLink>
-            <DropdownLink href="/team">
+            <DropdownLink href="/team" onClose={() => setOpen(false)}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
@@ -147,7 +147,7 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
             </DropdownLink>
             {isBroker && brokerProfileId ? (
               <>
-                <DropdownLink href="/broker/dashboard">
+                <DropdownLink href="/broker/dashboard" onClose={() => setOpen(false)}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 6L9 17l-5-5"/>
                   </svg>
@@ -155,9 +155,9 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
                 </DropdownLink>
               </>
             ) : (
-              <DropdownLink href="/apply-broker">Apply as broker</DropdownLink>
+              <DropdownLink href="/apply-broker" onClose={() => setOpen(false)}>Apply as broker</DropdownLink>
             )}
-            {isAdmin && <DropdownLink href="/admin">Admin</DropdownLink>}
+            {isAdmin && <DropdownLink href="/admin" onClose={() => setOpen(false)}>Admin</DropdownLink>}
           </div>
 
           {/* Logout */}
@@ -187,10 +187,11 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
   )
 }
 
-function DropdownLink({ href, children }: { href: string; children: React.ReactNode }) {
+function DropdownLink({ href, children, onClose }: { href: string; children: React.ReactNode; onClose: () => void }) {
   return (
     <Link
       href={href}
+      onClick={onClose}
       style={{
         display: 'flex',
         alignItems: 'center',
