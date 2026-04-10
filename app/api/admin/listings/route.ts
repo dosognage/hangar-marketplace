@@ -14,6 +14,9 @@ async function requireAdmin(req: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const user = await requireAdmin(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const body = await request.json()
     const { id, status } = body
@@ -22,7 +25,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Missing id or status' }, { status: 400 })
     }
 
-    if (!['approved', 'rejected'].includes(status)) {
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
