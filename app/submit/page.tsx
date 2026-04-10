@@ -14,8 +14,12 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
+
+// Leaflet must be loaded client-side only
+const AirportMap = dynamic(() => import('@/app/components/AirportMap'), { ssr: false })
 
 const MIN_PHOTOS = 5
 
@@ -49,13 +53,26 @@ export default function SubmitPage() {
   const [status, setStatus] = useState<{ type: 'error'; message: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
+  const [hangarLat, setHangarLat] = useState<number | null>(null)
+  const [hangarLng, setHangarLng] = useState<number | null>(null)
+  // Track the ICAO code to pass to AirportMap (only update after user finishes typing)
+  const [mapIcao, setMapIcao] = useState('')
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+    // When the airport_code field is updated, load it into the map if it looks like a valid ICAO code
+    if (name === 'airport_code' && value.length >= 3) {
+      setMapIcao(value.trim().toUpperCase())
+    }
   }
+
+  const handleLocationSelect = useCallback((lat: number, lng: number) => {
+    setHangarLat(lat)
+    setHangarLng(lng)
+  }, [])
 
   const handlePhotosChange = useCallback((files: File[]) => {
     setPhotos(files)
@@ -103,6 +120,8 @@ export default function SubmitPage() {
           contact_phone: formData.contact_phone || null,
           status: isBroker ? 'approved' : 'pending',
           broker_profile_id: isBroker && brokerProfileId ? brokerProfileId : null,
+          hangar_lat: hangarLat,
+          hangar_lng: hangarLng,
         }])
         .select('id')
         .single()
@@ -309,6 +328,39 @@ export default function SubmitPage() {
               style={{ ...inputStyle, resize: 'vertical' }}
             />
           </Field>
+        </Section>
+
+        {/* ── Hangar Location on Airport ───────────────────────────────── */}
+        <Section title="Hangar Location (optional)">
+          <p style={{ margin: '0 0 0.75rem', color: '#6b7280', fontSize: '0.82rem', lineHeight: 1.5 }}>
+            Enter your airport code above and pin exactly where your hangar is on the field. Buyers can see it on
+            the airport diagram — a feature no other marketplace offers.
+          </p>
+          {mapIcao ? (
+            <>
+              <AirportMap
+                icao={mapIcao}
+                savedLat={hangarLat}
+                savedLng={hangarLng}
+                editable
+                onLocationSelect={handleLocationSelect}
+                height="380px"
+              />
+              {hangarLat && hangarLng && (
+                <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: '#16a34a', fontWeight: '500' }}>
+                  ✓ Pin placed at {hangarLat.toFixed(5)}, {hangarLng.toFixed(5)}
+                </p>
+              )}
+            </>
+          ) : (
+            <div style={{
+              height: '120px', borderRadius: '8px', border: '1px dashed #d1d5db',
+              backgroundColor: '#f9fafb', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', color: '#9ca3af', fontSize: '0.85rem',
+            }}>
+              Fill in the airport code above to load the airport diagram
+            </div>
+          )}
         </Section>
 
         {/* ── Photos ──────────────────────────────────────────────────── */}

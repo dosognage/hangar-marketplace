@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@/lib/supabase-server'
 import PhotoGallery from '@/app/components/PhotoGallery'
@@ -13,6 +14,9 @@ import type { Metadata } from 'next'
 import { Star } from 'lucide-react'
 import SponsorButton from '@/app/components/SponsorButton'
 import ViewTracker from '@/app/components/ViewTracker'
+
+// Airport map — client only (Leaflet requires window)
+const AirportMap = dynamic(() => import('@/app/components/AirportMap'), { ssr: false })
 
 type ListingPageProps = {
   params: Promise<{ id: string }>
@@ -112,6 +116,8 @@ type Listing = {
   status: string
   view_count: number
   is_sample: boolean
+  hangar_lat: number | null
+  hangar_lng: number | null
   listing_photos: Photo[]
 }
 
@@ -419,6 +425,23 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
           <p style={{ margin: 0, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
             {typedListing.description}
           </p>
+        </div>
+      )}
+
+      {/* Airport diagram — only shown when the seller pinned a location */}
+      {typedListing.hangar_lat && typedListing.hangar_lng && (
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+          <h2 style={{ margin: '0 0 0.2rem', fontSize: '1rem', color: '#374151' }}>Hangar location on airport</h2>
+          <p style={{ margin: '0 0 0.85rem', fontSize: '0.8rem', color: '#9ca3af' }}>
+            The seller has pinned their exact hangar position on the airport diagram.
+          </p>
+          <AirportMap
+            icao={typedListing.airport_code}
+            savedLat={typedListing.hangar_lat}
+            savedLng={typedListing.hangar_lng}
+            editable={false}
+            height="360px"
+          />
         </div>
       )}
 
