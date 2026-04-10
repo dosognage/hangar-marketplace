@@ -493,6 +493,13 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
           listingTitle={typedListing.title}
           sellerName={typedListing.contact_name}
           sellerEmail={typedListing.contact_email}
+          prefillName={user.user_metadata?.full_name ?? ''}
+          prefillEmail={user.email ?? ''}
+          prefillPhone={user.user_metadata?.phone ?? ''}
+          profileComplete={
+            !!(user.user_metadata?.full_name?.trim()) &&
+            !!(user.user_metadata?.phone?.trim())
+          }
         />
       ) : (
         <div style={{

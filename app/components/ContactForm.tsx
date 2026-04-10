@@ -17,12 +17,16 @@ type Props = {
   listingTitle: string
   sellerName: string
   sellerEmail: string
+  prefillName?: string
+  prefillEmail?: string
+  prefillPhone?: string
+  profileComplete?: boolean
 }
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
-export default function ContactForm({ listingId, listingTitle, sellerName, sellerEmail }: Props) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' })
+export default function ContactForm({ listingId, listingTitle, sellerName, sellerEmail, prefillName = '', prefillEmail = '', prefillPhone = '', profileComplete = true }: Props) {
+  const [form, setForm] = useState({ name: prefillName, email: prefillEmail, phone: prefillPhone, message: '' })
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const { addToast } = useToast()
@@ -163,6 +167,24 @@ export default function ContactForm({ listingId, listingTitle, sellerName, selle
             style={{ ...inputStyle, resize: 'vertical' }}
           />
         </Field>
+
+        {/* Profile completion nudge */}
+        {!profileComplete && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.6rem',
+            padding: '0.6rem 0.85rem',
+            backgroundColor: '#fffbeb', border: '1px solid #fcd34d',
+            borderRadius: '6px', fontSize: '0.8rem', color: '#92400e',
+          }}>
+            <span style={{ fontSize: '1rem' }}>⚡</span>
+            <span>
+              Sellers respond faster to complete profiles.{' '}
+              <a href="/settings" target="_blank" rel="noopener noreferrer" style={{ color: '#b45309', fontWeight: '600' }}>
+                Add your name &amp; phone →
+              </a>
+            </span>
+          </div>
+        )}
 
         <button
           type="submit"

@@ -107,6 +107,17 @@ export default async function DashboardPage() {
   const displayName = user.user_metadata?.full_name ?? user.email ?? 'Seller'
   const isBroker = user.user_metadata?.is_broker === true
 
+  // Profile completion check
+  const hasName    = !!user.user_metadata?.full_name?.trim()
+  const hasPhone   = !!user.user_metadata?.phone?.trim()
+  const hasAvatar  = !!user.user_metadata?.avatar_url?.trim()
+  const missingFields: string[] = []
+  if (!hasName)   missingFields.push('name')
+  if (!hasPhone)  missingFields.push('phone number')
+  if (!hasAvatar) missingFields.push('profile photo')
+  const profileComplete = missingFields.length === 0
+  const completedCount  = 3 - missingFields.length
+
   return (
     <div>
       {/* Header */}
@@ -179,6 +190,51 @@ export default async function DashboardPage() {
             fontSize: '0.8rem', whiteSpace: 'nowrap',
           }}>
             Apply for verification
+          </Link>
+        </div>
+      )}
+
+      {/* Profile completion banner */}
+      {!profileComplete && (
+        <div style={{
+          backgroundColor: '#fffbeb',
+          border: '1px solid #fcd34d',
+          borderRadius: '10px',
+          padding: '0.9rem 1.25rem',
+          marginBottom: '1.75rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1, minWidth: '220px' }}>
+            {/* Progress dots */}
+            <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} style={{
+                  width: '9px', height: '9px', borderRadius: '50%',
+                  backgroundColor: i < completedCount ? '#f59e0b' : '#fde68a',
+                  border: '1px solid #f59e0b',
+                }} />
+              ))}
+            </div>
+            <div>
+              <p style={{ margin: '0 0 0.1rem', fontWeight: '700', fontSize: '0.875rem', color: '#92400e' }}>
+                Complete your profile ({completedCount}/3)
+              </p>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#b45309' }}>
+                Missing: {missingFields.join(', ')}. Buyers trust complete profiles more.
+              </p>
+            </div>
+          </div>
+          <Link href="/settings" style={{
+            display: 'inline-block', padding: '0.4rem 0.95rem',
+            backgroundColor: '#f59e0b', color: 'white',
+            borderRadius: '6px', textDecoration: 'none', fontWeight: '600',
+            fontSize: '0.8rem', whiteSpace: 'nowrap',
+          }}>
+            Complete profile →
           </Link>
         </div>
       )}
