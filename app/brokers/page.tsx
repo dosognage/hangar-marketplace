@@ -48,7 +48,7 @@ export default async function BrokersPage({ searchParams }: PageProps) {
   // Get current user (for message button)
   let currentUserId: string | null = null
   try {
-    const serverClient = createServerClient()
+    const serverClient = await createServerClient()
     const { data: { user } } = await serverClient.auth.getUser()
     currentUserId = user?.id ?? null
   } catch {}
