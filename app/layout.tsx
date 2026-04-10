@@ -3,6 +3,9 @@ import './globals.css'
 import { createServerClient } from '@/lib/supabase-server'
 import ProfileMenu from '@/app/components/ProfileMenu'
 import NotificationBell from '@/app/components/NotificationBell'
+import MessageBell from '@/app/components/MessageBell'
+import ChatDrawer from '@/app/components/ChatDrawer'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import ToastProvider from '@/app/components/ToastProvider'
 import ProgressBar from '@/app/components/ProgressBar'
 import SavedCountProvider from '@/app/components/SavedCountProvider'
@@ -75,6 +78,8 @@ export default async function RootLayout({
   let hasTeam = false
   let pendingApplications = 0
   let initialUnreadNotifications = 0
+  let initialUnreadMessages = 0
+  let brokerProfileId: string | undefined = undefined
 
   try {
     const supabase = await createServerClient()
@@ -107,6 +112,26 @@ export default async function RootLayout({
         .eq('user_id', user.id)
         .eq('read', false)
       initialUnreadNotifications = notifCount ?? 0
+
+      // Unread message count (conversations where user is buyer or broker)
+      brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+      const conversationFilter = brokerProfileId
+        ? `buyer_id.eq.${user.id},broker_profile_id.eq.${brokerProfileId}`
+        : `buyer_id.eq.${user.id}`
+      const { data: userConvos } = await supabaseAdmin
+        .from('conversations')
+        .select('id')
+        .or(conversationFilter)
+      if (userConvos?.length) {
+        const convoIds = userConvos.map(c => c.id)
+        const { count: msgCount } = await supabaseAdmin
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .in('conversation_id', convoIds)
+          .eq('read', false)
+          .neq('sender_id', user.id)
+        initialUnreadMessages = msgCount ?? 0
+      }
     }
 
     if (isAdmin) {
@@ -200,6 +225,13 @@ export default async function RootLayout({
                 )}
                 {user ? (
                   <NotificationBell initialUnread={initialUnreadNotifications} />
+                ) : null}
+                {user ? (
+                  <MessageBell
+                    initialUnread={initialUnreadMessages}
+                    currentUserId={user.id}
+                    isBroker={user.user_metadata?.is_broker === true}
+                  />
                 ) : null}
                 {user ? (
                   <ProfileMenu
@@ -311,6 +343,9 @@ export default async function RootLayout({
 
           {/* Bug report floating button — renders on every page */}
           <BugReportButton userEmail={user?.email ?? null} />
+
+          {/* Global chat drawer — opened via openChat() event bus */}
+          {user && <ChatDrawer />}
 
         </BugReportProvider>
       </body>

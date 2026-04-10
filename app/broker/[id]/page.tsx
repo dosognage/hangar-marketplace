@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { createServerClient } from '@/lib/supabase-server'
+import MessageButton from './MessageButton'
 
 type PageProps = { params: Promise<{ id: string }> }
 
@@ -24,9 +26,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function BrokerProfilePage({ params }: PageProps) {
   const { id } = await params
 
+  // Get current user (if logged in) for Message button
+  const serverSupabase = await createServerClient()
+  const { data: { user: currentUser } } = await serverSupabase.auth.getUser()
+
   const { data: broker } = await supabase
     .from('broker_profiles')
-    .select('id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at')
+    .select('id, user_id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at')
     .eq('id', id)
     .single()
 
@@ -106,7 +112,14 @@ export default async function BrokerProfilePage({ params }: PageProps) {
           </p>
 
           {/* Contact buttons */}
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {currentUser && currentUser.id !== (broker as { user_id?: string }).user_id && (
+              <MessageButton
+                brokerProfileId={broker.id}
+                brokerName={broker.full_name}
+                currentUserId={currentUser.id}
+              />
+            )}
             {broker.phone && (
               <a href={`tel:${broker.phone}`} style={contactBtnStyle}>
                 📞 {broker.phone}
