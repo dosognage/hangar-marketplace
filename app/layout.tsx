@@ -71,6 +71,7 @@ export default async function RootLayout({
   let user: Awaited<ReturnType<Awaited<ReturnType<typeof createServerClient>>['auth']['getUser']>>['data']['user'] = null
   let isAdmin = false
   let initialSavedCount = 0
+  let hasTeam = false
 
   try {
     const supabase = await createServerClient()
@@ -90,6 +91,12 @@ export default async function RootLayout({
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
       initialSavedCount = count ?? 0
+
+      const { count: orgCount } = await supabase
+        .from('organization_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+      hasTeam = (orgCount ?? 0) > 0
     }
   } catch {
     // Build-time prerender: env vars / cookies not available → show logged-out nav
@@ -182,6 +189,7 @@ export default async function RootLayout({
                     isAdmin={!!isAdmin}
                     isBroker={user.user_metadata?.is_broker === true}
                     brokerProfileId={user.user_metadata?.broker_profile_id as string | undefined}
+                    hasTeam={hasTeam}
                   />
                 ) : (
                   <>

@@ -19,9 +19,10 @@ type Props = {
   isAdmin: boolean
   isBroker?: boolean
   brokerProfileId?: string
+  hasTeam?: boolean
 }
 
-export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProfileId }: Props) {
+export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProfileId, hasTeam = false }: Props) {
   const { savedCount } = useSavedCount()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -136,15 +137,17 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
               </svg>
               Settings
             </DropdownLink>
-            <DropdownLink href="/team" onClose={() => setOpen(false)}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              Team
-            </DropdownLink>
+            {hasTeam && (
+              <DropdownLink href="/team" onClose={() => setOpen(false)}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Team
+              </DropdownLink>
+            )}
             {isBroker && brokerProfileId ? (
               <>
                 <DropdownLink href="/broker/dashboard" onClose={() => setOpen(false)}>
