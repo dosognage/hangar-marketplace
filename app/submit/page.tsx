@@ -76,6 +76,11 @@ export default function SubmitPage() {
       // ── Step 1: Insert the listing ──────────────────────────────────────
       setUploadProgress('Saving listing…')
 
+      // Verified brokers get auto-approved and their listings linked to their profile
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      const isBroker = currentUser?.user_metadata?.is_broker === true
+      const brokerProfileId = currentUser?.user_metadata?.broker_profile_id as string | undefined
+
       const { data: listing, error: listingError } = await supabase
         .from('listings')
         .insert([{
@@ -96,7 +101,8 @@ export default function SubmitPage() {
           contact_name: formData.contact_name,
           contact_email: formData.contact_email,
           contact_phone: formData.contact_phone || null,
-          status: 'pending',
+          status: isBroker ? 'approved' : 'pending',
+          broker_profile_id: isBroker && brokerProfileId ? brokerProfileId : null,
         }])
         .select('id')
         .single()

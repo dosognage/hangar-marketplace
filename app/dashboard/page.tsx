@@ -105,6 +105,7 @@ export default async function DashboardPage() {
   }
 
   const displayName = user.user_metadata?.full_name ?? user.email ?? 'Seller'
+  const isBroker = user.user_metadata?.is_broker === true
 
   return (
     <div>
@@ -116,6 +117,71 @@ export default async function DashboardPage() {
           {displayName !== user.email && ` · ${displayName}`}
         </p>
       </div>
+
+      {/* Broker upgrade banner */}
+      {isBroker ? (
+        <div style={{
+          background: 'linear-gradient(135deg, #1a3a5c 0%, #1e40af 100%)',
+          borderRadius: '12px', padding: '1.25rem 1.5rem',
+          marginBottom: '1.75rem', display: 'flex',
+          justifyContent: 'space-between', alignItems: 'center',
+          flexWrap: 'wrap', gap: '1rem',
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+              <span style={{ color: 'white', fontWeight: '700', fontSize: '0.95rem' }}>Verified Broker Account</span>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                padding: '0.15rem 0.5rem', borderRadius: '999px',
+                fontSize: '0.65rem', fontWeight: '700',
+                backgroundColor: 'rgba(255,255,255,0.2)', color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+              }}>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                Verified
+              </span>
+            </div>
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: '0.82rem' }}>
+              Access your broker analytics, inquiries, and profile from your dedicated dashboard.
+            </p>
+          </div>
+          <Link href="/broker/dashboard" style={{
+            display: 'inline-block', padding: '0.55rem 1.1rem',
+            backgroundColor: 'white', color: '#1a3a5c',
+            borderRadius: '8px', textDecoration: 'none', fontWeight: '700',
+            fontSize: '0.85rem', whiteSpace: 'nowrap',
+          }}>
+            Broker Dashboard →
+          </Link>
+        </div>
+      ) : (
+        <div style={{
+          backgroundColor: '#eff6ff', border: '1px solid #bfdbfe',
+          borderRadius: '10px', padding: '1rem 1.25rem',
+          marginBottom: '1.75rem', display: 'flex',
+          justifyContent: 'space-between', alignItems: 'center',
+          flexWrap: 'wrap', gap: '0.75rem',
+        }}>
+          <div>
+            <p style={{ margin: '0 0 0.2rem', fontWeight: '700', fontSize: '0.875rem', color: '#1e40af' }}>
+              Are you a licensed real estate broker?
+            </p>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: '#3b82f6' }}>
+              Apply for verification to get a public profile, verified badge, and auto-approval on listings.
+            </p>
+          </div>
+          <Link href="/apply-broker" style={{
+            display: 'inline-block', padding: '0.45rem 1rem',
+            backgroundColor: '#1e40af', color: 'white',
+            borderRadius: '6px', textDecoration: 'none', fontWeight: '600',
+            fontSize: '0.8rem', whiteSpace: 'nowrap',
+          }}>
+            Apply for verification
+          </Link>
+        </div>
+      )}
 
       {/* Quick actions */}
       <div style={{ marginBottom: '2rem' }}>

@@ -48,6 +48,7 @@ type Listing = Omit<MapListing, 'latitude' | 'longitude'> & {
   is_sponsored: boolean
   sponsored_until: string | null
   is_sample: boolean
+  broker_profile_id: string | null
   listing_photos: Photo[]
 }
 
@@ -465,6 +466,22 @@ export default function SplitView({
                         <span style={specStyle}>🚪 {listing.door_width ?? '?'}′ × {listing.door_height ?? '?'}′</span>
                       )}
                     </div>
+                    {listing.broker_profile_id && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                          padding: '0.15rem 0.5rem', borderRadius: '999px',
+                          fontSize: '0.68rem', fontWeight: '700',
+                          backgroundColor: '#dbeafe', color: '#1e40af',
+                          border: '1px solid #bfdbfe',
+                        }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <path d="M20 6L9 17l-5-5"/>
+                          </svg>
+                          Verified Broker
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Link>

@@ -1,0 +1,382 @@
+/**
+ * Verified Broker Dashboard
+ *
+ * Only accessible to users with is_broker = true in their user_metadata.
+ * Shows performance analytics, listings management, and broker-specific tools.
+ */
+
+export const dynamic = 'force-dynamic'
+
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { createServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+
+export default async function BrokerDashboardPage() {
+  const supabase = await createServerClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) redirect('/login?next=/broker/dashboard')
+
+  const isBroker = user.user_metadata?.is_broker === true
+  if (!isBroker) redirect('/apply-broker')
+
+  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+
+  // Fetch broker profile
+  const { data: profile } = await supabaseAdmin
+    .from('broker_profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!profile) redirect('/apply-broker')
+
+  // Fetch all listings tagged to this broker profile
+  const { data: listings } = await supabaseAdmin
+    .from('listings')
+    .select('id, title, airport_code, city, state, listing_type, asking_price, monthly_lease, status, created_at, view_count, is_sponsored, sponsored_until')
+    .eq('broker_profile_id', brokerProfileId ?? profile.id)
+    .order('created_at', { ascending: false })
+
+  const safeListings = (listings ?? []) as Array<{
+    id: string
+    title: string
+    airport_code: string
+    city: string
+    state: string
+    listing_type: string
+    asking_price: number | null
+    monthly_lease: number | null
+    status: string
+    created_at: string
+    view_count: number
+    is_sponsored: boolean
+    sponsored_until: string | null
+  }>
+
+  // Fetch inquiries for all broker listings
+  const listingIds = safeListings.map(l => l.id)
+  let inquiries: Array<{
+    id: string
+    listing_id: string
+    buyer_name: string
+    buyer_email: string
+    buyer_phone: string | null
+    message: string
+    created_at: string
+  }> = []
+
+  if (listingIds.length > 0) {
+    const { data: inqData } = await supabaseAdmin
+      .from('inquiries')
+      .select('id, listing_id, buyer_name, buyer_email, buyer_phone, message, created_at')
+      .in('listing_id', listingIds)
+      .order('created_at', { ascending: false })
+    inquiries = (inqData ?? []) as typeof inquiries
+  }
+
+  // Compute stats
+  const totalViews     = safeListings.reduce((s, l) => s + (l.view_count ?? 0), 0)
+  const totalInquiries = inquiries.length
+  const liveCount      = safeListings.filter(l => l.status === 'approved').length
+  const pendingCount   = safeListings.filter(l => l.status === 'pending').length
+  const memberSince    = new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+  const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
+    pending:  { label: 'Pending review', color: '#92400e', bg: '#fef3c7' },
+    approved: { label: 'Live',           color: '#166534', bg: '#dcfce7' },
+    rejected: { label: 'Rejected',       color: '#991b1b', bg: '#fee2e2' },
+  }
+
+  return (
+    <div>
+      {/* Hero header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1a3a5c 0%, #1e40af 100%)',
+        borderRadius: '16px',
+        padding: '2rem 2.5rem',
+        marginBottom: '2rem',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1.5rem',
+        flexWrap: 'wrap',
+      }}>
+        {/* Avatar */}
+        <div style={{
+          width: '72px', height: '72px', borderRadius: '50%', flexShrink: 0,
+          background: 'rgba(255,255,255,0.15)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          fontSize: '1.8rem', fontWeight: '700', border: '2px solid rgba(255,255,255,0.3)',
+        }}>
+          {profile.full_name.charAt(0).toUpperCase()}
+        </div>
+
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'white' }}>{profile.full_name}</h1>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+              padding: '0.2rem 0.65rem', borderRadius: '999px',
+              fontSize: '0.72rem', fontWeight: '700',
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.35)',
+              color: 'white',
+            }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+              Verified Broker
+            </span>
+          </div>
+          <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem' }}>
+            {profile.brokerage} · Licensed in {profile.license_state} · Member since {memberSince}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <Link href={`/broker/${profile.id}`} style={{
+            display: 'inline-block', padding: '0.55rem 1.1rem',
+            backgroundColor: 'rgba(255,255,255,0.15)', color: 'white',
+            borderRadius: '8px', textDecoration: 'none', fontWeight: '600',
+            fontSize: '0.85rem', border: '1px solid rgba(255,255,255,0.3)',
+          }}>
+            View public profile →
+          </Link>
+          <Link href="/submit" style={{
+            display: 'inline-block', padding: '0.55rem 1.1rem',
+            backgroundColor: 'white', color: '#1a3a5c',
+            borderRadius: '8px', textDecoration: 'none', fontWeight: '700',
+            fontSize: '0.85rem',
+          }}>
+            + New listing
+          </Link>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        {[
+          { label: 'Total views', value: totalViews.toLocaleString(), icon: '👁', color: '#dbeafe', text: '#1e40af' },
+          { label: 'Total inquiries', value: totalInquiries.toLocaleString(), icon: '💬', color: '#dcfce7', text: '#166534' },
+          { label: 'Live listings', value: liveCount.toLocaleString(), icon: '✅', color: '#eff6ff', text: '#1e40af' },
+          { label: 'Pending review', value: pendingCount.toLocaleString(), icon: '⏳', color: '#fef3c7', text: '#92400e' },
+        ].map(stat => (
+          <div key={stat.label} style={{
+            backgroundColor: 'white', border: '1px solid #e5e7eb',
+            borderRadius: '12px', padding: '1.25rem',
+            display: 'flex', alignItems: 'center', gap: '0.85rem',
+          }}>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '10px',
+              backgroundColor: stat.color, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.3rem',
+            }}>
+              {stat.icon}
+            </div>
+            <div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '800', color: stat.text, lineHeight: 1 }}>
+                {stat.value}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.2rem' }}>
+                {stat.label}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent inquiries */}
+      {inquiries.length > 0 && (
+        <div style={{ marginBottom: '2rem' }}>
+          <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem', color: '#111827' }}>
+            Recent Inquiries
+          </h2>
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            {inquiries.slice(0, 5).map(inq => {
+              const listing = safeListings.find(l => l.id === inq.listing_id)
+              return (
+                <div key={inq.id} style={{
+                  backgroundColor: 'white', border: '1px solid #e5e7eb',
+                  borderRadius: '10px', padding: '1rem 1.25rem',
+                  display: 'grid', gridTemplateColumns: '1fr auto',
+                  gap: '0.75rem', alignItems: 'start',
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
+                      <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#111827' }}>{inq.buyer_name}</span>
+                      <a href={`mailto:${inq.buyer_email}`} style={{ fontSize: '0.8rem', color: '#6366f1', textDecoration: 'none' }}>{inq.buyer_email}</a>
+                      {inq.buyer_phone && (
+                        <a href={`tel:${inq.buyer_phone}`} style={{ fontSize: '0.8rem', color: '#6366f1', textDecoration: 'none' }}>{inq.buyer_phone}</a>
+                      )}
+                    </div>
+                    {listing && (
+                      <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+                        Re: <Link href={`/listing/${listing.id}`} style={{ color: '#6366f1', textDecoration: 'none' }}>{listing.title}</Link>
+                      </p>
+                    )}
+                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151', lineHeight: 1.5 }}>{inq.message}</p>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#9ca3af', whiteSpace: 'nowrap', paddingTop: '2px' }}>
+                    {new Date(inq.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Listings table */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ margin: 0, fontSize: '1.05rem', color: '#111827' }}>Your Listings</h2>
+          <Link href="/submit" style={{
+            padding: '0.45rem 1rem', backgroundColor: '#111827', color: 'white',
+            borderRadius: '6px', textDecoration: 'none', fontWeight: '600', fontSize: '0.8rem',
+          }}>
+            + New listing
+          </Link>
+        </div>
+
+        {safeListings.length === 0 ? (
+          <div style={{
+            backgroundColor: 'white', border: '1px dashed #d1d5db',
+            borderRadius: '12px', padding: '3rem', textAlign: 'center', color: '#6b7280',
+          }}>
+            <p style={{ margin: '0 0 1rem' }}>You have not posted any listings yet.</p>
+            <Link href="/submit" style={{
+              padding: '0.55rem 1.25rem', backgroundColor: '#111827', color: 'white',
+              borderRadius: '6px', textDecoration: 'none', fontWeight: '600', fontSize: '0.875rem',
+            }}>
+              Post your first listing
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '0.875rem' }}>
+            {safeListings.map(listing => {
+              const s = STATUS_STYLE[listing.status] ?? STATUS_STYLE.pending
+              const listingInquiries = inquiries.filter(i => i.listing_id === listing.id)
+              const now = new Date()
+              const isSponsored = listing.is_sponsored && listing.sponsored_until && new Date(listing.sponsored_until) > now
+              const price = listing.asking_price
+                ? `$${listing.asking_price.toLocaleString()}`
+                : listing.monthly_lease
+                  ? `$${listing.monthly_lease.toLocaleString()}/mo`
+                  : 'Contact for price'
+
+              return (
+                <div key={listing.id} style={{
+                  backgroundColor: 'white', border: '1px solid #e5e7eb',
+                  borderRadius: '10px', padding: '1rem 1.25rem',
+                  display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem',
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                      <span style={{ fontWeight: '700', fontSize: '0.95rem', color: '#111827' }}>{listing.title}</span>
+                      <span style={{
+                        padding: '0.12rem 0.55rem', borderRadius: '999px',
+                        fontSize: '0.72rem', fontWeight: '600',
+                        backgroundColor: s.bg, color: s.color,
+                      }}>
+                        {s.label}
+                      </span>
+                      {isSponsored && (
+                        <span style={{
+                          padding: '0.12rem 0.55rem', borderRadius: '999px',
+                          fontSize: '0.72rem', fontWeight: '600',
+                          backgroundColor: '#eef2ff', color: '#4338ca',
+                        }}>
+                          Sponsored
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: '0 0 0.25rem', color: '#6b7280', fontSize: '0.825rem' }}>
+                      {listing.airport_code} · {listing.city}, {listing.state} · {price}
+                    </p>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#6b7280', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <strong style={{ color: '#111827' }}>{(listing.view_count ?? 0).toLocaleString()}</strong> views
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#6b7280', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <strong style={{ color: '#111827' }}>{listingInquiries.length}</strong> {listingInquiries.length === 1 ? 'inquiry' : 'inquiries'}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {listing.status === 'approved' && (
+                      <Link href={`/listing/${listing.id}`} style={{
+                        fontSize: '0.8rem', color: '#6366f1', textDecoration: 'none',
+                        fontWeight: '500', padding: '0.3rem 0.75rem',
+                        border: '1px solid #c7d2fe', borderRadius: '6px',
+                      }}>
+                        View live →
+                      </Link>
+                    )}
+                    <Link href={`/listing/${listing.id}/edit`} style={{
+                      fontSize: '0.8rem', color: '#374151', textDecoration: 'none',
+                      fontWeight: '500', padding: '0.3rem 0.75rem',
+                      border: '1px solid #d1d5db', borderRadius: '6px',
+                    }}>
+                      Edit
+                    </Link>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Profile section */}
+      <div style={{
+        marginTop: '2rem', backgroundColor: 'white',
+        border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.5rem',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ margin: 0, fontSize: '1.05rem', color: '#111827' }}>Your Public Profile</h2>
+          <Link href={`/broker/${profile.id}`} style={{
+            fontSize: '0.8rem', color: '#6366f1', textDecoration: 'none',
+            fontWeight: '500', padding: '0.3rem 0.75rem',
+            border: '1px solid #c7d2fe', borderRadius: '6px',
+          }}>
+            View profile →
+          </Link>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          {[
+            ['Name', profile.full_name],
+            ['Brokerage', profile.brokerage],
+            ['License state', profile.license_state],
+            ['Phone', profile.phone ?? 'Not set'],
+            ['Website', profile.website ?? 'Not set'],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <div style={{ fontSize: '0.72rem', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>{label}</div>
+              <div style={{ fontSize: '0.875rem', color: '#111827' }}>{value}</div>
+            </div>
+          ))}
+        </div>
+        {profile.bio && (
+          <div style={{ marginTop: '0.75rem' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Bio</div>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151', lineHeight: 1.6 }}>{profile.bio}</p>
+          </div>
+        )}
+        <p style={{ margin: '1rem 0 0', fontSize: '0.78rem', color: '#9ca3af' }}>
+          Need to update your profile? Contact us at{' '}
+          <a href="mailto:hello@hangarmarketplace.com" style={{ color: '#6366f1' }}>hello@hangarmarketplace.com</a>.
+        </p>
+      </div>
+    </div>
+  )
+}

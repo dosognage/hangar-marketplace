@@ -45,6 +45,7 @@ type Listing = {
   is_sponsored: boolean
   sponsored_until: string | null
   is_sample: boolean
+  broker_profile_id: string | null
   listing_photos: Photo[]
 }
 

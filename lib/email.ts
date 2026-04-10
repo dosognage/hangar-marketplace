@@ -337,6 +337,100 @@ export function listingRejectedEmail(opts: {
   }
 }
 
+/** Sent to a broker when their application is approved — VIP welcome. */
+export function brokerApprovedEmail(opts: {
+  name: string
+  profileId: string
+}): { subject: string; html: string } {
+  const { name, profileId } = opts
+  const profileUrl   = `${SITE_URL}/broker/${profileId}`
+  const dashboardUrl = `${SITE_URL}/broker/dashboard`
+  return {
+    subject: 'You\'re now a Verified Broker on Hangar Marketplace',
+    html: layout(`
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;
+                    background:#dbeafe;border-radius:50%;margin-bottom:12px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2.5">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </div>
+        <h1 style="margin:0 0 6px;font-size:24px;color:#111827;">Welcome to the Verified Broker Program</h1>
+        <p style="margin:0;color:#6b7280;font-size:15px;">Your credentials have been reviewed and approved.</p>
+      </div>
+
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
+        Hi ${name}, congratulations! You're now a <strong>Verified Broker</strong> on Hangar Marketplace.
+        Your public profile is live and your listings will now display a verified badge — helping buyers
+        trust and choose you above the competition.
+      </p>
+
+      <!-- What's unlocked -->
+      <div style="border:1px solid #bfdbfe;border-radius:10px;padding:20px 24px;background:#eff6ff;margin-bottom:28px;">
+        <p style="margin:0 0 14px;font-weight:700;font-size:14px;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em;">
+          Your Verified Broker Perks
+        </p>
+        ${[
+          ['Public profile page', `Your profile is live at hangarmarketplace.com/broker/${profileId}`],
+          ['Verified badge', 'Displays on every listing you post, building instant buyer trust'],
+          ['Broker dashboard', 'Dedicated analytics: views, inquiries, and listing performance'],
+          ['Priority listing placement', 'Your listings are highlighted in search results'],
+          ['Auto-approval', 'New listings you submit go live immediately — no wait'],
+        ].map(([title, desc]) => `
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;
+                         background:#2563eb;border-radius:50%;flex-shrink:0;margin-top:1px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+            </span>
+            <div>
+              <strong style="color:#111827;font-size:14px;">${title}</strong><br/>
+              <span style="color:#6b7280;font-size:13px;">${desc}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      ${btn('View my profile →', profileUrl)}
+      &nbsp;&nbsp;
+      ${btn('Go to broker dashboard →', dashboardUrl, '#111827')}
+
+      <p style="margin-top:28px;color:#9ca3af;font-size:13px;line-height:1.6;">
+        Questions or need help? Reply to this email or call us at
+        <a href="tel:9203858284" style="color:#6b7280;">(920) 385-8284</a>.
+      </p>
+    `),
+  }
+}
+
+/** Sent to a broker when their application is rejected. */
+export function brokerRejectedEmail(opts: {
+  name: string
+}): { subject: string; html: string } {
+  const { name } = opts
+  return {
+    subject: 'Update on your Hangar Marketplace broker application',
+    html: layout(`
+      <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Broker Application Update</h1>
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 12px;">Hi ${name},</p>
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
+        Thank you for applying to become a Verified Broker on Hangar Marketplace. After reviewing your
+        application, we're unable to approve it at this time.
+      </p>
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
+        This is often due to a mismatch in license details. If you believe this is an error or would
+        like to reapply with updated information, please reply to this email or give us a call.
+        We're happy to work through it with you.
+      </p>
+      ${btn('Contact us', 'mailto:hello@hangarmarketplace.com', '#111827')}
+      <p style="margin-top:24px;color:#9ca3af;font-size:13px;">
+        You can also reach us at <a href="tel:9203858284" style="color:#6b7280;">(920) 385-8284</a>.
+      </p>
+    `),
+  }
+}
+
 /** Sent to listing owners 3 days before their sponsorship expires. */
 export function sponsorshipExpiryEmail(opts: {
   ownerName: string
