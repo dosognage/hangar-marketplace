@@ -35,7 +35,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   approved: { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
-  pending:  { bg: '#fffbeb', text: '#92400e', border: '#fde68a' },
+  pending:  { bg: '#eff6ff', text: '#1d4ed8', border: '#93c5fd' },
   rejected: { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' },
 }
 
@@ -214,11 +214,11 @@ export default function AdminListingsManager({ initialListings }: { initialListi
 
             return (
               <div key={listing.id} style={{
-                border: `1px solid ${listing.is_sample ? '#fde68a' : '#e5e7eb'}`,
+                border: `1px solid ${listing.is_sample ? '#d1d5db' : '#e5e7eb'}`,
                 borderLeft: `4px solid ${sc.border}`,
                 borderRadius: '8px',
                 padding: '0.9rem 1.1rem',
-                backgroundColor: listing.is_sample ? '#fffbeb' : 'white',
+                backgroundColor: listing.is_sample ? '#f9fafb' : 'white',
                 opacity: isDeleting ? 0.4 : 1,
                 transition: 'opacity 0.2s',
               }}>
@@ -226,8 +226,8 @@ export default function AdminListingsManager({ initialListings }: { initialListi
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 700, color: '#111827', fontSize: '0.95rem' }}>{listing.title}</span>
-                    {listing.is_sample && <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>🔍 SAMPLE</span>}
-                    {listing.is_featured && <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#fef3c7', color: '#854d0e', border: '1px solid #fde68a', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>⭐ FEATURED</span>}
+                    {listing.is_sample && <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>🔍 SAMPLE</span>}
+                    {listing.is_featured && <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>⭐ FEATURED</span>}
                     {listing.is_sponsored && <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#ede9fe', color: '#5b21b6', border: '1px solid #ddd6fe', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>💎 SPONSORED</span>}
                   </div>
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '20px', backgroundColor: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, whiteSpace: 'nowrap' }}>
@@ -292,7 +292,7 @@ export default function AdminListingsManager({ initialListings }: { initialListi
                     <button
                       disabled={isStatusLoading}
                       onClick={() => handleStatusChange(listing.id, 'pending')}
-                      style={btnStyle('#92400e', '#fffbeb', '#fde68a')}
+                      style={btnStyle('#1d4ed8', '#eff6ff', '#93c5fd')}
                     >
                       {isStatusLoading ? '…' : '↩ Set Pending'}
                     </button>
@@ -304,9 +304,9 @@ export default function AdminListingsManager({ initialListings }: { initialListi
                       disabled={isSampleLoading}
                       onClick={() => handleToggleSample(listing.id, listing.is_sample)}
                       style={btnStyle(
-                        listing.is_sample ? '#92400e' : '#374151',
-                        listing.is_sample ? '#fffbeb' : 'white',
-                        listing.is_sample ? '#fde68a' : '#d1d5db',
+                        listing.is_sample ? '#374151' : '#374151',
+                        listing.is_sample ? '#f3f4f6' : 'white',
+                        listing.is_sample ? '#d1d5db' : '#d1d5db',
                       )}
                     >
                       {isSampleLoading ? '…' : listing.is_sample ? '🔍 Unmark Sample' : 'Mark as Sample'}

@@ -134,8 +134,8 @@ export default async function AdminPage() {
           <a href="/admin/featured" style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             padding: '0.45rem 0.9rem', borderRadius: '7px',
-            backgroundColor: '#fef3c7', color: '#92400e',
-            border: '1px solid #fde68a', fontWeight: '600',
+            backgroundColor: '#eef2ff', color: '#4338ca',
+            border: '1px solid #c7d2fe', fontWeight: '600',
             fontSize: '0.825rem', textDecoration: 'none', whiteSpace: 'nowrap',
           }}>
             <Star size={14} style={{ flexShrink: 0 }} /> Manage Featured
