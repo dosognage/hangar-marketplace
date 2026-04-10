@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 }
 
 const EFFECTIVE_DATE = 'April 9, 2026'
-const CONTACT_EMAIL  = 'andre.dosogne@outlook.com'
+const CONTACT_EMAIL  = 'hello@hangarmarketplace.com'
 const SITE_NAME      = 'Hangar Marketplace'
 const SITE_URL       = 'https://hangarmarketplace.com'
 

@@ -258,8 +258,7 @@ export default async function RootLayout({
                     <FooterLink href="/apply-broker">Broker verification</FooterLink>
                   </FooterCol>
                   <FooterCol title="Contact us">
-                    <a href="tel:+19203858284" style={footerContactStyle}>(920) 385-8284</a>
-                    <a href="mailto:andre.dosogne@outlook.com" style={footerContactStyle}>andre.dosogne@outlook.com</a>
+                    <a href="mailto:hello@hangarmarketplace.com" style={footerContactStyle}>hello@hangarmarketplace.com</a>
                   </FooterCol>
                 </div>
               </div>

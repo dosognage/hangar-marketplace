@@ -355,7 +355,7 @@ export default function PricingPage() {
           You can cancel your subscription at any time through the billing portal (no penalty, no phone call required). Your subscription remains active until the end of the paid period.
         </Faq>
         <Faq q="Do you offer NET-30 or custom invoicing for enterprise accounts?">
-          Yes. Enterprise plans can be invoiced monthly or quarterly on NET-30 terms. Contact us at <a href="mailto:andre.dosogne@outlook.com" style={{ color: '#2563eb' }}>andre.dosogne@outlook.com</a> to set this up.
+          Yes. Enterprise plans can be invoiced monthly or quarterly on NET-30 terms. Contact us at <a href="mailto:hello@hangarmarketplace.com" style={{ color: '#2563eb' }}>hello@hangarmarketplace.com</a> to set this up.
         </Faq>
       </div>
 

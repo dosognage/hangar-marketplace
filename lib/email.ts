@@ -163,7 +163,7 @@ export function welcomeEmail(name: string): { subject: string; html: string } {
       ${btn('Post a request →', `${SITE_URL}/requests/new`, '#111827')}
 
       <p style="margin-top:28px;color:#9ca3af;font-size:13px;">
-        Questions? Reply to this email or call us at <a href="tel:9203858284" style="color:#6b7280;">(920) 385-8284</a>.
+        Questions? Reply to this email or call us at <a href="mailto:hello@hangarmarketplace.com" style="color:#2563eb;">hello@hangarmarketplace.com</a>.
       </p>
     `),
   }
@@ -330,7 +330,7 @@ export function listingRejectedEmail(opts: {
       <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
         Unfortunately your listing <strong>${title}</strong> was not approved at this time.
         If you have questions or want to resubmit with changes, reply to this email or call us
-        at <a href="tel:9203858284" style="color:#2563eb;">(920) 385-8284</a>.
+        at <a href="mailto:hello@hangarmarketplace.com" style="color:#2563eb;">hello@hangarmarketplace.com</a>.
       </p>
       ${btn('Edit and resubmit →', `${SITE_URL}/dashboard`, '#111827')}
     `),
@@ -397,8 +397,8 @@ export function brokerApprovedEmail(opts: {
       ${btn('Go to broker dashboard →', dashboardUrl, '#111827')}
 
       <p style="margin-top:28px;color:#9ca3af;font-size:13px;line-height:1.6;">
-        Questions or need help? Reply to this email or call us at
-        <a href="tel:9203858284" style="color:#6b7280;">(920) 385-8284</a>.
+        Questions or need help? Reply to this email or contact us at
+        <a href="mailto:hello@hangarmarketplace.com" style="color:#93c5fd;">hello@hangarmarketplace.com</a>.
       </p>
     `),
   }
@@ -425,7 +425,7 @@ export function brokerRejectedEmail(opts: {
       </p>
       ${btn('Contact us', 'mailto:hello@hangarmarketplace.com', '#111827')}
       <p style="margin-top:24px;color:#9ca3af;font-size:13px;">
-        You can also reach us at <a href="tel:9203858284" style="color:#6b7280;">(920) 385-8284</a>.
+        You can also reach us at <a href="mailto:hello@hangarmarketplace.com" style="color:#2563eb;">hello@hangarmarketplace.com</a>.
       </p>
     `),
   }
@@ -467,7 +467,7 @@ export function sponsorshipExpiryEmail(opts: {
       ${btn('View your listing', listingUrl, '#111827')}
 
       <p style="margin-top:28px;color:#9ca3af;font-size:13px;line-height:1.6;">
-        Questions? Reply to this email or call us at <a href="tel:9203858284" style="color:#6b7280;">(920) 385-8284</a>.
+        Questions? Reply to this email or call us at <a href="mailto:hello@hangarmarketplace.com" style="color:#2563eb;">hello@hangarmarketplace.com</a>.
       </p>
     `),
   }

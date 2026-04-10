@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { BugReportPayload, LogEntry } from '@/lib/bug-report-types'
 
 const RESEND_API    = 'https://api.resend.com/emails'
-const ADMIN_EMAIL   = process.env.ADMIN_REPORT_EMAIL ?? 'andre.dosogne@outlook.com'
+const ADMIN_EMAIL   = process.env.ADMIN_REPORT_EMAIL ?? 'hello@hangarmarketplace.com'
 const SITE_URL      = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 
 // Rate-limit: track recent submissions by IP (in-memory, resets on restart)
