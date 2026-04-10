@@ -409,6 +409,16 @@ body {
   }
 }
 
+/* ── Global input text & placeholder colors ──────────────────────────────── */
+/* Ensures readable text on all inputs across browsers and iOS Safari         */
+input, select, textarea {
+  color: #111827;
+}
+::placeholder {
+  color: #6b7280;
+  opacity: 1; /* Firefox reduces opacity by default */
+}
+
 /* ── Submit / form pages: comfortable touch targets ──────────────────────── */
 @media (max-width: 640px) {
   input, select, textarea {
