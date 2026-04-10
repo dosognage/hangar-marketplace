@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { submitBrokerApplication } from '@/app/actions/broker'
 import Link from 'next/link'
 
-type Status = 'idle' | 'loading' | 'success' | 'error'
+type Status = 'idle' | 'loading' | 'error'
 
 export default function ApplyBrokerForm() {
   const [form, setForm] = useState({
@@ -18,6 +19,7 @@ export default function ApplyBrokerForm() {
   })
   const [status, setStatus]     = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const router = useRouter()
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target
@@ -37,31 +39,7 @@ export default function ApplyBrokerForm() {
       return
     }
 
-    setStatus('success')
-  }
-
-  if (status === 'success') {
-    return (
-      <div style={{ maxWidth: '600px' }}>
-        <div style={{
-          backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
-          borderRadius: '12px', padding: '2.5rem', textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-          <h2 style={{ margin: '0 0 0.75rem', color: '#166534' }}>Application submitted!</h2>
-          <p style={{ margin: '0 0 1.5rem', color: '#166534', lineHeight: 1.6 }}>
-            Our team will review your credentials and notify you at your account email
-            once you're verified. This typically takes 1–2 business days.
-          </p>
-          <Link href="/dashboard" style={{
-            padding: '0.6rem 1.25rem', backgroundColor: '#111827', color: 'white',
-            borderRadius: '6px', textDecoration: 'none', fontWeight: '600', fontSize: '0.875rem',
-          }}>
-            Back to dashboard
-          </Link>
-        </div>
-      </div>
-    )
+    router.push('/apply-broker/success')
   }
 
   return (
@@ -99,15 +77,6 @@ export default function ApplyBrokerForm() {
           </div>
         ))}
       </div>
-
-      {status === 'error' && (
-        <div style={{
-          backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px',
-          padding: '0.75rem 1rem', color: '#dc2626', fontSize: '0.875rem', marginBottom: '1.25rem',
-        }}>
-          {errorMsg}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.1rem' }}>
         <Section title="Personal Info">
@@ -162,13 +131,25 @@ export default function ApplyBrokerForm() {
           will result in permanent removal from the platform.
         </div>
 
+        {/* Error — shown right above the button so it's always in view on mobile */}
+        {status === 'error' && (
+          <div style={{
+            backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px',
+            padding: '0.75rem 1rem', color: '#dc2626', fontSize: '0.875rem',
+          }}>
+            {errorMsg}
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={status === 'loading'}
           style={{
-            padding: '0.85rem', backgroundColor: '#111827', color: 'white',
-            border: 'none', borderRadius: '8px', fontSize: '1rem',
-            fontWeight: '700', cursor: 'pointer',
+            padding: '0.85rem', color: 'white', border: 'none', borderRadius: '8px',
+            fontSize: '1rem', fontWeight: '700', cursor: status === 'loading' ? 'not-allowed' : 'pointer',
+            backgroundColor: status === 'loading' ? '#6b7280' : '#111827',
+            opacity: status === 'loading' ? 0.8 : 1,
+            transition: 'background-color 0.15s',
           }}
         >
           {status === 'loading' ? 'Submitting…' : 'Submit Application'}
