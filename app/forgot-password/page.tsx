@@ -4,8 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
-
 
 type Status = 'idle' | 'loading' | 'sent' | 'error'
 

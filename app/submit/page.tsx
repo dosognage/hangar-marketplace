@@ -19,8 +19,6 @@ import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
 import { createListing } from '@/app/actions/listing'
 
-export const dynamic = 'force-dynamic'
-
 
 // Leaflet must be loaded client-side only
 const AirportMap = dynamic(() => import('@/app/components/AirportMap'), { ssr: false })

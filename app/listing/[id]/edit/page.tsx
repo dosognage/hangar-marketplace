@@ -13,8 +13,6 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { updateListing, type UpdateState } from '@/app/actions/listings'
 
-export const dynamic = 'force-dynamic'
-
 
 type Listing = {
   id: string
