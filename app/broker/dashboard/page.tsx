@@ -12,6 +12,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import AvatarUpload from './AvatarUpload'
+import BrokerProfileForm from './BrokerProfileForm'
 
 export default async function BrokerDashboardPage() {
   const supabase = await createServerClient()
@@ -336,45 +337,44 @@ export default async function BrokerDashboardPage() {
         )}
       </div>
 
-      {/* Profile section */}
+      {/* Profile edit section */}
       <div style={{
         marginTop: '2rem', backgroundColor: 'white',
         border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.5rem',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.05rem', color: '#111827' }}>Your Public Profile</h2>
-          <Link href={`/broker/${profile.id}`} style={{
-            fontSize: '0.8rem', color: '#6366f1', textDecoration: 'none',
-            fontWeight: '500', padding: '0.3rem 0.75rem',
-            border: '1px solid #c7d2fe', borderRadius: '6px',
-          }}>
-            View profile →
-          </Link>
+        <div style={{ marginBottom: '0.35rem' }}>
+          <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', color: '#111827' }}>Edit Your Public Profile</h2>
+          <p style={{ margin: 0, fontSize: '0.8rem', color: '#6b7280' }}>
+            Changes appear immediately on your{' '}
+            <Link href={`/broker/${profile.id}`} style={{ color: '#6366f1', textDecoration: 'none' }}>
+              public broker page
+            </Link>.
+            {' '}To update your name or login email, visit{' '}
+            <Link href="/settings" style={{ color: '#6366f1', textDecoration: 'none' }}>Settings</Link>.
+          </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+
+        {/* Read-only fields */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', margin: '1.1rem 0', padding: '0.9rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #f3f4f6' }}>
           {[
             ['Name', profile.full_name],
             ['Brokerage', profile.brokerage],
             ['License state', profile.license_state],
-            ['Phone', profile.phone ?? 'Not set'],
-            ['Website', profile.website ?? 'Not set'],
           ].map(([label, value]) => (
             <div key={label}>
-              <div style={{ fontSize: '0.72rem', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>{label}</div>
-              <div style={{ fontSize: '0.875rem', color: '#111827' }}>{value}</div>
+              <div style={{ fontSize: '0.7rem', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.15rem' }}>{label}</div>
+              <div style={{ fontSize: '0.85rem', color: '#374151' }}>{value}</div>
             </div>
           ))}
         </div>
-        {profile.bio && (
-          <div style={{ marginTop: '0.75rem' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Bio</div>
-            <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151', lineHeight: 1.6 }}>{profile.bio}</p>
-          </div>
-        )}
-        <p style={{ margin: '1rem 0 0', fontSize: '0.78rem', color: '#9ca3af' }}>
-          Need to update your profile? Contact us at{' '}
-          <a href="mailto:hello@hangarmarketplace.com" style={{ color: '#6366f1' }}>hello@hangarmarketplace.com</a>.
-        </p>
+
+        <BrokerProfileForm
+          profileId={profile.id}
+          currentPhone={profile.phone ?? null}
+          currentEmail={(profile as { contact_email?: string | null }).contact_email ?? null}
+          currentWebsite={profile.website ?? null}
+          currentBio={profile.bio ?? null}
+        />
       </div>
     </div>
   )

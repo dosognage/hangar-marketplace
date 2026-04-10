@@ -10,6 +10,57 @@ function isAdmin(email: string | undefined): boolean {
   return adminEmails.includes((email ?? '').toLowerCase())
 }
 
+export type BrokerProfileState = {
+  success?: string
+  error?: string
+}
+
+/**
+ * Save editable fields on a broker's own profile:
+ * phone, contact_email, website, and bio.
+ * Only the authenticated broker who owns the profile may update it.
+ */
+export async function saveBrokerProfile(
+  _prev: BrokerProfileState,
+  formData: FormData,
+): Promise<BrokerProfileState> {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'You must be logged in.' }
+
+  const isBroker = user.user_metadata?.is_broker === true
+  if (!isBroker) return { error: 'Not a verified broker.' }
+
+  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  if (!brokerProfileId) return { error: 'Broker profile not found.' }
+
+  const phone         = (formData.get('phone')         as string | null)?.trim() ?? ''
+  const contact_email = (formData.get('contact_email') as string | null)?.trim() ?? ''
+  const website       = (formData.get('website')       as string | null)?.trim() ?? ''
+  const bio           = (formData.get('bio')           as string | null)?.trim() ?? ''
+
+  // Basic email format check
+  if (contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact_email)) {
+    return { error: 'Please enter a valid contact email address.' }
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from('broker_profiles')
+    .update({
+      phone:         phone         || null,
+      contact_email: contact_email || null,
+      website:       website       || null,
+      bio:           bio           || null,
+    })
+    .eq('id', brokerProfileId)
+
+  if (updateError) return { error: 'Failed to save: ' + updateError.message }
+
+  revalidatePath('/broker/dashboard')
+  revalidatePath(`/broker/${brokerProfileId}`)
+  return { success: 'Profile updated successfully.' }
+}
+
 /**
  * Submit a broker application.
  * Uses the server-side auth client so the cookie session is always valid.

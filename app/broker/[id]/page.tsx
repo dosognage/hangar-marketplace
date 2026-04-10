@@ -26,7 +26,7 @@ export default async function BrokerProfilePage({ params }: PageProps) {
 
   const { data: broker } = await supabase
     .from('broker_profiles')
-    .select('id, full_name, brokerage, phone, website, bio, license_state, avatar_url, created_at')
+    .select('id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at')
     .eq('id', id)
     .single()
 
@@ -110,6 +110,11 @@ export default async function BrokerProfilePage({ params }: PageProps) {
             {broker.phone && (
               <a href={`tel:${broker.phone}`} style={contactBtnStyle}>
                 📞 {broker.phone}
+              </a>
+            )}
+            {(broker as { contact_email?: string | null }).contact_email && (
+              <a href={`mailto:${(broker as { contact_email?: string | null }).contact_email}`} style={contactBtnStyle}>
+                ✉️ {(broker as { contact_email?: string | null }).contact_email}
               </a>
             )}
             {broker.website && (
