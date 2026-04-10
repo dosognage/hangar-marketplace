@@ -166,23 +166,31 @@ export default function AirportMap({
     setFeatures([])
     setBounds(null)
 
-    const query = `
-[out:json][timeout:25];
-area["aeroway"="aerodrome"]["icao"="${normalized}"]->.a;
-(
-  way["aeroway"~"runway|taxiway|taxilane|apron|terminal|hangar|parking_position"](area.a);
-);
-out body;
->;
-out skel qt;`
+    const query = `[out:json][timeout:25];area["aeroway"="aerodrome"]["icao"="${normalized}"]->.a;(way["aeroway"~"runway|taxiway|taxilane|apron|terminal|hangar|parking_position"](area.a););out body;>;out skel qt;`
 
-    fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: `data=${encodeURIComponent(query)}`,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    })
-      .then(r => r.json())
-      .then((data: { elements: OverpassElement[] }) => {
+    // Try primary Overpass server, fall back to mirror on failure
+    const SERVERS = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+    ]
+
+    const tryFetch = async (): Promise<{ elements: OverpassElement[] }> => {
+      let lastErr: unknown
+      for (const server of SERVERS) {
+        try {
+          const url = `${server}?data=${encodeURIComponent(query)}`
+          const res = await fetch(url)
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          return await res.json()
+        } catch (e) {
+          lastErr = e
+        }
+      }
+      throw lastErr
+    }
+
+    tryFetch()
+      .then((data) => {
         if (!data.elements || data.elements.length === 0) {
           setLoadState('notfound')
           return

@@ -12,7 +12,7 @@
  *  3. Show success (or a clear error if something went wrong)
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
@@ -55,17 +55,29 @@ export default function SubmitPage() {
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
   const [hangarLat, setHangarLat] = useState<number | null>(null)
   const [hangarLng, setHangarLng] = useState<number | null>(null)
-  // Track the ICAO code to pass to AirportMap (only update after user finishes typing)
+  // Track the ICAO code to pass to AirportMap (debounced — only commits after user stops typing)
   const [mapIcao, setMapIcao] = useState('')
+  const icaoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Debounce airport_code → map load (fires 600ms after user stops typing, only on 3-4 char codes)
+  useEffect(() => {
+    return () => {
+      if (icaoDebounceRef.current) clearTimeout(icaoDebounceRef.current)
+    }
+  }, [])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
-    // When the airport_code field is updated, load it into the map if it looks like a valid ICAO code
-    if (name === 'airport_code' && value.length >= 3) {
-      setMapIcao(value.trim().toUpperCase())
+    if (name === 'airport_code') {
+      const code = value.trim().toUpperCase()
+      if (icaoDebounceRef.current) clearTimeout(icaoDebounceRef.current)
+      // ICAO codes are 3–4 chars; wait until user stops typing before fetching
+      if (code.length >= 3 && code.length <= 4) {
+        icaoDebounceRef.current = setTimeout(() => setMapIcao(code), 600)
+      }
     }
   }
 
