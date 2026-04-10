@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
 
 type Props = {
   userId: string
@@ -34,39 +33,23 @@ export default function AvatarUpload({ userId, profileId, currentAvatarUrl, disp
     setUploading(true)
     setError(null)
 
-    const ext      = file.name.split('.').pop() ?? 'jpg'
-    const path     = `${userId}/avatar.${ext}`
+    // Send file directly to the API route — upload happens server-side
+    // using the admin client so RLS never blocks it
+    const body = new FormData()
+    body.append('file', file)
+    body.append('profileId', profileId)
 
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from('broker-avatars')
-      .upload(path, file, { upsert: true, contentType: file.type })
-
-    if (uploadError) {
-      setError(uploadError.message)
-      setUploading(false)
-      return
-    }
-
-    // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('broker-avatars')
-      .getPublicUrl(path)
-
-    // Save to broker_profiles via server action
-    const res = await fetch('/api/broker/avatar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profileId, avatarUrl: publicUrl }),
-    })
+    const res = await fetch('/api/broker/avatar', { method: 'POST', body })
 
     if (!res.ok) {
-      setError('Upload succeeded but failed to save. Try again.')
+      const { error: msg } = await res.json().catch(() => ({ error: 'Upload failed.' }))
+      setError(msg ?? 'Upload failed.')
       setUploading(false)
       return
     }
 
-    // Bust cache by appending a timestamp
+    const { publicUrl } = await res.json()
+    // Bust cache so the browser fetches the new image
     setAvatarUrl(`${publicUrl}?t=${Date.now()}`)
     setUploading(false)
   }
