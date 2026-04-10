@@ -13,9 +13,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import BrokerApplicationButtons from './BrokerApplicationButtons'
 import ReGeocodeButton from './RegeoCodeButton'
 import AdminListingsManager from './AdminListingsManager'
+import AdminHomesManager, { type AdminHomeListing } from './AdminHomesManager'
 import AdminUsersManager, { type AdminUser } from './AdminUsersManager'
 import AdminBrokersManager, { type AdminBrokerProfile } from './AdminBrokersManager'
-import { Star, Building2, Users } from 'lucide-react'
+import { Star, Building2, Users, Home } from 'lucide-react'
 
 type BrokerApp = {
   id: string
@@ -47,10 +48,18 @@ export default async function AdminPage() {
     redirect('/')
   }
 
-  // Fetch ALL listings (admin sees everything, filterable client-side)
+  // Fetch hangar listings (admin sees everything, filterable client-side)
   const { data: allListings, error: listingsError } = await supabaseAdmin
     .from('listings')
     .select('id, title, airport_name, airport_code, city, state, listing_type, ownership_type, asking_price, monthly_lease, square_feet, status, is_sample, is_featured, is_sponsored, contact_name, contact_email, contact_phone, created_at, view_count')
+    .in('property_type', ['hangar'])
+    .order('created_at', { ascending: false })
+
+  // Fetch airport home / land / fly-in community listings
+  const { data: homeListings } = await supabaseAdmin
+    .from('listings')
+    .select('id, title, airport_name, airport_code, city, state, property_type, listing_type, asking_price, monthly_lease, bedrooms, bathrooms, home_sqft, lot_acres, has_runway_access, airpark_name, status, is_sample, contact_name, contact_email, contact_phone, created_at, view_count')
+    .in('property_type', ['airport_home', 'land', 'fly_in_community'])
     .order('created_at', { ascending: false })
 
   // Fetch pending broker applications
@@ -123,7 +132,9 @@ export default async function AdminPage() {
   }
 
   const pendingApps = (brokerApps ?? []) as BrokerApp[]
-  const pendingCount = (allListings ?? []).filter(l => l.status === 'pending').length
+  const pendingCount =
+    (allListings ?? []).filter(l => l.status === 'pending').length +
+    (homeListings ?? []).filter(l => l.status === 'pending').length
 
   return (
     <div>
@@ -132,7 +143,7 @@ export default async function AdminPage() {
         <div>
           <h1 style={{ marginBottom: '0.25rem' }}>Admin</h1>
           <p style={{ color: '#6b7280', margin: 0 }}>
-            {pendingCount} pending review · {(allListings ?? []).length} total listings · {adminUsers.length} users · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
+            {pendingCount} pending review · {(allListings ?? []).length} hangars · {(homeListings ?? []).length} homes/land · {adminUsers.length} users · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -205,11 +216,57 @@ export default async function AdminPage() {
         </div>
       )}
 
-      {/* ── All Listings Manager ──────────────────────────────────────────── */}
-      <h2 style={{ fontSize: '1rem', color: '#374151', margin: '0 0 0.75rem' }}>
-        All Listings
-      </h2>
-      <AdminListingsManager initialListings={allListings ?? []} />
+      {/* ── Hangar Listings ───────────────────────────────────────────────── */}
+      <div style={{ borderRadius: '12px', border: '1px solid #bfdbfe', overflow: 'hidden', marginBottom: '2rem' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+          padding: '0.85rem 1.25rem',
+          backgroundColor: '#eff6ff', borderBottom: '1px solid #bfdbfe',
+        }}>
+          <span style={{ fontSize: '1.15rem' }}>🛩</span>
+          <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e40af' }}>Hangar Listings</span>
+          <span style={{
+            marginLeft: '0.35rem', fontSize: '0.75rem', fontWeight: 600,
+            backgroundColor: '#dbeafe', color: '#1e40af',
+            border: '1px solid #bfdbfe', borderRadius: '20px',
+            padding: '0.1rem 0.55rem',
+          }}>
+            {(allListings ?? []).length}
+          </span>
+          <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: '#3b82f6' }}>
+            {(allListings ?? []).filter(l => l.status === 'pending').length} pending
+          </span>
+        </div>
+        <div style={{ padding: '1rem', backgroundColor: 'white' }}>
+          <AdminListingsManager initialListings={allListings ?? []} />
+        </div>
+      </div>
+
+      {/* ── Airport Homes / Land ──────────────────────────────────────────── */}
+      <div style={{ borderRadius: '12px', border: '1px solid #a7f3d0', overflow: 'hidden', marginBottom: '2rem' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+          padding: '0.85rem 1.25rem',
+          backgroundColor: '#ecfdf5', borderBottom: '1px solid #a7f3d0',
+        }}>
+          <Home size={16} style={{ color: '#065f46', flexShrink: 0 }} />
+          <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#065f46' }}>Airport Homes &amp; Land</span>
+          <span style={{
+            marginLeft: '0.35rem', fontSize: '0.75rem', fontWeight: 600,
+            backgroundColor: '#d1fae5', color: '#065f46',
+            border: '1px solid #a7f3d0', borderRadius: '20px',
+            padding: '0.1rem 0.55rem',
+          }}>
+            {(homeListings ?? []).length}
+          </span>
+          <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: '#059669' }}>
+            {(homeListings ?? []).filter(l => l.status === 'pending').length} pending
+          </span>
+        </div>
+        <div style={{ padding: '1rem', backgroundColor: 'white' }}>
+          <AdminHomesManager initialListings={(homeListings ?? []) as AdminHomeListing[]} />
+        </div>
+      </div>
 
       {/* ── Broker Profiles ───────────────────────────────────────────────── */}
       <h2 style={{ fontSize: '1rem', color: '#374151', margin: '2.5rem 0 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
