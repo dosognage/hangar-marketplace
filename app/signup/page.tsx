@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signup, type AuthState } from '@/app/actions/auth'
 
@@ -9,6 +10,8 @@ export default function SignupPage() {
     signup,
     null
   )
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') ?? '/'
 
   return (
     <div style={{ maxWidth: '420px', margin: '3rem auto' }}>
@@ -23,6 +26,7 @@ export default function SignupPage() {
         )}
 
         <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <input type="hidden" name="next" value={next} />
           <div style={fieldStyle}>
             <label htmlFor="name" style={labelStyle}>Full name</label>
             <input

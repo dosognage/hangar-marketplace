@@ -6,7 +6,10 @@ import { Mail } from 'lucide-react'
  * If your Supabase project has "Confirm email" disabled, users are
  * logged in immediately and redirected to /dashboard instead.
  */
-export default function ConfirmPage() {
+export default async function ConfirmPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next } = await searchParams
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login'
+
   return (
     <div style={{ maxWidth: '420px', margin: '4rem auto', textAlign: 'center' }}>
       <div style={{
@@ -26,7 +29,7 @@ export default function ConfirmPage() {
           Didn&apos;t get it? Check your spam folder.
         </p>
         <Link
-          href="/login"
+          href={loginHref}
           style={{
             display: 'inline-block',
             padding: '0.65rem 1.5rem',

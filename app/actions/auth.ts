@@ -51,6 +51,7 @@ export async function signup(
   const password = formData.get('password') as string
   const confirm = formData.get('confirmPassword') as string
   const marketingConsent = formData.get('marketingConsent') === 'on'
+  const next = (formData.get('next') as string) || '/'
 
   if (!name || !email || !password) {
     return { error: 'All fields are required.', name, email }
@@ -105,8 +106,9 @@ export async function signup(
   }
 
   // Supabase may require email confirmation depending on project settings.
-  // Redirect to a page that tells the user to check their inbox.
-  redirect('/signup/confirm')
+  // Pass next through so after confirming they land back where they came from.
+  const confirmUrl = next && next !== '/' ? `/signup/confirm?next=${encodeURIComponent(next)}` : '/signup/confirm'
+  redirect(confirmUrl)
 }
 
 // ── Logout ─────────────────────────────────────────────────────────────────

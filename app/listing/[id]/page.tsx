@@ -361,21 +361,52 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
         </DetailCard>
 
         <DetailCard title="Contact Seller">
-          <DetailRow label="Name" value={typedListing.contact_name} />
-          <div style={{ marginTop: '0.35rem' }}>
-            <span style={detailLabelStyle}>Email</span>
-            <br />
-            <a href={`mailto:${typedListing.contact_email}`} style={{ color: '#6366f1', textDecoration: 'none', fontSize: '0.9rem' }}>
-              {typedListing.contact_email}
-            </a>
-          </div>
-          {typedListing.contact_phone && (
-            <div style={{ marginTop: '0.35rem' }}>
-              <span style={detailLabelStyle}>Phone</span>
-              <br />
-              <a href={`tel:${typedListing.contact_phone}`} style={{ color: '#6366f1', textDecoration: 'none', fontSize: '0.9rem' }}>
-                {typedListing.contact_phone}
-              </a>
+          {user ? (
+            <>
+              <DetailRow label="Name" value={typedListing.contact_name} />
+              <div style={{ marginTop: '0.35rem' }}>
+                <span style={detailLabelStyle}>Email</span>
+                <br />
+                <a href={`mailto:${typedListing.contact_email}`} style={{ color: '#6366f1', textDecoration: 'none', fontSize: '0.9rem' }}>
+                  {typedListing.contact_email}
+                </a>
+              </div>
+              {typedListing.contact_phone && (
+                <div style={{ marginTop: '0.35rem' }}>
+                  <span style={detailLabelStyle}>Phone</span>
+                  <br />
+                  <a href={`tel:${typedListing.contact_phone}`} style={{ color: '#6366f1', textDecoration: 'none', fontSize: '0.9rem' }}>
+                    {typedListing.contact_phone}
+                  </a>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔒</div>
+              <p style={{ margin: '0 0 0.25rem', fontWeight: '600', color: '#111827', fontSize: '0.9rem' }}>
+                Sign in to view contact info
+              </p>
+              <p style={{ margin: '0 0 1rem', color: '#6b7280', fontSize: '0.8rem', lineHeight: 1.4 }}>
+                Create a free account to see the seller's name, email, and phone number.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link href={`/login?next=/listing/${typedListing.id}`} style={{
+                  padding: '0.45rem 1rem', borderRadius: '6px',
+                  backgroundColor: '#111827', color: 'white',
+                  fontSize: '0.85rem', fontWeight: '600', textDecoration: 'none',
+                }}>
+                  Sign in
+                </Link>
+                <Link href={`/signup?next=/listing/${typedListing.id}`} style={{
+                  padding: '0.45rem 1rem', borderRadius: '6px',
+                  backgroundColor: 'white', color: '#111827',
+                  border: '1px solid #d1d5db',
+                  fontSize: '0.85rem', fontWeight: '600', textDecoration: 'none',
+                }}>
+                  Create account
+                </Link>
+              </div>
             </div>
           )}
         </DetailCard>
@@ -407,7 +438,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
       {/* Fuel prices */}
       <FuelPrices airportCode={typedListing.airport_code} />
 
-      {/* Contact form — hidden on sample listings, replaced with owner CTA */}
+      {/* Contact form — hidden on sample listings, gated behind auth for others */}
       {typedListing.is_sample ? (
         <div style={{
           backgroundColor: '#1a3a5c',
@@ -435,13 +466,46 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
             List your hangar free →
           </Link>
         </div>
-      ) : (
+      ) : user ? (
         <ContactForm
           listingId={typedListing.id}
           listingTitle={typedListing.title}
           sellerName={typedListing.contact_name}
           sellerEmail={typedListing.contact_email}
         />
+      ) : (
+        <div style={{
+          backgroundColor: '#f9fafb',
+          border: '1px solid #e5e7eb',
+          borderRadius: '10px',
+          padding: '2rem',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '1.75rem', marginBottom: '0.6rem' }}>🔒</div>
+          <p style={{ margin: '0 0 0.3rem', fontWeight: '700', color: '#111827', fontSize: '1rem' }}>
+            Sign in to contact the seller
+          </p>
+          <p style={{ margin: '0 0 1.25rem', color: '#6b7280', fontSize: '0.875rem', lineHeight: 1.5 }}>
+            Create a free Hangar Marketplace account to send a message directly to this listing's owner.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href={`/login?next=/listing/${typedListing.id}`} style={{
+              padding: '0.65rem 1.5rem', borderRadius: '7px',
+              backgroundColor: '#111827', color: 'white',
+              fontSize: '0.925rem', fontWeight: '600', textDecoration: 'none',
+            }}>
+              Sign in
+            </Link>
+            <Link href={`/signup?next=/listing/${typedListing.id}`} style={{
+              padding: '0.65rem 1.5rem', borderRadius: '7px',
+              backgroundColor: 'white', color: '#111827',
+              border: '1px solid #d1d5db',
+              fontSize: '0.925rem', fontWeight: '600', textDecoration: 'none',
+            }}>
+              Create a free account
+            </Link>
+          </div>
+        </div>
       )}
 
       {/* Similar listings */}
