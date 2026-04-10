@@ -103,13 +103,13 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
           {/* Links */}
           <div style={{ padding: '0.4rem 0' }}>
             <DropdownLink href="/saved">
-              <HeartIcon filled={savedCount > 0} size={15} />
+              <HeartIcon filled={false} size={15} />
               Saved listings
               {savedCount > 0 && (
                 <span style={{
                   marginLeft: 'auto',
-                  backgroundColor: '#dc2626',
-                  color: 'white',
+                  backgroundColor: '#f3f4f6',
+                  color: '#6b7280',
                   borderRadius: '9999px',
                   fontSize: '0.7rem',
                   fontWeight: '700',
@@ -120,7 +120,15 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
                 </span>
               )}
             </DropdownLink>
-            <DropdownLink href="/dashboard">My listings</DropdownLink>
+            <DropdownLink href="/dashboard">
+              {/* Hangar icon */}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12 C2 7 6 3 12 3 C18 3 22 7 22 12" />
+                <rect x="2" y="12" width="20" height="9" rx="0" />
+                <path d="M9 21 L9 16 Q12 13 15 16 L15 21" />
+              </svg>
+              My listings
+            </DropdownLink>
             <DropdownLink href="/settings">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3"/>
