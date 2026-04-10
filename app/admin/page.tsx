@@ -13,7 +13,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import BrokerApplicationButtons from './BrokerApplicationButtons'
 import ReGeocodeButton from './RegeoCodeButton'
 import AdminListingsManager from './AdminListingsManager'
-import { Star, Building2 } from 'lucide-react'
+import AdminUsersManager, { type AdminUser } from './AdminUsersManager'
+import { Star, Building2, Users } from 'lucide-react'
 
 type BrokerApp = {
   id: string
@@ -58,6 +59,44 @@ export default async function AdminPage() {
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
 
+  // Fetch all auth users (paginated — Supabase returns up to 1000 per page)
+  const { data: authData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+  const authUsers = authData?.users ?? []
+
+  // Listing counts per user_id
+  const { data: listingCounts } = await supabaseAdmin
+    .from('listings')
+    .select('user_id')
+    .not('user_id', 'is', null)
+
+  const countByUser: Record<string, number> = {}
+  for (const row of listingCounts ?? []) {
+    if (row.user_id) countByUser[row.user_id] = (countByUser[row.user_id] ?? 0) + 1
+  }
+
+  // Broker profiles keyed by user_id (to get profile id for links)
+  const { data: brokerProfiles } = await supabaseAdmin
+    .from('broker_profiles')
+    .select('id, user_id')
+
+  const brokerProfileByUser: Record<string, string> = {}
+  for (const bp of brokerProfiles ?? []) {
+    if (bp.user_id) brokerProfileByUser[bp.user_id] = bp.id
+  }
+
+  // Shape into AdminUser[]
+  const adminUsers: AdminUser[] = authUsers.map(u => ({
+    id:                u.id,
+    email:             u.email ?? '(no email)',
+    display_name:      (u.user_metadata?.full_name as string | null) ?? null,
+    created_at:        u.created_at,
+    last_sign_in:      u.last_sign_in_at ?? null,
+    is_broker:         u.user_metadata?.is_broker === true,
+    broker_profile_id: (brokerProfileByUser[u.id] ?? null),
+    listing_count:     countByUser[u.id] ?? 0,
+    confirmed:         !!u.email_confirmed_at,
+  })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
   if (listingsError) {
     return (
       <div>
@@ -78,7 +117,7 @@ export default async function AdminPage() {
         <div>
           <h1 style={{ marginBottom: '0.25rem' }}>Admin</h1>
           <p style={{ color: '#6b7280', margin: 0 }}>
-            {pendingCount} pending review · {(allListings ?? []).length} total listings · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
+            {pendingCount} pending review · {(allListings ?? []).length} total listings · {adminUsers.length} users · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -156,6 +195,14 @@ export default async function AdminPage() {
         All Listings
       </h2>
       <AdminListingsManager initialListings={allListings ?? []} />
+
+      {/* ── Users ─────────────────────────────────────────────────────────── */}
+      <h2 style={{ fontSize: '1rem', color: '#374151', margin: '2.5rem 0 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <Users size={15} style={{ display: 'inline', verticalAlign: 'middle' }} /> All Users
+      </h2>
+      <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '1.25rem' }}>
+        <AdminUsersManager users={adminUsers} />
+      </div>
     </div>
   )
 }
