@@ -11,14 +11,23 @@ export type ListingFormData = {
   airport_code: string
   city: string
   state: string
+  property_type: string
   listing_type: string
   ownership_type: string
   asking_price: string
   monthly_lease: string
+  // Hangar-specific
   square_feet: string
   door_width: string
   door_height: string
   hangar_depth: string
+  // Home/land-specific
+  bedrooms: string
+  bathrooms: string
+  home_sqft: string
+  lot_acres: string
+  has_runway_access: boolean
+  airpark_name: string
   description: string
   contact_name: string
   contact_email: string
@@ -48,6 +57,9 @@ export async function createListing(data: ListingFormData): Promise<{ id: string
   const isBroker     = user.user_metadata?.is_broker === true
   const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
 
+  const isHangar = !data.property_type || data.property_type === 'hangar'
+  const isHome   = data.property_type === 'airport_home' || data.property_type === 'fly_in_community'
+
   const { data: listing, error } = await supabaseAdmin
     .from('listings')
     .insert([{
@@ -57,16 +69,25 @@ export async function createListing(data: ListingFormData): Promise<{ id: string
       airport_code:     data.airport_code,
       city:             data.city,
       state:            data.state,
+      property_type:    data.property_type || 'hangar',
       listing_type:     data.listing_type,
       ownership_type:   data.ownership_type,
       asking_price:     data.listing_type === 'sale' && data.asking_price
                           ? Number(data.asking_price) : null,
       monthly_lease:    IS_RENTAL(data.listing_type) && data.monthly_lease
                           ? Number(data.monthly_lease) : null,
-      square_feet:      data.square_feet  ? Number(data.square_feet)  : null,
-      door_width:       data.door_width   ? Number(data.door_width)   : null,
-      door_height:      data.door_height  ? Number(data.door_height)  : null,
-      hangar_depth:     data.hangar_depth ? Number(data.hangar_depth) : null,
+      // Hangar-specific
+      square_feet:      isHangar && data.square_feet  ? Number(data.square_feet)  : null,
+      door_width:       isHangar && data.door_width   ? Number(data.door_width)   : null,
+      door_height:      isHangar && data.door_height  ? Number(data.door_height)  : null,
+      hangar_depth:     isHangar && data.hangar_depth ? Number(data.hangar_depth) : null,
+      // Home/land-specific
+      bedrooms:         isHome && data.bedrooms    ? Number(data.bedrooms)    : null,
+      bathrooms:        isHome && data.bathrooms   ? Number(data.bathrooms)   : null,
+      home_sqft:        isHome && data.home_sqft   ? Number(data.home_sqft)   : null,
+      lot_acres:        data.lot_acres             ? Number(data.lot_acres)   : null,
+      has_runway_access: data.has_runway_access ?? false,
+      airpark_name:     data.airpark_name || null,
       description:      data.description  || null,
       contact_name:     data.contact_name,
       contact_email:    data.contact_email,

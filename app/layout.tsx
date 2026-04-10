@@ -209,9 +209,9 @@ export default async function RootLayout({
               {/* Secondary nav links */}
               <div className="nav-links">
                 <Link href="/" style={navLinkStyle}>Browse</Link>
-                <Link href="/requests" style={navLinkStyle}>Requests</Link>
+                <Link href="/airport-homes" style={navLinkStyle}>Airport Homes</Link>
                 <Link href="/brokers" style={navLinkStyle}>Brokers</Link>
-                <Link href="/submit" style={navLinkStyle}>List a Hangar</Link>
+                <Link href="/submit" style={navLinkStyle}>List a Property</Link>
               </div>
 
               {/* Mobile hamburger — only visible on mobile via CSS */}
@@ -307,9 +307,9 @@ export default async function RootLayout({
                 <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
                   <FooterCol title="Platform">
                     <FooterLink href="/">Browse hangars</FooterLink>
-                    <FooterLink href="/submit">List a hangar</FooterLink>
+                    <FooterLink href="/airport-homes">Airport Homes &amp; Land</FooterLink>
+                    <FooterLink href="/submit">List a property</FooterLink>
                     <FooterLink href="/requests">Hangar requests</FooterLink>
-                    <FooterLink href="/requests/new">Post a request</FooterLink>
                     <FooterLink href="/brokers">Find a broker</FooterLink>
                     <FooterLink href="/pricing">Pricing</FooterLink>
                   </FooterCol>

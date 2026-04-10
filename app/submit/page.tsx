@@ -31,19 +31,34 @@ const EMPTY_FORM = {
   airport_code: '',
   city: '',
   state: '',
+  property_type: 'hangar',
   listing_type: 'sale',
   ownership_type: '',
   asking_price: '',
   monthly_lease: '',
+  // Hangar-specific
   square_feet: '',
   door_width: '',
   door_height: '',
   hangar_depth: '',
+  // Home/land-specific
+  bedrooms: '',
+  bathrooms: '',
+  home_sqft: '',
+  lot_acres: '',
+  airpark_name: '',
   description: '',
   contact_name: '',
   contact_email: '',
   contact_phone: '',
 }
+
+const PROPERTY_TYPE_OPTIONS = [
+  { value: 'hangar',           label: 'Hangar' },
+  { value: 'airport_home',     label: 'Airport Home' },
+  { value: 'land',             label: 'Land / Lot' },
+  { value: 'fly_in_community', label: 'Fly-in Community' },
+]
 
 // Listings that require a monthly rate (not a sale price)
 const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
@@ -51,6 +66,7 @@ const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
 export default function SubmitPage() {
   const router = useRouter()
   const [formData, setFormData] = useState(EMPTY_FORM)
+  const [hasRunwayAccess, setHasRunwayAccess] = useState(false)
   const [photos, setPhotos] = useState<File[]>([])
   const [status, setStatus] = useState<{ type: 'error'; message: string } | null>(null)
   const [loading, setLoading] = useState(false)
@@ -109,6 +125,7 @@ export default function SubmitPage() {
 
       const { id: listingId } = await createListing({
         ...formData,
+        has_runway_access: hasRunwayAccess,
         hangar_lat: hangarLat,
         hangar_lng: hangarLng,
       })
@@ -188,10 +205,10 @@ export default function SubmitPage() {
   return (
     <div style={{ maxWidth: '700px' }}>
       <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ marginBottom: '0.25rem' }}>Submit a Hangar Listing</h1>
+        <h1 style={{ marginBottom: '0.25rem' }}>Submit a Listing</h1>
         <p style={{ color: '#6b7280', margin: 0 }}>
-          Listing a full hangar for sale or lease, or have extra space to share? Fill out the details below.
-          Your listing will be reviewed before going live.
+          List a hangar, airport home, land, or fly-in community property. Fill out the details below —
+          your listing will be reviewed before going live.
         </p>
       </div>
 
@@ -210,10 +227,49 @@ export default function SubmitPage() {
 
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.25rem' }}>
 
+        {/* ── Property Type ────────────────────────────────────────────── */}
+        <Section title="Property Type">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.6rem' }}>
+            {PROPERTY_TYPE_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, property_type: opt.value }))}
+                style={{
+                  padding: '0.7rem 0.5rem',
+                  border: `2px solid ${formData.property_type === opt.value ? '#6366f1' : '#e5e7eb'}`,
+                  borderRadius: '8px',
+                  backgroundColor: formData.property_type === opt.value ? '#eef2ff' : 'white',
+                  color: formData.property_type === opt.value ? '#4338ca' : '#374151',
+                  fontWeight: formData.property_type === opt.value ? '700' : '500',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {opt.value === 'hangar'           && '🏗 '}
+                {opt.value === 'airport_home'     && '🏡 '}
+                {opt.value === 'land'             && '🌿 '}
+                {opt.value === 'fly_in_community' && '✈ '}
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </Section>
+
         {/* ── Basic Info ──────────────────────────────────────────────── */}
         <Section title="Basic Info">
           <Field label="Listing title *">
-            <input name="title" placeholder="e.g. 60×60 T-Hangar at KPAE" value={formData.title} onChange={handleChange} required style={inputStyle} />
+            <input
+              name="title"
+              placeholder={
+                formData.property_type === 'hangar'           ? 'e.g. 60×60 T-Hangar at KPAE' :
+                formData.property_type === 'airport_home'     ? 'e.g. 3BR Fly-in Home at KCMA' :
+                formData.property_type === 'land'             ? 'e.g. 2-Acre Aviation Lot at KLGU' :
+                'e.g. Camarillo Airpark Lot 12'
+              }
+              value={formData.title} onChange={handleChange} required style={inputStyle}
+            />
           </Field>
           <TwoCol>
             <Field label="Airport name *">
@@ -233,14 +289,25 @@ export default function SubmitPage() {
           </TwoCol>
           <Field label="Listing type *">
             <select name="listing_type" value={formData.listing_type} onChange={handleChange} style={inputStyle}>
-              <option value="sale">For Sale (full hangar)</option>
-              <option value="lease">For Lease (full hangar)</option>
-              <option value="space">Space Available (partial hangar)</option>
+              {formData.property_type === 'hangar' ? (
+                <>
+                  <option value="sale">For Sale (full hangar)</option>
+                  <option value="lease">For Lease (full hangar)</option>
+                  <option value="space">Space Available (partial hangar)</option>
+                </>
+              ) : (
+                <>
+                  <option value="sale">For Sale</option>
+                  <option value="lease">For Lease</option>
+                </>
+              )}
             </select>
           </Field>
-          <Field label="Ownership type *">
-            <input name="ownership_type" placeholder="Private / Municipal / Condo" value={formData.ownership_type} onChange={handleChange} required style={inputStyle} />
-          </Field>
+          {formData.property_type === 'hangar' && (
+            <Field label="Ownership type *">
+              <input name="ownership_type" placeholder="Private / Municipal / Condo" value={formData.ownership_type} onChange={handleChange} required style={inputStyle} />
+            </Field>
+          )}
           {formData.listing_type === 'space' && (
             <div style={{
               backgroundColor: '#eff6ff', border: '1px solid #bfdbfe',
@@ -271,38 +338,80 @@ export default function SubmitPage() {
           )}
         </Section>
 
-        {/* ── Dimensions ──────────────────────────────────────────────── */}
-        <Section title="Dimensions">
-          <TwoCol>
-            <Field label="Square feet">
-              <input name="square_feet" type="number" placeholder="3600" value={formData.square_feet} onChange={handleChange} style={inputStyle} />
+        {/* ── Hangar Dimensions (hangar only) ─────────────────────────── */}
+        {formData.property_type === 'hangar' && (
+          <Section title="Dimensions">
+            <TwoCol>
+              <Field label="Square feet">
+                <input name="square_feet" type="number" placeholder="3600" value={formData.square_feet} onChange={handleChange} style={inputStyle} />
+              </Field>
+              <Field label=""><span /></Field>
+            </TwoCol>
+            <TwoCol>
+              <Field label="Door width (ft)">
+                <input name="door_width" type="number" placeholder="40" value={formData.door_width} onChange={handleChange} style={inputStyle} />
+              </Field>
+              <Field label="Door height (ft)">
+                <input name="door_height" type="number" placeholder="14" value={formData.door_height} onChange={handleChange} style={inputStyle} />
+              </Field>
+            </TwoCol>
+            <TwoCol>
+              <Field label="Hangar depth (ft)">
+                <input name="hangar_depth" type="number" placeholder="45" value={formData.hangar_depth} onChange={handleChange} style={inputStyle} />
+              </Field>
+              <Field label=""><span /></Field>
+            </TwoCol>
+          </Section>
+        )}
+
+        {/* ── Property Details (home / land / fly-in) ──────────────────── */}
+        {formData.property_type !== 'hangar' && (
+          <Section title="Property Details">
+            {(formData.property_type === 'airport_home' || formData.property_type === 'fly_in_community') && (
+              <>
+                <TwoCol>
+                  <Field label="Bedrooms">
+                    <input name="bedrooms" type="number" placeholder="3" value={formData.bedrooms} onChange={handleChange} style={inputStyle} />
+                  </Field>
+                  <Field label="Bathrooms">
+                    <input name="bathrooms" type="number" step="0.5" placeholder="2.5" value={formData.bathrooms} onChange={handleChange} style={inputStyle} />
+                  </Field>
+                </TwoCol>
+                <Field label="Home square footage">
+                  <input name="home_sqft" type="number" placeholder="2400" value={formData.home_sqft} onChange={handleChange} style={inputStyle} />
+                </Field>
+              </>
+            )}
+            <Field label="Lot size (acres)">
+              <input name="lot_acres" type="number" step="0.01" placeholder="1.5" value={formData.lot_acres} onChange={handleChange} style={inputStyle} />
             </Field>
-            <Field label="">
-              <span /> {/* spacer */}
+            <Field label="Airpark / community name">
+              <input name="airpark_name" placeholder="e.g. Spruce Creek Fly-In" value={formData.airpark_name} onChange={handleChange} style={inputStyle} />
             </Field>
-          </TwoCol>
-          <TwoCol>
-            <Field label="Door width (ft)">
-              <input name="door_width" type="number" placeholder="40" value={formData.door_width} onChange={handleChange} style={inputStyle} />
-            </Field>
-            <Field label="Door height (ft)">
-              <input name="door_height" type="number" placeholder="14" value={formData.door_height} onChange={handleChange} style={inputStyle} />
-            </Field>
-          </TwoCol>
-          <TwoCol>
-            <Field label="Hangar depth (ft)">
-              <input name="hangar_depth" type="number" placeholder="45" value={formData.hangar_depth} onChange={handleChange} style={inputStyle} />
-            </Field>
-            <Field label=""><span /></Field>
-          </TwoCol>
-        </Section>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontSize: '0.9rem', color: '#374151' }}>
+              <input
+                type="checkbox"
+                checked={hasRunwayAccess}
+                onChange={e => setHasRunwayAccess(e.target.checked)}
+                style={{ width: '16px', height: '16px', accentColor: '#6366f1' }}
+              />
+              Direct runway / taxiway access from property
+            </label>
+          </Section>
+        )}
 
         {/* ── Description ─────────────────────────────────────────────── */}
         <Section title="Description">
-          <Field label="Tell buyers about this hangar">
+          <Field label={`Tell buyers about this ${formData.property_type === 'hangar' ? 'hangar' : formData.property_type === 'land' ? 'land' : 'property'}`}>
             <textarea
               name="description"
-              placeholder="Include any notable features, amenities, access details, tie-down info, etc."
+              placeholder={
+                formData.property_type === 'hangar'
+                  ? 'Include any notable features, amenities, access details, tie-down info, etc.'
+                  : formData.property_type === 'land'
+                  ? 'Describe the lot, zoning, utilities, proximity to runway, adjacent amenities, etc.'
+                  : 'Describe the home, hangar setup, community amenities, runway access, nearby services, etc.'
+              }
               value={formData.description}
               onChange={handleChange}
               rows={5}
@@ -311,10 +420,10 @@ export default function SubmitPage() {
           </Field>
         </Section>
 
-        {/* ── Hangar Location on Airport ───────────────────────────────── */}
-        <Section title="Hangar Location (optional)">
+        {/* ── Location on Airport ──────────────────────────────────────── */}
+        <Section title={formData.property_type === 'hangar' ? 'Hangar Location (optional)' : 'Property Location on Airport (optional)'}>
           <p style={{ margin: '0 0 0.75rem', color: '#6b7280', fontSize: '0.82rem', lineHeight: 1.5 }}>
-            Enter your airport code above and pin exactly where your hangar is on the field. Buyers can see it on
+            Enter your airport code above and pin exactly where your property is on the field. Buyers can see it on
             the airport diagram — a feature no other marketplace offers.
           </p>
           {mapIcao ? (

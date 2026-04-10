@@ -97,14 +97,23 @@ type Listing = {
   airport_code: string
   city: string
   state: string
+  property_type: string
   listing_type: string
   ownership_type: string
   asking_price: number | null
   monthly_lease: number | null
+  // Hangar-specific
   square_feet: number | null
   door_width: number | null
   door_height: number | null
   hangar_depth: number | null
+  // Home/land-specific
+  bedrooms: number | null
+  bathrooms: number | null
+  home_sqft: number | null
+  lot_acres: number | null
+  has_runway_access: boolean | null
+  airpark_name: string | null
   description: string | null
   is_featured: boolean
   featured_until: string | null
@@ -350,20 +359,48 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
 
       {/* Details card — 2 columns on desktop, 1 on mobile (see globals.css .detail-grid) */}
       <div className="detail-grid">
-        <DetailCard title="Hangar Details">
-          <DetailRow label="Listing type" value={typedListing.listing_type === 'sale' ? 'For Sale' : typedListing.listing_type === 'space' ? 'Space Available' : 'For Lease'} />
-          <DetailRow label="Ownership" value={typedListing.ownership_type} />
-          {typedListing.square_feet && (
+        <DetailCard title={
+          typedListing.property_type === 'airport_home'     ? 'Home Details' :
+          typedListing.property_type === 'land'             ? 'Land Details' :
+          typedListing.property_type === 'fly_in_community' ? 'Community Details' :
+          'Hangar Details'
+        }>
+          <DetailRow
+            label="Listing type"
+            value={typedListing.listing_type === 'sale' ? 'For Sale' : typedListing.listing_type === 'space' ? 'Space Available' : 'For Lease'}
+          />
+          {typedListing.airpark_name && (
+            <DetailRow label="Airpark / Community" value={typedListing.airpark_name} />
+          )}
+          {/* Hangar-specific */}
+          {typedListing.property_type === 'hangar' && typedListing.ownership_type && (
+            <DetailRow label="Ownership" value={typedListing.ownership_type} />
+          )}
+          {typedListing.property_type === 'hangar' && typedListing.square_feet && (
             <DetailRow label="Square feet" value={`${typedListing.square_feet.toLocaleString()} sq ft`} />
           )}
-          {(typedListing.door_width || typedListing.door_height) && (
-            <DetailRow
-              label="Door dimensions"
-              value={`${typedListing.door_width ?? '?'}′ W × ${typedListing.door_height ?? '?'}′ H`}
-            />
+          {typedListing.property_type === 'hangar' && (typedListing.door_width || typedListing.door_height) && (
+            <DetailRow label="Door dimensions" value={`${typedListing.door_width ?? '?'}′ W × ${typedListing.door_height ?? '?'}′ H`} />
           )}
-          {typedListing.hangar_depth && (
+          {typedListing.property_type === 'hangar' && typedListing.hangar_depth && (
             <DetailRow label="Hangar depth" value={`${typedListing.hangar_depth}′`} />
+          )}
+          {/* Home-specific */}
+          {typedListing.bedrooms != null && (
+            <DetailRow label="Bedrooms" value={`${typedListing.bedrooms}`} />
+          )}
+          {typedListing.bathrooms != null && (
+            <DetailRow label="Bathrooms" value={`${typedListing.bathrooms}`} />
+          )}
+          {typedListing.home_sqft != null && (
+            <DetailRow label="Home size" value={`${typedListing.home_sqft.toLocaleString()} sq ft`} />
+          )}
+          {/* Home + land */}
+          {typedListing.lot_acres != null && (
+            <DetailRow label="Lot size" value={`${typedListing.lot_acres} acres`} />
+          )}
+          {typedListing.has_runway_access && (
+            <DetailRow label="Runway access" value="✈ Direct runway / taxiway access" />
           )}
         </DetailCard>
 
@@ -422,7 +459,12 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
       {/* Description */}
       {typedListing.description && (
         <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '1.25rem', marginBottom: '1.5rem' }}>
-          <h2 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: '#374151' }}>About this hangar</h2>
+          <h2 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: '#374151' }}>
+            {typedListing.property_type === 'airport_home'     ? 'About this home' :
+             typedListing.property_type === 'land'             ? 'About this land' :
+             typedListing.property_type === 'fly_in_community' ? 'About this community' :
+             'About this hangar'}
+          </h2>
           <p style={{ margin: 0, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
             {typedListing.description}
           </p>
