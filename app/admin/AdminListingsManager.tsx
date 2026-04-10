@@ -145,15 +145,16 @@ export default function AdminListingsManager({ initialListings }: { initialListi
   }
 
   const btnStyle = (color: string, bg: string, border: string): React.CSSProperties => ({
-    padding: '0.3rem 0.7rem',
+    padding: '0.3rem 0.75rem',
     fontSize: '0.775rem',
-    fontWeight: 600,
-    borderRadius: '5px',
-    border: `1.5px solid ${border}`,
+    fontWeight: 400,
+    borderRadius: '6px',
+    border: `1px solid ${border}`,
     backgroundColor: bg,
     color,
     cursor: 'pointer',
     whiteSpace: 'nowrap',
+    letterSpacing: '0.01em',
   })
 
   return (
@@ -321,7 +322,7 @@ export default function AdminListingsManager({ initialListings }: { initialListi
                   <div style={{ marginLeft: 'auto' }}>
                     {confirmDelete === listing.id ? (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ fontSize: '0.78rem', color: '#b91c1c', fontWeight: 600 }}>Delete permanently?</span>
+                        <span style={{ fontSize: '0.78rem', color: '#6b7280', fontWeight: 400 }}>Delete permanently?</span>
                         <button
                           onClick={() => handleDelete(listing.id)}
                           style={btnStyle('white', '#dc2626', '#dc2626')}
