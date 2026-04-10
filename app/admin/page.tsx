@@ -83,6 +83,15 @@ export default async function AdminPage() {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <ReGeocodeButton />
+          <a href="/broker/dashboard" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+            padding: '0.45rem 0.9rem', borderRadius: '7px',
+            backgroundColor: '#dbeafe', color: '#1e40af',
+            border: '1px solid #bfdbfe', fontWeight: '600',
+            fontSize: '0.825rem', textDecoration: 'none', whiteSpace: 'nowrap',
+          }}>
+            <Building2 size={14} style={{ flexShrink: 0 }} /> Broker Dashboard
+          </a>
           <a href="/admin/featured" style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             padding: '0.45rem 0.9rem', borderRadius: '7px',
