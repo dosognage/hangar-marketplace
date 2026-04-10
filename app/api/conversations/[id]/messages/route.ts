@@ -21,7 +21,7 @@ export async function GET(
 
   if (!convo) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const brokerUserId = (convo.broker_profile as { user_id: string } | null)?.user_id
+  const brokerUserId = (convo.broker_profile as unknown as { user_id: string } | null)?.user_id
   if (convo.buyer_id !== user.id && brokerUserId !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -67,7 +67,7 @@ export async function POST(
 
   if (!convo) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const brokerUserId = (convo.broker_profile as { user_id: string } | null)?.user_id
+  const brokerUserId = (convo.broker_profile as unknown as { user_id: string } | null)?.user_id
   if (convo.buyer_id !== user.id && brokerUserId !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
