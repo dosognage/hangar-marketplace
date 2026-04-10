@@ -73,6 +73,19 @@ export default function SignupPage() {
             />
           </div>
 
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', marginTop: '0.25rem' }}>
+            <input
+              id="marketingConsent"
+              name="marketingConsent"
+              type="checkbox"
+              defaultChecked={false}
+              style={{ marginTop: '2px', accentColor: '#111827', flexShrink: 0 }}
+            />
+            <label htmlFor="marketingConsent" style={{ fontSize: '0.8rem', color: '#6b7280', lineHeight: 1.5, cursor: 'pointer' }}>
+              Send me occasional updates on new hangar listings, aviation news, and Hangar Marketplace announcements. You can unsubscribe any time.
+            </label>
+          </div>
+
           <button type="submit" disabled={isPending} style={buttonStyle}>
             {isPending ? 'Creating account…' : 'Create account'}
           </button>

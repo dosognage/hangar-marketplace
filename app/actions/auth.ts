@@ -50,6 +50,7 @@ export async function signup(
   const email = (formData.get('email') as string)?.trim()
   const password = formData.get('password') as string
   const confirm = formData.get('confirmPassword') as string
+  const marketingConsent = formData.get('marketingConsent') === 'on'
 
   if (!name || !email || !password) {
     return { error: 'All fields are required.', name, email }
@@ -82,6 +83,25 @@ export async function signup(
     await sendEmail({ to: email, subject, html })
   } catch (emailErr) {
     console.error('[signup] Welcome email failed:', emailErr)
+  }
+
+  // If user opted into marketing emails, record their consent
+  if (marketingConsent) {
+    try {
+      const supabaseAdmin = (await import('@/lib/supabase-admin')).supabaseAdmin
+      await supabaseAdmin.from('email_subscribers').upsert(
+        {
+          email: email.toLowerCase(),
+          marketing_consent: true,
+          consent_timestamp: new Date().toISOString(),
+          consent_source: 'signup_form',
+          unsubscribed_at: null,
+        },
+        { onConflict: 'email' }
+      )
+    } catch (subErr) {
+      console.error('[signup] Marketing consent save failed:', subErr)
+    }
   }
 
   // Supabase may require email confirmation depending on project settings.
