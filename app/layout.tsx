@@ -162,8 +162,6 @@ export default async function RootLayout({
                 <Link href="/requests" style={navLinkStyle}>Requests</Link>
                 <Link href="/brokers" style={navLinkStyle}>Brokers</Link>
                 <Link href="/submit" style={navLinkStyle}>List a Hangar</Link>
-                <Link href="/blog" style={navLinkStyle}>Blog</Link>
-                <Link href="/pricing" style={navLinkStyle}>Pricing</Link>
               </div>
 
               {/* Mobile hamburger — only visible on mobile via CSS */}
@@ -250,9 +248,11 @@ export default async function RootLayout({
                     <FooterLink href="/submit">List a hangar</FooterLink>
                     <FooterLink href="/requests">Hangar requests</FooterLink>
                     <FooterLink href="/requests/new">Post a request</FooterLink>
+                    <FooterLink href="/brokers">Find a broker</FooterLink>
                     <FooterLink href="/pricing">Pricing</FooterLink>
                   </FooterCol>
                   <FooterCol title="Company">
+                    <FooterLink href="/blog">Blog</FooterLink>
                     <FooterLink href="/privacy">Privacy Policy</FooterLink>
                     <FooterLink href="/unsubscribe">Unsubscribe</FooterLink>
                     <FooterLink href="/apply-broker">Broker verification</FooterLink>

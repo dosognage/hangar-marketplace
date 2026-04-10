@@ -10,8 +10,6 @@ const NAV_LINKS = [
   { href: '/requests', label: 'Requests' },
   { href: '/brokers',  label: 'Brokers' },
   { href: '/submit',   label: 'List a Hangar' },
-  { href: '/blog',     label: 'Blog' },
-  { href: '/pricing',  label: 'Pricing' },
 ]
 
 export default function MobileMenu() {
