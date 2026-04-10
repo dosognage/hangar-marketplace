@@ -20,9 +20,10 @@ type Props = {
   isBroker?: boolean
   brokerProfileId?: string
   hasTeam?: boolean
+  pendingApplications?: number
 }
 
-export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProfileId, hasTeam = false }: Props) {
+export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProfileId, hasTeam = false, pendingApplications = 0 }: Props) {
   const { savedCount } = useSavedCount()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -160,7 +161,30 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
             ) : (
               <DropdownLink href="/apply-broker" onClose={() => setOpen(false)}>Apply as broker</DropdownLink>
             )}
-            {isAdmin && <DropdownLink href="/admin" onClose={() => setOpen(false)}>Admin</DropdownLink>}
+            {isAdmin && (
+              <DropdownLink href="/admin" onClose={() => setOpen(false)}>
+                Admin
+                {pendingApplications > 0 && (
+                  <span style={{
+                    marginLeft: 'auto',
+                    minWidth: '18px',
+                    height: '18px',
+                    borderRadius: '9999px',
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    fontSize: '0.65rem',
+                    fontWeight: '700',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 5px',
+                    lineHeight: 1,
+                  }}>
+                    {pendingApplications}
+                  </span>
+                )}
+              </DropdownLink>
+            )}
           </div>
 
           {/* Logout */}

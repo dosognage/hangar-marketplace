@@ -72,6 +72,7 @@ export default async function RootLayout({
   let isAdmin = false
   let initialSavedCount = 0
   let hasTeam = false
+  let pendingApplications = 0
 
   try {
     const supabase = await createServerClient()
@@ -97,6 +98,14 @@ export default async function RootLayout({
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
       hasTeam = (orgCount ?? 0) > 0
+    }
+
+    if (isAdmin) {
+      const { count: appCount } = await supabase
+        .from('broker_applications')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending')
+      pendingApplications = appCount ?? 0
     }
   } catch {
     // Build-time prerender: env vars / cookies not available → show logged-out nav
@@ -187,6 +196,7 @@ export default async function RootLayout({
                       ?? user.email!.split('@')[0]
                     }
                     isAdmin={!!isAdmin}
+                    pendingApplications={pendingApplications}
                     isBroker={user.user_metadata?.is_broker === true}
                     brokerProfileId={user.user_metadata?.broker_profile_id as string | undefined}
                     hasTeam={hasTeam}
