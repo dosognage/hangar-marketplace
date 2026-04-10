@@ -355,8 +355,8 @@ export default function AdminUsersManager({ users: initialUsers }: Props) {
           </tbody>
         </table>
       </div>
-    </div> {/* end inner wrapper */}
-    </div> {/* end outer wrapper */}
+    </div>
+    </div>
   )
 }
 
