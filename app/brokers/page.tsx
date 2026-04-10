@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { createServerClient } from '@/lib/supabase-server'
+import MessageButton from '@/app/broker/[id]/MessageButton'
 
 export const metadata: Metadata = {
   title: 'Find a Verified Hangar Broker | Hangar Marketplace',
@@ -15,6 +17,7 @@ type PageProps = {
 
 type BrokerProfile = {
   id: string
+  user_id: string
   full_name: string
   brokerage: string
   license_state: string
@@ -42,10 +45,18 @@ export default async function BrokersPage({ searchParams }: PageProps) {
   const qVal     = (Array.isArray(q)     ? q[0]     : q     ?? '').trim()
   const stateVal = (Array.isArray(state) ? state[0] : state ?? '').trim().toUpperCase()
 
+  // Get current user (for message button)
+  let currentUserId: string | null = null
+  try {
+    const serverClient = createServerClient()
+    const { data: { user } } = await serverClient.auth.getUser()
+    currentUserId = user?.id ?? null
+  } catch {}
+
   // Fetch all visible broker profiles with their listings (for active count)
   let query = supabase
     .from('broker_profiles')
-    .select('id, full_name, brokerage, license_state, avatar_url, bio, created_at, listings(id, status)')
+    .select('id, user_id, full_name, brokerage, license_state, avatar_url, bio, created_at, listings(id, status)')
     .eq('is_hidden', false)
     .order('created_at', { ascending: false })
 
@@ -165,28 +176,26 @@ export default async function BrokersPage({ searchParams }: PageProps) {
         }}>
           {brokers.map(broker => {
             const activeCount = broker.listings.filter(l => l.status === 'approved').length
+            const isOwnProfile = currentUserId === broker.user_id
             return (
-              <Link
+              <div
                 key={broker.id}
-                href={`/broker/${broker.id}`}
-                style={{ textDecoration: 'none', color: 'inherit' }}
+                className="hover-card"
+                style={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '1.5rem',
+                  height: '100%',
+                  boxSizing: 'border-box',
+                  transition: 'box-shadow 0.15s, border-color 0.15s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                }}
               >
-                <div
-                  className="hover-card"
-                  style={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '12px',
-                    padding: '1.5rem',
-                    height: '100%',
-                    boxSizing: 'border-box',
-                    transition: 'box-shadow 0.15s, border-color 0.15s',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '1rem',
-                  }}
-                >
-                  {/* Top row: avatar + name */}
+                {/* Top row: avatar + name — links to profile */}
+                <Link href={`/broker/${broker.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                     <div style={{
                       width: '56px', height: '56px', borderRadius: '50%',
@@ -233,12 +242,14 @@ export default async function BrokersPage({ searchParams }: PageProps) {
                       </p>
                     </div>
                   </div>
+                </Link>
 
-                  {/* Bio snippet */}
-                  {broker.bio && (
+                {/* Bio snippet */}
+                {broker.bio && (
+                  <Link href={`/broker/${broker.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}>
                     <p style={{
                       margin: 0, fontSize: '0.82rem', color: '#4b5563',
-                      lineHeight: 1.6, flex: 1,
+                      lineHeight: 1.6,
                       display: '-webkit-box',
                       WebkitLineClamp: 3,
                       WebkitBoxOrient: 'vertical',
@@ -246,14 +257,16 @@ export default async function BrokersPage({ searchParams }: PageProps) {
                     }}>
                       {broker.bio}
                     </p>
-                  )}
+                  </Link>
+                )}
 
-                  {/* Footer: state + listing count */}
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', paddingTop: '0.75rem',
-                    borderTop: '1px solid #f3f4f6',
-                  }}>
+                {/* Footer: state + listing count + message */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'center', paddingTop: '0.75rem',
+                  borderTop: '1px solid #f3f4f6', gap: '0.5rem', flexWrap: 'wrap',
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                       fontSize: '0.78rem', color: '#6b7280',
@@ -273,8 +286,34 @@ export default async function BrokersPage({ searchParams }: PageProps) {
                         : 'No active listings'}
                     </span>
                   </div>
+
+                  {/* Message button */}
+                  {currentUserId && !isOwnProfile ? (
+                    <MessageButton
+                      brokerProfileId={broker.id}
+                      brokerName={broker.full_name}
+                      currentUserId={currentUserId}
+                    />
+                  ) : !currentUserId ? (
+                    <a
+                      href={`/signup?redirect=/brokers`}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                        padding: '0.45rem 0.9rem',
+                        backgroundColor: '#6366f1', color: 'white',
+                        border: 'none', borderRadius: '7px',
+                        fontWeight: '600', fontSize: '0.8rem',
+                        textDecoration: 'none', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      Message
+                    </a>
+                  ) : null}
                 </div>
-              </Link>
+              </div>
             )
           })}
         </div>
