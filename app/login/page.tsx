@@ -53,7 +53,12 @@ function LoginForm() {
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="password" style={labelStyle}>Password</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <label htmlFor="password" style={labelStyle}>Password</label>
+            <Link href="/forgot-password" style={{ fontSize: '0.8rem', color: '#6366f1', textDecoration: 'none' }}>
+              Forgot password?
+            </Link>
+          </div>
           <input
             id="password"
             name="password"
