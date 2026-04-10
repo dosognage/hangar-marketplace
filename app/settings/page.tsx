@@ -12,6 +12,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import type { Metadata } from 'next'
 import SettingsForm from './SettingsForm'
+import ProfileForm from './ProfileForm'
 
 export const metadata: Metadata = {
   title: 'Settings | Hangar Marketplace',
@@ -25,7 +26,11 @@ export default async function SettingsPage() {
     redirect('/login?next=/settings')
   }
 
-  const homeAirport = (user.user_metadata?.home_airport as string | null) ?? ''
+  const homeAirport   = (user.user_metadata?.home_airport as string | null) ?? ''
+  const fullName      = (user.user_metadata?.full_name    as string | null) ?? ''
+  const phone         = (user.user_metadata?.phone        as string | null) ?? ''
+  const avatarUrl     = (user.user_metadata?.avatar_url   as string | null) ?? null
+  const isBroker      = user.user_metadata?.is_broker === true
 
   return (
     <div style={{ maxWidth: '580px' }}>
@@ -40,7 +45,45 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      {/* Home airport section */}
+      {/* ── Profile section ──────────────────────────────────────────────── */}
+      <div style={{
+        backgroundColor: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        marginBottom: '1.25rem',
+      }}>
+        <div style={{
+          padding: '1rem 1.4rem',
+          borderBottom: '1px solid #f3f4f6',
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <div>
+            <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem', color: '#111827' }}>
+              Profile
+            </p>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.4 }}>
+              Your name, photo, phone, and email address.
+            </p>
+          </div>
+        </div>
+        <div style={{ padding: '1.4rem' }}>
+          <ProfileForm
+            currentName={fullName}
+            currentPhone={phone}
+            currentEmail={user.email ?? ''}
+            currentAvatar={avatarUrl}
+            isBroker={isBroker}
+          />
+        </div>
+      </div>
+
+      {/* ── Home airport section ─────────────────────────────────────────── */}
       <div style={{
         backgroundColor: 'white',
         border: '1px solid #e5e7eb',
