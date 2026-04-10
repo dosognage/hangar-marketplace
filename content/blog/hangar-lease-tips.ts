@@ -1,7 +1,7 @@
 export const post = {
   slug: 'hangar-lease-tips',
   title: '7 Things to Check Before Signing a Hangar Lease',
-  description: "A hangar lease is often a multi-year commitment. Here are 7 things every pilot should review before signing — from door dimensions to liability clauses that most renters overlook.",
+  description: "A hangar lease is often a multi-year commitment. Here are 7 things every pilot should review before signing: from door dimensions to liability clauses that most renters overlook.",
   publishedAt: '2025-03-10',
   updatedAt: '2025-03-10',
   keywords: ['hangar lease', 'hangar rental agreement', 'aircraft storage lease', 'hangar lease tips', 'airport lease agreement'],
@@ -12,7 +12,7 @@ Here are 7 things experienced hangar tenants check before signing.
 
 ## 1. Measure the Actual Hangar, Not Just the Listing
 
-This sounds obvious, but it's the most common mistake. Hangar dimensions in listings and ads reflect the building — not necessarily the usable space your aircraft needs.
+This sounds obvious, but it's the most common mistake. Hangar dimensions in listings and ads reflect the building, not necessarily the usable space your aircraft needs.
 
 Things to physically measure before signing:
 - **Door width**: Measured at its narrowest point. Does it clear your aircraft's widest point (usually wingtip to wingtip) with room to spare?
@@ -22,7 +22,7 @@ Things to physically measure before signing:
 
 If the hangar belongs to a row of T-hangars, note whether the unit you're touring is the same size as the one you'll actually get. Sizes within a row often vary.
 
-## 2. Understand What's Included — and What Isn't
+## 2. Understand What's Included and What Isn't
 
 Ask explicitly before assuming:
 - Is electricity included, or billed separately?
@@ -51,7 +51,7 @@ Key questions:
 - Are there automatic renewal clauses? (Leases that auto-renew annually unless you cancel 90 days in advance are easy to miss)
 - Is there a penalty for early termination, and what is it?
 
-Some airport leases are with the municipality, not an FBO — those often have different notice requirements and may involve waiting lists if you want to return.
+Some airport leases are with the municipality, not an FBO. Those often have different notice requirements and may involve waiting lists if you want to return.
 
 ## 5. Clarify Liability for Damage
 
@@ -71,7 +71,7 @@ Hangar rents at many airports have increased 30–50% over the past five years a
 - Is rent fixed for the lease term, or can it increase?
 - If it can increase, is there a cap (e.g., CPI + 2%)?
 - What has the rent history been for this unit over the past 3–5 years?
-- Is this airport controlled by a municipality with public rate schedules? (If so, increases may require public notice and hearings — more predictable.)
+- Is this airport controlled by a municipality with public rate schedules? (If so, increases may require public notice and hearings, which are more predictable.)
 
 A seemingly reasonable $350/month T-hangar that's been increasing 15% annually will be $680/month in six years. Factor in trajectory, not just today's rate.
 
@@ -81,7 +81,7 @@ What good is a hangar if you can't get to your aircraft when you want to fly?
 
 - What are the official access hours for the ramp and hangar area?
 - Is there 24/7 gate access, or is the gate locked overnight?
-- How is access managed — PIN code, key fob, physical key?
+- How is access managed: PIN code, key fob, or physical key?
 - Can you change your access credentials easily if they're compromised?
 - Is there video surveillance on the ramp and/or inside the hangar row?
 - Has the airport had any break-ins or aircraft theft in recent years?
@@ -90,6 +90,6 @@ Many pilots are surprised to find that their "always available" hangar has a gat
 
 ---
 
-Taking 30 minutes to go through these seven points before signing can save you from years of frustration. The best hangar lease is one where both sides understand exactly what they're agreeing to — and that only happens when you ask the right questions upfront.
+Taking 30 minutes to go through these seven points before signing can save you from years of frustration. The best hangar lease is one where both sides understand exactly what they're agreeing to, and that only happens when you ask the right questions upfront.
 `.trim(),
 }

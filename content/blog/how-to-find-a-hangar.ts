@@ -1,7 +1,7 @@
 export const post = {
   slug: 'how-to-find-a-hangar',
   title: 'How to Find a Hangar for Your Aircraft: A Complete Guide',
-  description: 'Finding available hangar space can be one of the hardest parts of aircraft ownership. This guide walks through every option — from airport waiting lists to online marketplaces — so you can get your plane off the ramp.',
+  description: 'Finding available hangar space can be one of the hardest parts of aircraft ownership. This guide walks through every option: from airport waiting lists to online marketplaces, so you can get your plane off the ramp.',
   publishedAt: '2025-01-15',
   updatedAt: '2025-01-15',
   keywords: ['how to find a hangar', 'aircraft hangar rental', 'hangar waiting list', 'airplane storage', 't-hangar availability'],
@@ -12,7 +12,7 @@ If you've been flying for any length of time, you already know the frustration: 
 
 The demand for hangar space in the United States has never been higher. The FAA counts roughly 211,000 registered general aviation aircraft, and the number of available hangars hasn't kept pace. According to airport managers across the country, waiting lists at many towered airports exceed 100 names.
 
-But hangars do become available — often without any public announcement. Here's how to actually find one.
+But hangars do become available, often without any public announcement. Here's how to actually find one.
 
 ## Option 1: The Airport Manager (Still Works)
 
@@ -23,7 +23,7 @@ Your first call should always be to the airport manager or FBO director. Ask spe
 - Do any tenants sublet their space? (This is common and often unadvertised.)
 - Are there plans to build new hangars?
 
-At smaller general aviation airports, decisions get made informally. Being a known, polite presence on the field — and actually flying regularly — can move you up an unofficial priority list.
+At smaller general aviation airports, decisions get made informally. Being a known, polite presence on the field and actually flying regularly can move you up an unofficial priority list.
 
 ## Option 2: Talk to Other Pilots
 
@@ -35,7 +35,7 @@ Local EAA chapters are another goldmine. Members tend to know who's building, wh
 
 Dedicated hangar listing platforms like Hangar Marketplace let owners post available hangars and renters search by airport code, state, size, and price. Unlike craigslist or Facebook groups, these listings are aviation-specific and usually include photos, hangar dimensions, and direct contact information.
 
-When searching online, use the airport's ICAO code (e.g., KBFI, KPAE, KSEA) rather than the airport name — that's how most listings are tagged. Filter by hangar type: T-hangars are the most common and affordable, while box hangars offer more flexibility for larger or unique aircraft.
+When searching online, use the airport's ICAO code (e.g., KBFI, KPAE, KSEA) rather than the airport name. That's how most listings are tagged. Filter by hangar type: T-hangars are the most common and affordable, while box hangars offer more flexibility for larger or unique aircraft.
 
 ## Option 4: Post a Hangar Request
 
@@ -76,7 +76,7 @@ Hangar rental costs vary enormously by region and airport type:
 | Northeast | $500–$1,200 | $1,500–$4,000 |
 | Mountain West | $200–$500 | $700–$2,000 |
 
-Prices at busy metro airports (KBFI, KPAO, KJYO) routinely exceed these ranges. If budget is a constraint, look at satellite airports 20–30 miles from major metros — you'll often find much better availability and prices.
+Prices at busy metro airports (KBFI, KPAO, KJYO) routinely exceed these ranges. If budget is a constraint, look at satellite airports 20–30 miles from major metros. You'll often find much better availability and prices.
 
 ## The Bottom Line
 

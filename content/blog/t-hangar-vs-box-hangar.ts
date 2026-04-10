@@ -12,15 +12,15 @@ Walk down the ramp at almost any general aviation airport and you'll see two bas
 
 ## What Is a T-Hangar?
 
-T-hangars get their name from their shape — multiple units nested together like puzzle pieces, with each unit forming roughly half of a "T." They're designed to be space-efficient: by nesting opposing units together, airports can house more aircraft per square foot of building than any other hangar type.
+T-hangars get their name from their shape: multiple units nested together like puzzle pieces, with each unit forming roughly half of a "T." They're designed to be space-efficient. By nesting opposing units together, airports can house more aircraft per square foot of building than any other hangar type.
 
 ### T-Hangar Pros
 
-**Cost.** T-hangars are almost always the cheapest enclosed option at an airport. Because they're smaller and densely packed, land and construction costs per unit are lower — and those savings get passed on.
+**Cost.** T-hangars are almost always the cheapest enclosed option at an airport. Because they're smaller and densely packed, land and construction costs per unit are lower, and those savings get passed on.
 
 **Availability.** At most airports, there are far more T-hangars than box hangars. If you're on a waiting list, a T-hangar will come open first.
 
-**Security.** Your aircraft is enclosed — no UV exposure, no weather, no bird strikes, and substantially reduced theft risk compared to tiedowns.
+**Security.** Your aircraft is enclosed. No UV exposure, no weather, no bird strikes, and substantially reduced theft risk compared to tiedowns.
 
 ### T-Hangar Cons
 
@@ -40,7 +40,7 @@ T-hangars get their name from their shape — multiple units nested together lik
 
 ## What Is a Box Hangar?
 
-Box hangars are freestanding structures with a wide, flat front door — usually an electrically or hydraulically operated bi-fold or sliding door. The interior is a single open rectangle, giving you maximum flexibility.
+Box hangars are freestanding structures with a wide, flat front door, usually an electrically or hydraulically operated bi-fold or sliding door. The interior is a single open rectangle, giving you maximum flexibility.
 
 ### Box Hangar Pros
 
@@ -54,7 +54,7 @@ Box hangars are freestanding structures with a wide, flat front door — usually
 
 ### Box Hangar Cons
 
-**Cost.** Box hangars are significantly more expensive than T-hangars — sometimes 3–5x the monthly rate for comparable square footage. Larger box hangars can run $1,500–$5,000/month at busy airports.
+**Cost.** Box hangars are significantly more expensive than T-hangars, sometimes 3–5x the monthly rate for comparable square footage. Larger box hangars can run $1,500–$5,000/month at busy airports.
 
 **Harder to find.** There are simply fewer of them, and they turn over less frequently. Box hangar tenants tend to stay for years.
 
@@ -76,7 +76,7 @@ Box hangars are freestanding structures with a wide, flat front door — usually
 
 ## The Right Fit Matters
 
-Regardless of type, always verify hangar dimensions against your aircraft's actual specifications before signing a lease. Wing tip to wing tip, nose to tail, prop arc to floor, and antenna height are all measurements you should walk in with. Hangar listings on Hangar Marketplace include door width, door height, and hangar depth when provided by the owner — use those numbers.
+Regardless of type, always verify hangar dimensions against your aircraft's actual specifications before signing a lease. Wing tip to wing tip, nose to tail, prop arc to floor, and antenna height are all measurements you should walk in with. Hangar listings on Hangar Marketplace include door width, door height, and hangar depth when provided by the owner. Use those numbers.
 
 When in doubt, bring a tape measure.
 `.trim(),
