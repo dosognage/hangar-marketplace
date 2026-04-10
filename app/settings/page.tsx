@@ -14,6 +14,9 @@ import type { Metadata } from 'next'
 import SettingsForm from './SettingsForm'
 import ProfileForm from './ProfileForm'
 
+export const dynamic = 'force-dynamic'
+
+
 export const metadata: Metadata = {
   title: 'Settings | Hangar Marketplace',
 }

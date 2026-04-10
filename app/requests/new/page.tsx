@@ -18,6 +18,9 @@ import AircraftAutocomplete from '@/app/components/AircraftAutocomplete'
 import type { AircraftSpec } from '@/lib/aircraft-data'
 import { Zap } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
+
 const DURATIONS = ['Month-to-month', '3 months', '6 months', '1 year', 'Permanent']
 
 const EMPTY = {

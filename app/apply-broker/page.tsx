@@ -11,6 +11,9 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import ApplyBrokerForm from './ApplyBrokerForm'
 
+export const dynamic = 'force-dynamic'
+
+
 export default async function ApplyBrokerPage() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()

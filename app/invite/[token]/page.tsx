@@ -5,6 +5,9 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { Plane, X } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
+
 export const metadata: Metadata = { title: 'Accept Invitation | Hangar Marketplace' }
 
 function serviceClient() {

@@ -5,6 +5,9 @@ import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import MessageButton from './MessageButton'
 
+export const dynamic = 'force-dynamic'
+
+
 type PageProps = { params: Promise<{ id: string }> }
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!

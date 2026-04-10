@@ -13,6 +13,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
+
 type Stage = 'waiting' | 'ready' | 'loading' | 'done' | 'error' | 'invalid'
 
 export default function ResetPasswordPage() {

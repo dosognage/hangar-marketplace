@@ -14,6 +14,9 @@ import { Star } from 'lucide-react'
 import SponsorButton from '@/app/components/SponsorButton'
 import ViewTracker from '@/app/components/ViewTracker'
 
+export const dynamic = 'force-dynamic'
+
+
 import AirportMapClient from '@/app/components/AirportMapClient'
 
 type ListingPageProps = {

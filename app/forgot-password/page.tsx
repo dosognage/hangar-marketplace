@@ -4,6 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
+
 type Status = 'idle' | 'loading' | 'sent' | 'error'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
