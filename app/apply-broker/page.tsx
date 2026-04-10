@@ -20,5 +20,5 @@ export default async function ApplyBrokerPage() {
   // If already a verified broker, send them straight to their dashboard
   if (user.user_metadata?.is_broker === true) redirect('/broker/dashboard')
 
-  return <ApplyBrokerForm userId={user.id} userEmail={user.email ?? ''} />
+  return <ApplyBrokerForm />
 }

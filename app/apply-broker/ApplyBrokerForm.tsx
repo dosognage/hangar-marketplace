@@ -1,17 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { submitBrokerApplication } from '@/app/actions/broker'
 import Link from 'next/link'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
-type Props = {
-  userId: string
-  userEmail: string
-}
-
-export default function ApplyBrokerForm({ userId, userEmail }: Props) {
+export default function ApplyBrokerForm() {
   const [form, setForm] = useState({
     full_name:      '',
     brokerage:      '',
@@ -34,25 +29,10 @@ export default function ApplyBrokerForm({ userId, userEmail }: Props) {
     setStatus('loading')
     setErrorMsg('')
 
-    const { error } = await supabase.from('broker_applications').insert([{
-      user_id:        userId,
-      email:          userEmail,
-      full_name:      form.full_name,
-      brokerage:      form.brokerage,
-      license_state:  form.license_state,
-      license_number: form.license_number,
-      phone:          form.phone || null,
-      website:        form.website || null,
-      bio:            form.bio || null,
-      status:         'pending',
-    }])
+    const { error } = await submitBrokerApplication(form)
 
     if (error) {
-      if (error.code === '23505') {
-        setErrorMsg('You already have a pending or approved broker application.')
-      } else {
-        setErrorMsg(error.message)
-      }
+      setErrorMsg(error)
       setStatus('error')
       return
     }

@@ -11,6 +11,46 @@ function isAdmin(email: string | undefined): boolean {
 }
 
 /**
+ * Submit a broker application.
+ * Uses the server-side auth client so the cookie session is always valid.
+ */
+export async function submitBrokerApplication(formData: {
+  full_name: string
+  brokerage: string
+  license_state: string
+  license_number: string
+  phone: string
+  website: string
+  bio: string
+}): Promise<{ error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You must be logged in to apply.' }
+
+  const { error } = await supabaseAdmin
+    .from('broker_applications')
+    .insert([{
+      user_id:        user.id,
+      email:          user.email,
+      full_name:      formData.full_name,
+      brokerage:      formData.brokerage,
+      license_state:  formData.license_state,
+      license_number: formData.license_number,
+      phone:          formData.phone || null,
+      website:        formData.website || null,
+      bio:            formData.bio || null,
+      status:         'pending',
+    }])
+
+  if (error) {
+    if (error.code === '23505') return { error: 'You already have a pending or approved broker application.' }
+    return { error: error.message }
+  }
+
+  return {}
+}
+
+/**
  * Approve a broker application.
  * 1. Creates a row in broker_profiles (with license_number)
  * 2. Marks the application as approved
