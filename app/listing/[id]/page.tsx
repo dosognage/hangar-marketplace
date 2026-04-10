@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@/lib/supabase-server'
 import PhotoGallery from '@/app/components/PhotoGallery'
@@ -15,8 +14,7 @@ import { Star } from 'lucide-react'
 import SponsorButton from '@/app/components/SponsorButton'
 import ViewTracker from '@/app/components/ViewTracker'
 
-// Airport map — client only (Leaflet requires window)
-const AirportMap = dynamic(() => import('@/app/components/AirportMap'), { ssr: false })
+import AirportMapClient from '@/app/components/AirportMapClient'
 
 type ListingPageProps = {
   params: Promise<{ id: string }>
@@ -435,7 +433,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
           <p style={{ margin: '0 0 0.85rem', fontSize: '0.8rem', color: '#9ca3af' }}>
             The seller has pinned their exact hangar position on the airport diagram.
           </p>
-          <AirportMap
+          <AirportMapClient
             icao={typedListing.airport_code}
             savedLat={typedListing.hangar_lat}
             savedLng={typedListing.hangar_lng}
