@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import AvatarUpload from './AvatarUpload'
 
 export default async function BrokerDashboardPage() {
   const supabase = await createServerClient()
@@ -103,15 +104,13 @@ export default async function BrokerDashboardPage() {
         gap: '1.5rem',
         flexWrap: 'wrap',
       }}>
-        {/* Avatar */}
-        <div style={{
-          width: '72px', height: '72px', borderRadius: '50%', flexShrink: 0,
-          background: 'rgba(255,255,255,0.15)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          fontSize: '1.8rem', fontWeight: '700', border: '2px solid rgba(255,255,255,0.3)',
-        }}>
-          {profile.full_name.charAt(0).toUpperCase()}
-        </div>
+        {/* Avatar with upload */}
+        <AvatarUpload
+          userId={user.id}
+          profileId={profile.id}
+          currentAvatarUrl={profile.avatar_url ?? null}
+          displayName={profile.full_name}
+        />
 
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>

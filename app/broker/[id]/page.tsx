@@ -26,7 +26,7 @@ export default async function BrokerProfilePage({ params }: PageProps) {
 
   const { data: broker } = await supabase
     .from('broker_profiles')
-    .select('id, full_name, brokerage, phone, website, bio, license_state, created_at')
+    .select('id, full_name, brokerage, phone, website, bio, license_state, avatar_url, created_at')
     .eq('id', id)
     .single()
 
@@ -65,13 +65,22 @@ export default async function BrokerProfilePage({ params }: PageProps) {
         padding: '2rem', margin: '1.25rem 0 2rem', display: 'flex',
         gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start',
       }}>
-        {/* Avatar placeholder */}
+        {/* Avatar */}
         <div style={{
           width: '80px', height: '80px', borderRadius: '50%', flexShrink: 0,
           backgroundColor: '#1a3a5c', display: 'flex', alignItems: 'center',
           justifyContent: 'center', color: 'white', fontSize: '2rem', fontWeight: '700',
+          overflow: 'hidden', border: '3px solid #e5e7eb',
         }}>
-          {broker.full_name.charAt(0).toUpperCase()}
+          {broker.avatar_url ? (
+            <img
+              src={broker.avatar_url}
+              alt={broker.full_name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            broker.full_name.charAt(0).toUpperCase()
+          )}
         </div>
 
         <div style={{ flex: 1, minWidth: '200px' }}>
