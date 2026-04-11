@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Request is not awaiting payment' }, { status: 400 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hangar-marketplace-o47rxh7fz-hangar-rats.vercel.app'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hangarmarketplace.com'
     const stripe = getStripe()
     const priceLabel = is_priority ? 'High-Priority' : 'Standard'
     const unitAmount = is_priority ? REQUEST_PRIORITY_CENTS : REQUEST_STANDARD_CENTS

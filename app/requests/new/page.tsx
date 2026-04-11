@@ -10,7 +10,7 @@
  *  4. On payment success: webhook sets status to 'active'
  */
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -49,6 +49,14 @@ function NewRequestForm() {
   const [isPriority, setIsPriority] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null)
+
+  // Capture logged-in user's ID so we can associate the request with their account
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setLoggedInUserId(data.user?.id ?? null)
+    })
+  }, [])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -94,6 +102,7 @@ function NewRequestForm() {
         notes:          form.notes          || null,
         is_priority:    isPriority,
         status:         'pending_payment',
+        ...(loggedInUserId ? { user_id: loggedInUserId } : {}),
       }])
       .select('id')
       .single()
