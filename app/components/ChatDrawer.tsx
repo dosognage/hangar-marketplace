@@ -39,6 +39,18 @@ export default function ChatDrawer() {
   const bottomRef                     = useRef<HTMLDivElement>(null)
   const inputRef                      = useRef<HTMLTextAreaElement>(null)
 
+  // ── Fetch messages when conversation is known ─────────────────────────────
+  // Declared BEFORE the open/close effect so it can be referenced in its deps.
+  const fetchMessages = useCallback(async (cid: string) => {
+    setLoading(true)
+    const res = await fetch(`/api/conversations/${cid}/messages`)
+    if (res.ok) {
+      const { messages: msgs } = await res.json()
+      setMessages(msgs ?? [])
+    }
+    setLoading(false)
+  }, [])
+
   // ── Listen for open/close events ──────────────────────────────────────────
   useEffect(() => {
     function onOpen(e: Event) {
@@ -70,17 +82,6 @@ export default function ChatDrawer() {
       window.removeEventListener('close-chat', onClose)
     }
   }, [fetchMessages])
-
-  // ── Fetch messages when conversation is known ─────────────────────────────
-  const fetchMessages = useCallback(async (cid: string) => {
-    setLoading(true)
-    const res = await fetch(`/api/conversations/${cid}/messages`)
-    if (res.ok) {
-      const { messages: msgs } = await res.json()
-      setMessages(msgs ?? [])
-    }
-    setLoading(false)
-  }, [])
 
   useEffect(() => {
     if (conversationId) fetchMessages(conversationId)
