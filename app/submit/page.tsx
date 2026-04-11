@@ -19,6 +19,8 @@ import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
 import { createListing } from '@/app/actions/listing'
 
+type AirportCoords = { lat: number; lng: number; icao: string }
+
 
 // Leaflet must be loaded client-side only
 const AirportMap = dynamic(() => import('@/app/components/AirportMap'), { ssr: false })
@@ -73,16 +75,44 @@ export default function SubmitPage() {
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
   const [hangarLat, setHangarLat] = useState<number | null>(null)
   const [hangarLng, setHangarLng] = useState<number | null>(null)
+  // Auto-geocoded airport coordinates (from ICAO lookup)
+  const [airportCoords, setAirportCoords] = useState<AirportCoords | null>(null)
+  const [geocoding, setGeocoding] = useState(false)
   // Track the ICAO code to pass to AirportMap (debounced — only commits after user stops typing)
   const [mapIcao, setMapIcao] = useState('')
   const icaoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Debounce airport_code → map load (fires 600ms after user stops typing, only on 3-4 char codes)
+  // Debounce airport_code → geocode + map load (fires 600ms after user stops typing)
   useEffect(() => {
     return () => {
       if (icaoDebounceRef.current) clearTimeout(icaoDebounceRef.current)
     }
   }, [])
+
+  // Auto-geocode the airport by ICAO code, store coords for use at submit time
+  async function geocodeAirport(code: string) {
+    setGeocoding(true)
+    setAirportCoords(null)
+    try {
+      const query = encodeURIComponent(`${code} airport USA`)
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=us`,
+        { headers: { 'User-Agent': 'HangarMarketplace/1.0' } }
+      )
+      const data = await res.json()
+      if (data[0]) {
+        setAirportCoords({
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+          icao: code,
+        })
+      }
+    } catch {
+      // Non-fatal — listing can still be saved, coordinates just won't be set
+    } finally {
+      setGeocoding(false)
+    }
+  }
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -92,9 +122,15 @@ export default function SubmitPage() {
     if (name === 'airport_code') {
       const code = value.trim().toUpperCase()
       if (icaoDebounceRef.current) clearTimeout(icaoDebounceRef.current)
-      // ICAO codes are 3–4 chars; wait until user stops typing before fetching
-      if (code.length >= 3 && code.length <= 4) {
-        icaoDebounceRef.current = setTimeout(() => setMapIcao(code), 600)
+      // ICAO codes are 3–4 chars; wait until user stops typing
+      if (code.length >= 3 && code.length <= 6) {
+        icaoDebounceRef.current = setTimeout(() => {
+          setMapIcao(code)
+          geocodeAirport(code)   // auto-capture airport lat/lng
+        }, 600)
+      } else {
+        // Code too short/long — clear any previous coords
+        setAirportCoords(null)
       }
     }
   }
@@ -123,37 +159,47 @@ export default function SubmitPage() {
       // ── Step 1: Insert the listing (server action — bypasses RLS) ──────
       setUploadProgress('Saving listing…')
 
+      // Coordinate priority:
+      //  1. Pin drop (hangarLat/Lng) — most precise, user placed it on the airport diagram
+      //  2. Auto-geocoded airport (airportCoords) — captured when airport code was typed
+      // The pin-drop position is also the best lat/lng for radius search.
+      const resolvedLat = hangarLat ?? airportCoords?.lat ?? null
+      const resolvedLng = hangarLng ?? airportCoords?.lng ?? null
+
       const { id: listingId } = await createListing({
         ...formData,
         has_runway_access: hasRunwayAccess,
         hangar_lat: hangarLat,
         hangar_lng: hangarLng,
+        latitude:   resolvedLat,
+        longitude:  resolvedLng,
       })
 
-      // ── Step 1b: Geocode city + state → lat/lng ─────────────────────────
-      // Uses OpenStreetMap's Nominatim (free, no API key needed).
-      // Non-fatal if it fails — listing still saves without coordinates.
-      try {
-        setUploadProgress('Getting location coordinates…')
-        const geoQuery = encodeURIComponent(
-          `${formData.airport_name}, ${formData.city}, ${formData.state}, USA`
-        )
-        const geoRes = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${geoQuery}&format=json&limit=1`,
-          { headers: { 'User-Agent': 'HangarMarketplace/1.0' } }
-        )
-        const geoData = await geoRes.json()
-        if (geoData[0]) {
-          await supabase
-            .from('listings')
-            .update({
-              latitude: parseFloat(geoData[0].lat),
-              longitude: parseFloat(geoData[0].lon),
-            })
-            .eq('id', listingId)
+      // If neither pin nor auto-geocode produced coords, do a final fallback
+      // geocode using airport name + city + state (non-fatal, best-effort).
+      if (resolvedLat == null || resolvedLng == null) {
+        try {
+          setUploadProgress('Getting location coordinates…')
+          const geoQuery = encodeURIComponent(
+            `${formData.airport_name}, ${formData.city}, ${formData.state}, USA`
+          )
+          const geoRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${geoQuery}&format=json&limit=1`,
+            { headers: { 'User-Agent': 'HangarMarketplace/1.0' } }
+          )
+          const geoData = await geoRes.json()
+          if (geoData[0]) {
+            await supabase
+              .from('listings')
+              .update({
+                latitude:  parseFloat(geoData[0].lat),
+                longitude: parseFloat(geoData[0].lon),
+              })
+              .eq('id', listingId)
+          }
+        } catch {
+          console.warn('Fallback geocoding failed — listing saved without coordinates.')
         }
-      } catch {
-        console.warn('Geocoding failed — listing saved without coordinates.')
       }
 
       // ── Step 2: Upload photos to Supabase Storage ───────────────────────
@@ -276,7 +322,41 @@ export default function SubmitPage() {
               <input name="airport_name" placeholder="Paine Field" value={formData.airport_name} onChange={handleChange} required style={inputStyle} />
             </Field>
             <Field label="Airport code *">
-              <input name="airport_code" placeholder="KPAE" value={formData.airport_code} onChange={handleChange} required style={inputStyle} />
+              <div style={{ position: 'relative' }}>
+                <input
+                  name="airport_code"
+                  placeholder="KPAE"
+                  value={formData.airport_code}
+                  onChange={handleChange}
+                  required
+                  style={{ ...inputStyle, paddingRight: airportCoords || geocoding ? '2.5rem' : undefined }}
+                />
+                {/* Geocode status badge — spins while loading, checkmark when found */}
+                {(geocoding || airportCoords) && (
+                  <span style={{
+                    position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)',
+                    fontSize: '0.8rem',
+                  }}>
+                    {geocoding ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round"
+                        style={{ animation: 'spin 1s linear infinite' }}>
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                      </svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    )}
+                  </span>
+                )}
+              </div>
+              {airportCoords && !geocoding && (
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.72rem', color: '#16a34a', fontWeight: '500' }}>
+                  ✓ Airport location captured — listing will be searchable by radius
+                </p>
+              )}
             </Field>
           </TwoCol>
           <TwoCol>

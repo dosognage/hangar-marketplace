@@ -34,6 +34,9 @@ export type ListingFormData = {
   contact_phone: string
   hangar_lat: number | null
   hangar_lng: number | null
+  // Searchable map coordinates — airport center or pin-drop location
+  latitude: number | null
+  longitude: number | null
 }
 
 const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
@@ -97,6 +100,8 @@ export async function createListing(data: ListingFormData): Promise<{ id: string
       broker_profile_id: isBroker && brokerProfileId ? brokerProfileId : null,
       hangar_lat:       data.hangar_lat,
       hangar_lng:       data.hangar_lng,
+      latitude:         data.latitude,
+      longitude:        data.longitude,
     }])
     .select('id')
     .single()
