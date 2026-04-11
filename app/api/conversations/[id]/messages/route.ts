@@ -34,13 +34,17 @@ export async function GET(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Mark messages from the other party as read
-  await supabaseAdmin
-    .from('messages')
-    .update({ read: true })
-    .eq('conversation_id', id)
-    .eq('read', false)
-    .neq('sender_id', user.id)
+  // Mark messages from the other party as read — but only if this user
+  // has read receipts enabled (default true; explicitly false means opt-out).
+  const readReceiptsEnabled = user.user_metadata?.read_receipts_enabled !== false
+  if (readReceiptsEnabled) {
+    await supabaseAdmin
+      .from('messages')
+      .update({ read: true })
+      .eq('conversation_id', id)
+      .eq('read', false)
+      .neq('sender_id', user.id)
+  }
 
   return NextResponse.json({ messages: messages ?? [] })
 }

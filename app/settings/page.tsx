@@ -13,6 +13,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import type { Metadata } from 'next'
 import SettingsForm from './SettingsForm'
 import ProfileForm from './ProfileForm'
+import ReadReceiptsToggle from './ReadReceiptsToggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,11 +30,13 @@ export default async function SettingsPage() {
     redirect('/login?next=/settings')
   }
 
-  const homeAirport   = (user.user_metadata?.home_airport as string | null) ?? ''
-  const fullName      = (user.user_metadata?.full_name    as string | null) ?? ''
-  const phone         = (user.user_metadata?.phone        as string | null) ?? ''
-  const avatarUrl     = (user.user_metadata?.avatar_url   as string | null) ?? null
-  const isBroker      = user.user_metadata?.is_broker === true
+  const homeAirport      = (user.user_metadata?.home_airport as string | null) ?? ''
+  const fullName         = (user.user_metadata?.full_name    as string | null) ?? ''
+  const phone            = (user.user_metadata?.phone        as string | null) ?? ''
+  const avatarUrl        = (user.user_metadata?.avatar_url   as string | null) ?? null
+  const isBroker         = user.user_metadata?.is_broker === true
+  // Default true — opt-out model (read receipts on unless explicitly disabled)
+  const readReceiptsEnabled = user.user_metadata?.read_receipts_enabled !== false
 
   return (
     <div style={{ maxWidth: '580px' }}>
@@ -119,6 +122,38 @@ export default async function SettingsPage() {
         {/* Form */}
         <div style={{ padding: '1.4rem' }}>
           <SettingsForm currentAirport={homeAirport} />
+        </div>
+      </div>
+
+      {/* ── Messaging section ────────────────────────────────────────────── */}
+      <div style={{
+        backgroundColor: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        marginTop: '1.25rem',
+        marginBottom: '1.25rem',
+      }}>
+        <div style={{
+          padding: '1rem 1.4rem',
+          borderBottom: '1px solid #f3f4f6',
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <div>
+            <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem', color: '#111827' }}>
+              Messaging
+            </p>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.4 }}>
+              Control how your messages appear to others.
+            </p>
+          </div>
+        </div>
+        <div style={{ padding: '1.4rem' }}>
+          <ReadReceiptsToggle enabled={readReceiptsEnabled} />
         </div>
       </div>
 
