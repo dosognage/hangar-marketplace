@@ -18,6 +18,7 @@ import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
 import { createListing } from '@/app/actions/listing'
+import AirportAutocomplete, { type AirportSuggestion } from '@/app/components/AirportAutocomplete'
 
 type AirportCoords = { lat: number; lng: number; icao: string }
 
@@ -89,23 +90,62 @@ export default function SubmitPage() {
     }
   }, [])
 
-  // Auto-geocode the airport by ICAO code, store coords for use at submit time
+  // Called when the user picks an airport from the autocomplete dropdown.
+  // This is the best path: we get exact coords + code from our own DB with no geocoding needed.
+  function applyAirportSelection(airport: AirportSuggestion) {
+    // Fill both fields
+    setFormData(prev => ({
+      ...prev,
+      airport_name: airport.name,
+      airport_code: airport.ident,
+    }))
+    // Set coords directly from the database — no Nominatim round-trip needed
+    setAirportCoords({ lat: airport.latitude_deg, lng: airport.longitude_deg, icao: airport.ident })
+    // Trigger the airport diagram map
+    setMapIcao(airport.ident)
+  }
+
+  // Auto-geocode the airport by code when typed manually (not via autocomplete).
+  // Priority: first tries the code directly, then falls back to name + state.
   async function geocodeAirport(code: string) {
     setGeocoding(true)
     setAirportCoords(null)
     try {
-      const query = encodeURIComponent(`${code} airport USA`)
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=us`,
+      // 1️⃣ Try searching our own airports table first (most accurate)
+      const dbRes = await fetch(`/api/airports/search?q=${encodeURIComponent(code)}&limit=1`)
+      if (dbRes.ok) {
+        const dbData = await dbRes.json()
+        if (dbData[0] && dbData[0].ident.toUpperCase() === code.toUpperCase()) {
+          setAirportCoords({ lat: dbData[0].latitude_deg, lng: dbData[0].longitude_deg, icao: code })
+          return
+        }
+      }
+
+      // 2️⃣ Fall back to Nominatim with code
+      const q1 = encodeURIComponent(`${code} airport USA`)
+      const r1 = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${q1}&format=json&limit=1&countrycodes=us`,
         { headers: { 'User-Agent': 'HangarMarketplace/1.0' } }
       )
-      const data = await res.json()
-      if (data[0]) {
-        setAirportCoords({
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon),
-          icao: code,
-        })
+      const d1 = await r1.json()
+      if (d1[0]) {
+        setAirportCoords({ lat: parseFloat(d1[0].lat), lng: parseFloat(d1[0].lon), icao: code })
+        return
+      }
+
+      // 3️⃣ Last resort: Nominatim with airport name + state
+      const name  = formData.airport_name.trim()
+      const state = formData.state.trim()
+      if (name) {
+        const q2 = encodeURIComponent(`${name}${state ? `, ${state}` : ''}, USA`)
+        const r2 = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${q2}&format=json&limit=1&countrycodes=us`,
+          { headers: { 'User-Agent': 'HangarMarketplace/1.0' } }
+        )
+        const d2 = await r2.json()
+        if (d2[0]) {
+          setAirportCoords({ lat: parseFloat(d2[0].lat), lng: parseFloat(d2[0].lon), icao: code })
+        }
       }
     } catch {
       // Non-fatal — listing can still be saved, coordinates just won't be set
@@ -319,7 +359,14 @@ export default function SubmitPage() {
           </Field>
           <TwoCol>
             <Field label="Airport name *">
-              <input name="airport_name" placeholder="Paine Field" value={formData.airport_name} onChange={handleChange} required style={inputStyle} />
+              <AirportAutocomplete
+                value={formData.airport_name}
+                onChange={(v) => setFormData(prev => ({ ...prev, airport_name: v }))}
+                onSelect={applyAirportSelection}
+                placeholder="Paine Field, Cawley's South Prairie…"
+                required
+                inputStyle={inputStyle}
+              />
             </Field>
             <Field label="Airport code *">
               <div style={{ position: 'relative' }}>
