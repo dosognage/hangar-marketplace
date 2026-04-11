@@ -99,15 +99,30 @@ type Props = {
   onBoundsChange?: (bounds: MapBounds) => void
 }
 
-// Auto-fit the map bounds whenever listings change
+// Auto-fit the map bounds whenever listings change.
+// Uses asymmetric padding to account for overlapping UI panels:
+//   Desktop — 400px cards panel overlays the left side of the map
+//   Mobile  — bottom sheet (~220px peek) overlays the bottom of the map
+// Without this, fitBounds() centres on the full map element including
+// the hidden-under-panel area, making markers appear left/bottom shifted.
 function BoundsUpdater({ listings }: { listings: MapListing[] }) {
   const map = useMap()
   const fitted = useRef(false)
 
   useEffect(() => {
     if (fitted.current || listings.length === 0) return
+
+    const isMobile = window.innerWidth <= 640
     const bounds = L.latLngBounds(listings.map((l) => [l.latitude, l.longitude]))
-    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 12 })
+
+    map.fitBounds(bounds, {
+      // [left, top] — add cards-panel width on desktop so the visible
+      // portion of the map (right of the panel) is truly centred
+      paddingTopLeft:     isMobile ? [12, 80]  : [448, 48],
+      // [right, bottom] — add bottom-sheet peek height on mobile
+      paddingBottomRight: isMobile ? [12, 240] : [48, 48],
+      maxZoom: 12,
+    })
     fitted.current = true
   }, [listings, map])
 
@@ -155,10 +170,15 @@ export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsCh
 
   const mapped = listings.filter((l) => l.latitude && l.longitude)
 
+  // Use average lat/lng as initial center so there's no visible jump
+  // before BoundsUpdater calls fitBounds() with the corrected padding.
   const center: [number, number] =
     mapped.length > 0
-      ? [mapped[0].latitude, mapped[0].longitude]
-      : [39.5, -98.35] // centre of USA as default
+      ? [
+          mapped.reduce((sum, l) => sum + l.latitude,  0) / mapped.length,
+          mapped.reduce((sum, l) => sum + l.longitude, 0) / mapped.length,
+        ]
+      : [39.5, -98.35] // centre of USA as fallback
 
   if (!mounted) {
     return (
