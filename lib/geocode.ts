@@ -16,10 +16,11 @@ export async function geocodeLocation(q: string): Promise<GeoPoint | null> {
   const trimmed = q.trim()
   if (!trimmed) return null
 
-  // For ICAO codes (3–4 uppercase alpha chars), add "airport" to help Nominatim
-  const isIcao = /^[A-Z]{3,4}$/.test(trimmed.toUpperCase())
-  const searchQ = isIcao
-    ? `${trimmed.toUpperCase()} airport`
+  // Looks like an airport identifier — could be ICAO (KPAE) or FAA (S36, 3W0)
+  // Add "airport USA" to help Nominatim find it regardless of format.
+  const looksLikeAirport = /^[A-Z0-9]{2,6}$/.test(trimmed.toUpperCase())
+  const searchQ = looksLikeAirport
+    ? `${trimmed.toUpperCase()} airport USA`
     : `${trimmed}, USA`
 
   try {

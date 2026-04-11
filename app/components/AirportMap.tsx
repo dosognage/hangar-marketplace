@@ -166,7 +166,18 @@ export default function AirportMap({
     setFeatures([])
     setBounds(null)
 
-    const query = `[out:json][timeout:25];area["aeroway"="aerodrome"]["icao"="${normalized}"]->.a;(way["aeroway"~"runway|taxiway|taxilane|apron|terminal|hangar|parking_position"](area.a););out body;>;out skel qt;`
+    // Union query: match by ICAO tag first, then FAA "ref" and "faa" tags.
+    // This covers both proper ICAO codes (KPAE) and FAA-only identifiers (S36, 3W0).
+    const query = [
+      `[out:json][timeout:25];`,
+      `(`,
+      `  area["aeroway"="aerodrome"]["icao"="${normalized}"];`,
+      `  area["aeroway"="aerodrome"]["ref"="${normalized}"];`,
+      `  area["aeroway"="aerodrome"]["faa"="${normalized}"];`,
+      `)->.a;`,
+      `(way["aeroway"~"runway|taxiway|taxilane|apron|terminal|hangar|parking_position"](area.a););`,
+      `out body;>;out skel qt;`,
+    ].join('')
 
     // Try primary Overpass server, fall back to mirror on failure
     const SERVERS = [
@@ -246,8 +257,9 @@ export default function AirportMap({
     if (loadState === 'notfound') return (
       <div style={overlayStyle}>
         <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✈️</div>
-        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem', textAlign: 'center', maxWidth: '240px' }}>
-          No airport diagram found for <strong>{icao.toUpperCase()}</strong>. Check the ICAO code and try again.
+        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem', textAlign: 'center', maxWidth: '260px' }}>
+          No airport diagram found for <strong>{icao.toUpperCase()}</strong> in OpenStreetMap.
+          You can still pin your location — just drop the marker on the map below.
         </p>
       </div>
     )
