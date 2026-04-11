@@ -6,10 +6,10 @@ import { Menu, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 const NAV_LINKS = [
-  { href: '/',         label: 'Browse' },
-  { href: '/requests', label: 'Requests' },
-  { href: '/brokers',  label: 'Brokers' },
-  { href: '/submit',   label: 'List a Hangar' },
+  { href: '/',               label: 'Browse' },
+  { href: '/airport-homes',  label: 'Airport Homes' },
+  { href: '/brokers',        label: 'Brokers' },
+  { href: '/submit',         label: 'List a Property' },
 ]
 
 export default function MobileMenu() {
