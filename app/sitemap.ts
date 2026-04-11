@@ -5,13 +5,16 @@ import { STATE_NAMES, stateToSlug } from '@/lib/states'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Static pages
+  // Static pages — ordered by importance for Google's sitelinks consideration
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: SITE_URL,                    lastModified: new Date(), changeFrequency: 'daily',   priority: 1.0 },
-    { url: `${SITE_URL}/requests`,      lastModified: new Date(), changeFrequency: 'daily',   priority: 0.9 },
-    { url: `${SITE_URL}/requests/new`,  lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${SITE_URL}/submit`,        lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${SITE_URL}/blog`,          lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.8 },
+    { url: SITE_URL,                         lastModified: new Date(), changeFrequency: 'daily',   priority: 1.0 },
+    { url: `${SITE_URL}/airport-homes`,      lastModified: new Date(), changeFrequency: 'daily',   priority: 0.95 },
+    { url: `${SITE_URL}/requests`,           lastModified: new Date(), changeFrequency: 'daily',   priority: 0.92 },
+    { url: `${SITE_URL}/brokers`,            lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.90 },
+    { url: `${SITE_URL}/submit`,             lastModified: new Date(), changeFrequency: 'monthly', priority: 0.85 },
+    { url: `${SITE_URL}/login`,              lastModified: new Date(), changeFrequency: 'monthly', priority: 0.80 },
+    { url: `${SITE_URL}/requests/new`,       lastModified: new Date(), changeFrequency: 'monthly', priority: 0.70 },
+    { url: `${SITE_URL}/blog`,               lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.75 },
   ]
 
   // State landing pages — all 50 states

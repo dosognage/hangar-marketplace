@@ -154,10 +154,60 @@ export default async function RootLayout({
     // Build-time prerender: env vars / cookies not available → show logged-out nav
   }
 
+  // JSON-LD structured data — signals site structure to Google for sitelinks
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${SITE_URL}/#website`,
+        url: SITE_URL,
+        name: 'Hangar Marketplace',
+        description: 'Find and list aircraft hangars for sale, lease, and rent across the US.',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: `${SITE_URL}/?q={search_term_string}`,
+          },
+          'query-input': 'required name=search_term_string',
+        },
+      },
+      {
+        '@type': 'Organization',
+        '@id': `${SITE_URL}/#organization`,
+        name: 'Hangar Marketplace',
+        url: SITE_URL,
+        logo: {
+          '@type': 'ImageObject',
+          url: `${SITE_URL}/favicon-512x512.png`,
+        },
+      },
+      {
+        '@type': 'SiteLinksAction',
+        '@id': `${SITE_URL}/#sitelinks`,
+        name: 'Hangar Marketplace Navigation',
+        url: SITE_URL,
+        hasPart: [
+          { '@type': 'WebPage', name: 'Browse Hangars',    url: SITE_URL,                       description: 'Search aircraft hangars for sale and lease across the US.' },
+          { '@type': 'WebPage', name: 'Airport Homes',     url: `${SITE_URL}/airport-homes`,    description: 'Residential properties on or near airports — live where you fly.' },
+          { '@type': 'WebPage', name: 'Hangar Requests',   url: `${SITE_URL}/requests`,         description: 'Pilots looking for hangar space — post or browse requests.' },
+          { '@type': 'WebPage', name: 'Find a Broker',     url: `${SITE_URL}/brokers`,          description: 'Verified aviation property brokers across the United States.' },
+          { '@type': 'WebPage', name: 'List a Property',   url: `${SITE_URL}/submit`,           description: 'List your hangar or aviation property for free.' },
+          { '@type': 'WebPage', name: 'Sign In',           url: `${SITE_URL}/login`,            description: 'Sign in to your Hangar Marketplace account.' },
+        ],
+      },
+    ],
+  }
+
   return (
     <html lang="en">
       <head>
         <GoogleAnalytics />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
       <body
         style={{
