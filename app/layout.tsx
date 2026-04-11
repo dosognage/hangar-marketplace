@@ -114,10 +114,19 @@ export default async function RootLayout({
       initialUnreadNotifications = notifCount ?? 0
 
       // Unread message count (conversations where user is buyer or broker)
-      brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
-      const conversationFilter = brokerProfileId
-        ? `buyer_id.eq.${user.id},broker_profile_id.eq.${brokerProfileId}`
-        : `buyer_id.eq.${user.id}`
+      // Query broker_profiles table directly — more reliable than user_metadata cache
+      const { data: brokerProfiles } = await supabaseAdmin
+        .from('broker_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+      const brokerProfileIds = (brokerProfiles ?? []).map(r => r.id)
+      brokerProfileId = brokerProfileIds[0]
+
+      let conversationFilter = `buyer_id.eq.${user.id}`
+      if (brokerProfileIds.length > 0) {
+        conversationFilter += `,broker_profile_id.in.(${brokerProfileIds.join(',')})`
+      }
+
       const { data: userConvos } = await supabaseAdmin
         .from('conversations')
         .select('id')
