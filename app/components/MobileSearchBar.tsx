@@ -55,7 +55,7 @@ export default function MobileSearchBar({
   return (
     <div style={{
       position: 'absolute',
-      top: '12px',
+      top: '20px',
       left: '12px',
       right: '12px',
       zIndex: 1001,

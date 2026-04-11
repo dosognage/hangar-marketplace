@@ -151,12 +151,18 @@ body {
     display: none !important;
   }
 
-  /* Show hamburger button on mobile */
+  /* Show hamburger button on mobile — push it to far right after logo */
   .mobile-hamburger {
     display: flex !important;
     align-items: center;
     justify-content: center;
     order: 3;
+    margin-left: auto;
+  }
+
+  /* Hide weather widget on mobile — keeps header uncluttered */
+  .home-airport-widget {
+    display: none !important;
   }
 
   .nav-email {

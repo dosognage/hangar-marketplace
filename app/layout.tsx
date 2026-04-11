@@ -219,6 +219,7 @@ export default async function RootLayout({
               <div className="nav-links">
                 <Link href="/" style={navLinkStyle}>Browse</Link>
                 <Link href="/airport-homes" style={navLinkStyle}>Airport Homes</Link>
+                <Link href="/requests" style={navLinkStyle}>Requests</Link>
                 <Link href="/brokers" style={navLinkStyle}>Brokers</Link>
                 <Link href="/submit" style={navLinkStyle}>List a Property</Link>
               </div>
@@ -228,9 +229,11 @@ export default async function RootLayout({
 
               {/* Auth / profile */}
               <div className="nav-auth">
-                {/* Home airport weather widget — only shown when logged in + airport set */}
+                {/* Home airport weather widget — only shown when logged in + airport set, hidden on mobile */}
                 {user && user.user_metadata?.home_airport && (
-                  <HomeAirportWidget icao={user.user_metadata.home_airport as string} />
+                  <div className="home-airport-widget">
+                    <HomeAirportWidget icao={user.user_metadata.home_airport as string} />
+                  </div>
                 )}
                 {user ? (
                   <NotificationBell initialUnread={initialUnreadNotifications} />

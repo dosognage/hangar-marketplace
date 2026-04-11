@@ -8,7 +8,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createServerClient } from '@/lib/supabase-server'
 import ReplyButton from './ReplyButton'
 import type { Metadata } from 'next'
@@ -46,10 +46,11 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
   const serverSupabase = await createServerClient()
   const { data: { user } } = await serverSupabase.auth.getUser()
 
-  let query = supabase
+  let query = supabaseAdmin
     .from('hangar_requests')
     .select('*')
-    .eq('status', 'active')
+    .in('status', ['open', 'active'])
+    .order('is_priority', { ascending: false })
     .order('created_at', { ascending: false })
 
   if (airport?.trim()) {
@@ -60,12 +61,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
   }
 
   const { data: requests } = await query
-  // Priority requests float to the top
-  const safeRequests = ((requests ?? []) as Request[]).sort((a, b) => {
-    if (a.is_priority && !b.is_priority) return -1
-    if (!a.is_priority && b.is_priority) return 1
-    return 0
-  })
+  const safeRequests = (requests ?? []) as Request[]
 
   return (
     <div style={{ maxWidth: '860px' }}>
