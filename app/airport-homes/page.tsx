@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { supabase } from '@/lib/supabase'
 import HomesSplitView, { type HomeListing } from '@/app/components/HomesSplitView'
+import { geocodeLocation, distanceMiles } from '@/lib/geocode'
 
 export const metadata: Metadata = {
   title: 'Airport Homes & Land For Sale or Lease | Hangar Marketplace',
@@ -23,6 +24,12 @@ export default async function AirportHomesPage({ searchParams }: PageProps) {
   const stateVal       = str(params.state).toUpperCase()
   const typeVal        = str(params.type)
   const listingTypeVal = str(params.listing_type)
+  const radiusVal      = str(params.radius)
+
+  // ── Radius geocoding ──────────────────────────────────────────────────────
+  const radiusMiles = parseFloat(radiusVal)
+  const useRadius   = !isNaN(radiusMiles) && radiusMiles > 0 && qVal.length > 0
+  const radiusCenter = useRadius ? await geocodeLocation(qVal) : null
 
   let query = supabase
     .from('listings')
@@ -48,7 +55,8 @@ export default async function AirportHomesPage({ searchParams }: PageProps) {
   const { data } = await query
   let listings = (data ?? []) as HomeListing[]
 
-  if (qVal) {
+  // Text search (only when no radius active)
+  if (qVal && !useRadius) {
     const lower = qVal.toLowerCase()
     listings = listings.filter(l =>
       l.title.toLowerCase().includes(lower) ||
@@ -56,6 +64,14 @@ export default async function AirportHomesPage({ searchParams }: PageProps) {
       l.airport_name.toLowerCase().includes(lower) ||
       (l.airpark_name ?? '').toLowerCase().includes(lower)
     )
+  }
+
+  // ── Radius post-filter ────────────────────────────────────────────────────
+  if (useRadius && radiusCenter) {
+    listings = listings.filter(l => {
+      if (l.latitude == null || l.longitude == null) return false
+      return distanceMiles(radiusCenter, { lat: l.latitude, lng: l.longitude }) <= radiusMiles
+    })
   }
 
   return (
@@ -76,6 +92,7 @@ export default async function AirportHomesPage({ searchParams }: PageProps) {
         initialType={typeVal}
         initialState={stateVal}
         initialListingType={listingTypeVal}
+        initialRadius={radiusVal}
       />
     </div>
   )

@@ -3,12 +3,15 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { RADIUS_OPTIONS } from '@/lib/geocode'
+
 type SearchFiltersProps = {
   initialQ?: string
   initialType?: string
   initialMinPrice?: string
   initialMaxPrice?: string
   initialMinSqft?: string
+  initialRadius?: string
 }
 
 export default function SearchFilters({
@@ -17,6 +20,7 @@ export default function SearchFilters({
   initialMinPrice = '',
   initialMaxPrice = '',
   initialMinSqft = '',
+  initialRadius = '',
 }: SearchFiltersProps) {
   const router = useRouter()
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -65,7 +69,7 @@ export default function SearchFilters({
   }
 
   // Count active filters (excluding the main search query)
-  const activeFilterCount = [initialType, initialMinPrice, initialMaxPrice, initialMinSqft]
+  const activeFilterCount = [initialType, initialMinPrice, initialMaxPrice, initialMinSqft, initialRadius]
     .filter(Boolean).length
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -78,12 +82,15 @@ export default function SearchFilters({
     const minPrice = (data.get('minPrice') as string)?.trim()
     const maxPrice = (data.get('maxPrice') as string)?.trim()
     const minSqft  = (data.get('minSqft') as string)?.trim()
+    const radius   = data.get('radius') as string
 
     if (q)        params.set('q', q)
     if (type)     params.set('type', type)
     if (minPrice) params.set('minPrice', minPrice)
     if (maxPrice) params.set('maxPrice', maxPrice)
     if (minSqft)  params.set('minSqft', minSqft)
+    // Only include radius when there's a location to center on
+    if (radius && q) params.set('radius', radius)
 
     const qs = params.toString()
     router.push(qs ? `/?${qs}` : '/', { scroll: false })
@@ -97,7 +104,7 @@ export default function SearchFilters({
     setFiltersOpen(false)
   }
 
-  const hasAnyFilter = Boolean(initialQ || initialType || initialMinPrice || initialMaxPrice || initialMinSqft)
+  const hasAnyFilter = Boolean(initialQ || initialType || initialMinPrice || initialMaxPrice || initialMinSqft || initialRadius)
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} style={wrapperStyle}>
@@ -239,6 +246,22 @@ export default function SearchFilters({
             min="0"
             style={inputStyle}
           />
+        </div>
+
+        {/* Radius — only meaningful when a search query is entered */}
+        <div style={fieldGroupStyle}>
+          <label style={labelStyle}>Search Radius</label>
+          <select name="radius" defaultValue={initialRadius} style={selectStyle}>
+            <option value="">Any distance</option>
+            {RADIUS_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          {!initialQ && (
+            <span style={{ fontSize: '0.67rem', color: '#9ca3af', lineHeight: 1.3 }}>
+              Enter a city or airport code first
+            </span>
+          )}
         </div>
 
         {/* Mobile-only: Apply button inside the filter panel */}

@@ -15,6 +15,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { MapBounds } from './MapView'
 import { useRouter } from 'next/navigation'
+import { RADIUS_OPTIONS } from '@/lib/geocode'
 
 const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
@@ -87,6 +88,7 @@ type Props = {
   initialType?: string
   initialState?: string
   initialListingType?: string
+  initialRadius?: string
 }
 
 const PAGE_SIZE = 15
@@ -105,6 +107,7 @@ export default function HomesSplitView({
   initialType = '',
   initialState = '',
   initialListingType = '',
+  initialRadius = '',
 }: Props) {
   const router = useRouter()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -120,6 +123,7 @@ export default function HomesSplitView({
   const [typeFilter, setTypeFilter] = useState(initialType)
   const [stateFilter, setStateFilter] = useState(initialState)
   const [listingTypeFilter, setListingTypeFilter] = useState(initialListingType)
+  const [radiusFilter, setRadiusFilter] = useState(initialRadius)
 
   const handleBoundsChange = useCallback((b: MapBounds) => {
     setMapBounds(b)
@@ -128,14 +132,16 @@ export default function HomesSplitView({
   // Navigate with updated search params
   function applyFilters(overrides: Record<string, string>) {
     const params = new URLSearchParams()
-    const q    = overrides.q    ?? searchQ
-    const type = overrides.type ?? typeFilter
-    const st   = overrides.state ?? stateFilter
-    const lt   = overrides.listing_type ?? listingTypeFilter
-    if (q.trim())  params.set('q', q.trim())
-    if (type)      params.set('type', type)
-    if (st)        params.set('state', st)
-    if (lt)        params.set('listing_type', lt)
+    const q      = overrides.q      ?? searchQ
+    const type   = overrides.type   ?? typeFilter
+    const st     = overrides.state  ?? stateFilter
+    const lt     = overrides.listing_type ?? listingTypeFilter
+    const rad    = overrides.radius ?? radiusFilter
+    if (q.trim())        params.set('q', q.trim())
+    if (type)            params.set('type', type)
+    if (st)              params.set('state', st)
+    if (lt)              params.set('listing_type', lt)
+    if (rad && q.trim()) params.set('radius', rad)
     router.push(`/airport-homes${params.toString() ? `?${params}` : ''}`)
   }
 
@@ -194,7 +200,7 @@ export default function HomesSplitView({
   }
 
   const listingCount = sortedListings.length
-  const hasFilters = !!(initialQ || initialType || initialState || initialListingType)
+  const hasFilters = !!(initialQ || initialType || initialState || initialListingType || initialRadius)
 
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
@@ -388,6 +394,36 @@ export default function HomesSplitView({
             >
               Search
             </button>
+          </div>
+
+          {/* Radius filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap' }}>Search radius:</span>
+            <select
+              value={radiusFilter}
+              onChange={e => {
+                setRadiusFilter(e.target.value)
+                setCurrentPage(1)
+                applyFilters({ radius: e.target.value })
+              }}
+              style={{
+                padding: '0.35rem 0.5rem',
+                border: '1px solid #d1d5db', borderRadius: '7px',
+                fontSize: '0.78rem', backgroundColor: 'white',
+                color: radiusFilter ? '#111827' : '#6b7280',
+                minWidth: '130px',
+              }}
+            >
+              <option value="">Any distance</option>
+              {RADIUS_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            {radiusFilter && !searchQ && (
+              <span style={{ fontSize: '0.7rem', color: '#f59e0b' }}>
+                Enter a city or airport first
+              </span>
+            )}
           </div>
 
           {/* Clear filters + count */}

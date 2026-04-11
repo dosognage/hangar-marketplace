@@ -19,6 +19,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import SearchFilters from '@/app/components/SearchFilters'
 import SplitView from '@/app/components/SplitView'
 import SaveSearchWidget from '@/app/components/SaveSearchWidget'
+import { geocodeLocation, distanceMiles } from '@/lib/geocode'
 
 type Photo = { storage_path: string; display_order: number }
 
@@ -56,7 +57,7 @@ type HomePageProps = {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 export default async function HomePage({ searchParams }: HomePageProps) {
-  const { q, type, minPrice, maxPrice, minSqft } = await searchParams
+  const { q, type, minPrice, maxPrice, minSqft, radius } = await searchParams
 
   // Get logged-in user + their saved listing IDs (server-side, cookie auth)
   const serverSupabase = await createServerClient()
@@ -78,6 +79,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const minPriceVal = str(minPrice)
   const maxPriceVal = str(maxPrice)
   const minSqftVal  = str(minSqft)
+  const radiusVal   = str(radius)
+
+  // ── Radius geocoding ────────────────────────────────────────────────────
+  // When a radius is requested, geocode the search query to a lat/lng center.
+  // We then skip the text-based DB filter and instead post-filter by distance.
+  const radiusMiles = parseFloat(radiusVal)
+  const useRadius = !isNaN(radiusMiles) && radiusMiles > 0 && qVal.trim().length > 0
+  const radiusCenter = useRadius ? await geocodeLocation(qVal) : null
 
   // ── Build query ─────────────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -87,7 +96,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     .eq('status', 'approved')
     .order('created_at', { ascending: false })
 
-  if (qVal.trim()) {
+  // Only apply text search when NOT doing radius (radius uses geocode instead)
+  if (qVal.trim() && !useRadius) {
     const like = `%${qVal.trim()}%`
     query = query.or(
       `city.ilike.${like},state.ilike.${like},airport_name.ilike.${like},airport_code.ilike.${like}`
@@ -140,7 +150,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
 
   const now = new Date()
-  const safeListings: Listing[] = (listings ?? [])
+  let safeListings: Listing[] = (listings ?? [])
     .map((l: Listing) => ({ ...l, listing_photos: l.listing_photos ?? [] }))
     .sort((a: Listing, b: Listing) => {
       const aFeatured = a.is_featured && a.featured_until && new Date(a.featured_until) > now
@@ -149,6 +159,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       if (!aFeatured && bFeatured) return 1
       return 0
     })
+
+  // ── Radius post-filter ───────────────────────────────────────────────────
+  if (useRadius && radiusCenter) {
+    safeListings = safeListings.filter(l => {
+      if (l.latitude == null || l.longitude == null) return false
+      return distanceMiles(radiusCenter, { lat: l.latitude, lng: l.longitude }) <= radiusMiles
+    })
+  }
 
   return (
     // Negative margin breaks out of the layout's max-width / padding
@@ -164,6 +182,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             initialMinPrice={minPriceVal}
             initialMaxPrice={maxPriceVal}
             initialMinSqft={minSqftVal}
+            initialRadius={radiusVal}
           />
         </Suspense>
         <SaveSearchWidget
