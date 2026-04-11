@@ -8,7 +8,14 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const isBroker = user.user_metadata?.is_broker === true
+  // Always fetch conversations where user is the buyer
+  // Plus broker-side conversations if they have a broker profile
+  const brokerProfileIds = await getBrokerProfileIds(user.id)
+
+  let orFilter = `buyer_id.eq.${user.id}`
+  if (brokerProfileIds.length > 0) {
+    orFilter += `,broker_profile_id.in.(${brokerProfileIds.join(',')})`
+  }
 
   // Fetch conversations where user is buyer OR broker
   const { data: convos, error } = await supabaseAdmin
@@ -18,11 +25,7 @@ export async function GET() {
       buyer:buyer_id ( id, raw_user_meta_data ),
       broker_profile:broker_profile_id ( id, full_name, avatar_url, user_id )
     `)
-    .or(
-      isBroker
-        ? `buyer_id.eq.${user.id},broker_profile_id.in.(${await getBrokerProfileIds(user.id)})`
-        : `buyer_id.eq.${user.id}`
-    )
+    .or(orFilter)
     .order('last_message_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -102,11 +105,10 @@ export async function POST(req: Request) {
   return NextResponse.json({ conversation_id: convo.id, message: msg })
 }
 
-async function getBrokerProfileIds(userId: string): Promise<string> {
+async function getBrokerProfileIds(userId: string): Promise<string[]> {
   const { data } = await supabaseAdmin
     .from('broker_profiles')
     .select('id')
     .eq('user_id', userId)
-  if (!data?.length) return 'null'
-  return data.map(r => r.id).join(',')
+  return (data ?? []).map(r => r.id)
 }

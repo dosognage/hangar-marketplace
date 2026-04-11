@@ -200,7 +200,7 @@ export default async function RootLayout({
                   <span style={{ color: 'white', fontWeight: '700', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
                     Hangar Marketplace
                   </span>
-                  <span style={{ color: '#93c5fd', fontSize: '0.65rem', fontWeight: '500', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  <span style={{ color: '#bfdbfe', fontSize: '0.65rem', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     Aviation Properties
                   </span>
                 </div>

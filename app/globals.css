@@ -43,6 +43,17 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Crisp text rendering on mobile (prevents washed-out "thin" look on iOS) */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure secondary text (#6b7280 / gray-500) is legible on mobile */
+@media (max-width: 640px) {
+  /* Bump up the minimum font weight for small gray text across the app */
+  body {
+    font-weight: 400;
+  }
 }
 
 /* Prevent Leaflet popup close button from inheriting global button styles */
@@ -340,6 +351,10 @@ body {
     width: 100vw !important;
     height: auto !important;
     margin: 0 !important;
+    /* Must be above the footer (which is later in DOM order and paints over
+       fixed elements without an explicit z-index on mobile).
+       Keep below site-header (z-index: 3000). */
+    z-index: 500 !important;
   }
 
   /* Show floating search bar on mobile */

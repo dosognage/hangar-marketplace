@@ -48,7 +48,16 @@ export default function ChatDrawer() {
       setInput('')
       setError(null)
       if (p.conversationId) {
-        setConvoId(p.conversationId)
+        // If the conversationId hasn't changed, the useEffect below won't
+        // re-run — so we explicitly fetch here to always populate messages
+        // when reopening an existing conversation.
+        setConvoId(prev => {
+          if (prev === p.conversationId) {
+            // Same convo: manually trigger a fetch since the effect won't fire
+            fetchMessages(p.conversationId!)
+          }
+          return p.conversationId!
+        })
       } else {
         setConvoId(null)
       }
@@ -60,7 +69,7 @@ export default function ChatDrawer() {
       window.removeEventListener('open-chat', onOpen)
       window.removeEventListener('close-chat', onClose)
     }
-  }, [])
+  }, [fetchMessages])
 
   // ── Fetch messages when conversation is known ─────────────────────────────
   const fetchMessages = useCallback(async (cid: string) => {
@@ -126,6 +135,8 @@ export default function ChatDrawer() {
         if (!res.ok) throw new Error('Failed to send')
         const { message } = await res.json()
         setMessages(prev => prev.find(m => m.id === message.id) ? prev : [...prev, message])
+        // Notify MessageBell to refresh its list so sent message appears
+        window.dispatchEvent(new Event('conversations-updated'))
       } else {
         // New conversation
         const res = await fetch('/api/conversations', {

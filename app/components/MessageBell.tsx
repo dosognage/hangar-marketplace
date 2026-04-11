@@ -67,7 +67,7 @@ export default function MessageBell({
     return () => window.removeEventListener('conversations-updated', fetchConvos)
   }, [fetchConvos])
 
-  // Realtime: new message in any conversation → bump unread
+  // Realtime: new message from someone else → bump unread + stale the list
   useEffect(() => {
     const channel = supabase
       .channel('message-bell')
@@ -79,13 +79,13 @@ export default function MessageBell({
         const msg = payload.new as { sender_id: string; conversation_id: string }
         if (msg.sender_id !== currentUserId) {
           setUnread(n => n + 1)
-          // Refresh list if dropdown is open
-          setConvos(prev => prev.length > 0 ? [] : prev)
+          // Re-fetch the conversation list so the new message appears in the bell
+          fetchConvos()
         }
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [currentUserId])
+  }, [currentUserId, fetchConvos])
 
   async function handleOpen() {
     setOpen(o => !o)
