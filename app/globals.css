@@ -135,7 +135,36 @@ body {
   }
 }
 
-/* ── Mobile nav: hamburger layout ─────────────────────────────────────────── */
+/* ── Tablet + mobile nav: hamburger at ≤900px ────────────────────────────── */
+/* At ≤900px the desktop link row is hidden and replaced by the drawer.      */
+/* This prevents "Airport Homes" / "List a Property" from wrapping or        */
+/* cramming at intermediate viewport widths.                                  */
+@media (max-width: 900px) {
+  /* Hide the desktop link row — MobileMenu drawer handles navigation */
+  .nav-links {
+    display: none !important;
+  }
+
+  /* Show hamburger button — pin it to the far right after the logo */
+  .mobile-hamburger {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    order: 3;
+    margin-left: auto;
+  }
+
+  /* Hide weather widget — keeps header clean on tablets */
+  .home-airport-widget {
+    display: none !important;
+  }
+
+  .nav-email {
+    display: none !important;
+  }
+}
+
+/* ── Mobile-only adjustments (≤640px) ───────────────────────────────────── */
 @media (max-width: 640px) {
   :root {
     --header-h: 60px;
@@ -145,29 +174,12 @@ body {
     padding: 0 1rem;
     min-height: 60px;
   }
+}
 
-  /* Hide the desktop link row on mobile — MobileMenu drawer handles this */
-  .nav-links {
-    display: none !important;
-  }
-
-  /* Show hamburger button on mobile — push it to far right after logo */
-  .mobile-hamburger {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    order: 3;
-    margin-left: auto;
-  }
-
-  /* Hide weather widget on mobile — keeps header uncluttered */
-  .home-airport-widget {
-    display: none !important;
-  }
-
-  .nav-email {
-    display: none !important;
-  }
+/* ── Nav link hover state ────────────────────────────────────────────────── */
+.nav-link-item:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
 }
 
 /* ── Detail page two-column grid ─────────────────────────────────────────── */

@@ -500,9 +500,14 @@ export default function HomesSplitView({
                       {listing.is_sample && (
                         <span style={{
                           position: 'absolute', top: '4px', left: '4px',
-                          padding: '0.1rem 0.35rem', borderRadius: '4px',
-                          fontSize: '0.6rem', fontWeight: '700',
-                          backgroundColor: '#f59e0b', color: 'white',
+                          padding: '0.18rem 0.5rem', borderRadius: '5px',
+                          fontSize: '0.62rem', fontWeight: '600',
+                          letterSpacing: '0.04em', textTransform: 'uppercase',
+                          backgroundColor: 'rgba(15, 23, 42, 0.72)',
+                          backdropFilter: 'blur(6px)',
+                          WebkitBackdropFilter: 'blur(6px)',
+                          color: 'rgba(255,255,255,0.92)',
+                          border: '1px solid rgba(255,255,255,0.12)',
                         }}>
                           Sample
                         </span>

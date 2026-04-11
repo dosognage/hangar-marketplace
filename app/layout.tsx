@@ -267,11 +267,11 @@ export default async function RootLayout({
 
               {/* Secondary nav links */}
               <div className="nav-links">
-                <Link href="/" style={navLinkStyle}>Browse</Link>
-                <Link href="/airport-homes" style={navLinkStyle}>Airport Homes</Link>
-                <Link href="/requests" style={navLinkStyle}>Requests</Link>
-                <Link href="/brokers" style={navLinkStyle}>Brokers</Link>
-                <Link href="/submit" style={navLinkStyle}>List a Property</Link>
+                <Link href="/" style={navLinkStyle} className="nav-link-item">Browse</Link>
+                <Link href="/airport-homes" style={navLinkStyle} className="nav-link-item">Airport Homes</Link>
+                <Link href="/requests" style={navLinkStyle} className="nav-link-item">Requests</Link>
+                <Link href="/brokers" style={navLinkStyle} className="nav-link-item">Brokers</Link>
+                <Link href="/submit" style={navLinkStyle} className="nav-link-item">List a Property</Link>
               </div>
 
               {/* Mobile hamburger — only visible on mobile via CSS */}
@@ -422,7 +422,8 @@ const navLinkStyle: React.CSSProperties = {
   fontWeight: '500',
   padding: '0.4rem 0.65rem',
   borderRadius: '6px',
-  transition: 'background-color 0.15s',
+  whiteSpace: 'nowrap',
+  transition: 'background-color 0.15s, color 0.15s',
 }
 
 const footerContactStyle: React.CSSProperties = {

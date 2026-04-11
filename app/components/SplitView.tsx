@@ -365,14 +365,18 @@ export default function SplitView({
                   {listing.is_sample && (
                     <div style={{
                       position: 'absolute', top: '8px', left: '8px', zIndex: 12,
-                      display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
-                      padding: '0.18rem 0.5rem', borderRadius: '999px',
-                      backgroundColor: '#f59e0b', color: 'white',
-                      fontSize: '0.68rem', fontWeight: '700',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '0.2rem 0.55rem', borderRadius: '6px',
+                      backgroundColor: 'rgba(15, 23, 42, 0.72)',
+                      backdropFilter: 'blur(6px)',
+                      WebkitBackdropFilter: 'blur(6px)',
+                      color: 'rgba(255,255,255,0.92)',
+                      fontSize: '0.66rem', fontWeight: '600',
+                      letterSpacing: '0.04em', textTransform: 'uppercase',
+                      border: '1px solid rgba(255,255,255,0.12)',
                       pointerEvents: 'none',
                     }}>
-                      🔍 Sample
+                      Sample
                     </div>
                   )}
 
