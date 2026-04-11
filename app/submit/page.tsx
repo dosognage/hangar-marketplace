@@ -512,6 +512,8 @@ export default function SubmitPage() {
                 icao={mapIcao}
                 savedLat={hangarLat}
                 savedLng={hangarLng}
+                centerLat={airportCoords?.lat}
+                centerLng={airportCoords?.lng}
                 editable
                 onLocationSelect={handleLocationSelect}
                 height="380px"

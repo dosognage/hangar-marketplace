@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { MapContainer, GeoJSON, Marker, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, GeoJSON, Marker, useMap, useMapEvents } from 'react-leaflet'
 import L, { LatLngBounds } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -112,6 +112,17 @@ function FitBounds({ bounds }: { bounds: LatLngBounds | null }) {
   return null
 }
 
+// ── Helper: center map at a point (used for tile fallback) ────────────────────
+function CenterMap({ lat, lng, zoom = 14 }: { lat: number; lng: number; zoom?: number }) {
+  const map = useMap()
+  useEffect(() => {
+    map.setView([lat, lng], zoom)
+  // Only run when the coords actually change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lat, lng])
+  return null
+}
+
 // ── Helper: handle click-to-place marker in editable mode ─────────────────────
 function ClickHandler({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) {
   useMapEvents({
@@ -130,6 +141,9 @@ type Props = {
   icao: string
   savedLat?: number | null
   savedLng?: number | null
+  /** Fallback center coords (e.g. from auto-geocode) used when no OSM aerodrome area is found */
+  centerLat?: number | null
+  centerLng?: number | null
   editable?: boolean
   onLocationSelect?: (lat: number, lng: number) => void
   height?: string
@@ -140,6 +154,8 @@ export default function AirportMap({
   icao,
   savedLat,
   savedLng,
+  centerLat,
+  centerLng,
   editable = false,
   onLocationSelect,
   height = '420px',
@@ -244,6 +260,9 @@ export default function AirportMap({
     return <div style={{ width: '100%', height, backgroundColor: '#f3f4f6', borderRadius: '8px' }} />
   }
 
+  // When notfound, show tile map if we have a fallback center (e.g. from auto-geocode)
+  const hasTileFallback = loadState === 'notfound' && centerLat != null && centerLng != null
+
   // ── Overlay messages ──────────────────────────────────────────────────────
   const overlayContent = (() => {
     if (loadState === 'loading') return (
@@ -254,7 +273,8 @@ export default function AirportMap({
         </p>
       </div>
     )
-    if (loadState === 'notfound') return (
+    // If we have a fallback center, skip the blocking overlay — tiles will show instead
+    if (loadState === 'notfound' && !hasTileFallback) return (
       <div style={overlayStyle}>
         <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✈️</div>
         <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem', textAlign: 'center', maxWidth: '260px' }}>
@@ -296,8 +316,22 @@ export default function AirportMap({
         scrollWheelZoom
         zoomControl
       >
-        {/* Fit to airport bounds when loaded */}
+        {/* Fit to airport bounds when OSM geometry loaded */}
         <FitBounds bounds={bounds} />
+
+        {/* Center on fallback coords when tile mode is active */}
+        {hasTileFallback && (
+          <CenterMap lat={centerLat as number} lng={centerLng as number} zoom={15} />
+        )}
+
+        {/* OSM tile layer — shown only when no aerodrome diagram is available */}
+        {hasTileFallback && (
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            maxZoom={19}
+          />
+        )}
 
         {/* Click-to-place handler */}
         {editable && <ClickHandler onLocationSelect={handleMapClick} />}
@@ -345,7 +379,7 @@ export default function AirportMap({
       )}
 
       {/* Instruction badge in editable mode */}
-      {editable && loadState === 'loaded' && (
+      {editable && (loadState === 'loaded' || hasTileFallback) && (
         <div style={{
           position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)',
           zIndex: 999, backgroundColor: 'rgba(17,24,39,0.8)', color: 'white',
@@ -357,8 +391,21 @@ export default function AirportMap({
         </div>
       )}
 
+      {/* "No diagram" notice in tile fallback mode — subtle, non-blocking */}
+      {hasTileFallback && (
+        <div style={{
+          position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 999, backgroundColor: 'rgba(255,255,255,0.9)',
+          border: '1px solid #e5e7eb', borderRadius: '20px',
+          padding: '0.3rem 0.85rem', fontSize: '0.72rem', color: '#6b7280',
+          fontWeight: '500', pointerEvents: 'none', whiteSpace: 'nowrap',
+        }}>
+          No diagram available for {icao.toUpperCase()} — satellite map shown
+        </div>
+      )}
+
       {/* Attribution (Overpass / OSM) */}
-      {loadState === 'loaded' && (
+      {(loadState === 'loaded' || hasTileFallback) && (
         <div style={{
           position: 'absolute', bottom: 0, right: 0, zIndex: 999,
           backgroundColor: 'rgba(255,255,255,0.7)',
