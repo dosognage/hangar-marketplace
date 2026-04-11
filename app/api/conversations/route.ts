@@ -18,7 +18,8 @@ type RawConvo = {
   created_at: string
   buyer_id: string
   broker_profile_id: string
-  broker_profile: BrokerProfile | null
+  // PostgREST always returns joined relations as an array even for many-to-one fks
+  broker_profile: BrokerProfile[]
 }
 
 // ─── GET /api/conversations ───────────────────────────────────────────────────
@@ -97,7 +98,7 @@ export async function GET() {
     ])
 
     const isUserBuyer = c.buyer_id === user.id
-    const bp = c.broker_profile
+    const bp = c.broker_profile[0] ?? null
 
     return {
       id: c.id,
