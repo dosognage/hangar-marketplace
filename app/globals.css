@@ -145,13 +145,21 @@ body {
     display: none !important;
   }
 
-  /* Show hamburger button — pin it to the far right after the logo */
+  /* Push auth icons (bells + profile) to the right side of the header.
+     margin-left: auto fills the gap between the logo and the icons,
+     keeping dropdowns near the right edge so they don't go off-screen. */
+  .nav-auth {
+    order: 2;
+    margin-left: auto;
+  }
+
+  /* Show hamburger button — sits immediately after auth icons */
   .mobile-hamburger {
     display: flex !important;
     align-items: center;
     justify-content: center;
     order: 3;
-    margin-left: auto;
+    margin-left: 0.25rem;
   }
 
   /* Hide weather widget — keeps header clean on tablets */
