@@ -8,7 +8,7 @@ const RESEND_API = 'https://api.resend.com/emails'
 // Use Resend's shared "from" address for testing.
 // Once you verify your own domain in Resend, change this to:
 // "Hangar Marketplace <noreply@yourdomain.com>"
-const FROM_ADDRESS = 'Hangar Marketplace <onboarding@resend.dev>'
+const FROM_ADDRESS = 'Hangar Marketplace <notify@hangarmarketplace.com>'
 
 // IMPORTANT: Without a verified domain, Resend only allows sending to
 // your own Resend account email address. Set RESEND_TEST_TO in .env.local

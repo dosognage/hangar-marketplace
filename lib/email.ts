@@ -21,7 +21,7 @@ export async function sendEmail({
   to,
   subject,
   html,
-  from = `Hangar Marketplace <onboarding@resend.dev>`,
+  from = `Hangar Marketplace <notify@hangarmarketplace.com>`,
 }: {
   to: string
   subject: string

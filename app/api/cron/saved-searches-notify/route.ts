@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
  */
 
 const RESEND_API   = 'https://api.resend.com/emails'
-const FROM_ADDRESS = 'Hangar Marketplace <onboarding@resend.dev>'
+const FROM_ADDRESS = 'Hangar Marketplace <notify@hangarmarketplace.com>'
 const SITE_URL     = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 const TEST_TO      = process.env.RESEND_TEST_TO
 

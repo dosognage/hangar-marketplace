@@ -309,7 +309,7 @@ export async function POST(req: NextRequest) {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from:    `Hangar Marketplace <onboarding@resend.dev>`,
+      from:    `Hangar Marketplace <notify@hangarmarketplace.com>`,
       to:      [ADMIN_EMAIL],
       subject,
       html,
