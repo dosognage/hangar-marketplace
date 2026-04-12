@@ -75,31 +75,45 @@ export async function updateListing(
   if (!existing) return { error: 'Listing not found.' }
   if (existing.user_id !== user.id) return { error: 'Not authorised.' }
 
-  const listing_type = formData.get('listing_type') as string
+  const listing_type   = formData.get('listing_type') as string
+  const property_type  = (formData.get('property_type') as string) || 'hangar'
+  const isHangar       = !property_type || property_type === 'hangar'
+  const isHome         = property_type === 'airport_home' || property_type === 'fly_in_community'
 
   const updates = {
     title:          (formData.get('title') as string)?.trim(),
+    property_type,
     airport_name:   (formData.get('airport_name') as string)?.trim(),
     airport_code:   (formData.get('airport_code') as string)?.trim().toUpperCase(),
     city:           (formData.get('city') as string)?.trim(),
     state:          (formData.get('state') as string)?.trim(),
     listing_type,
-    ownership_type: (formData.get('ownership_type') as string)?.trim(),
+    ownership_type: isHangar ? (formData.get('ownership_type') as string)?.trim() : null,
     asking_price:   listing_type === 'sale' && formData.get('asking_price')
                       ? Number(formData.get('asking_price'))
                       : null,
     monthly_lease:  (listing_type === 'lease' || listing_type === 'space') && formData.get('monthly_lease')
                       ? Number(formData.get('monthly_lease'))
                       : null,
-    square_feet:    formData.get('square_feet') ? Number(formData.get('square_feet')) : null,
-    door_width:     formData.get('door_width')  ? Number(formData.get('door_width'))  : null,
-    door_height:    formData.get('door_height') ? Number(formData.get('door_height')) : null,
-    hangar_depth:   formData.get('hangar_depth') ? Number(formData.get('hangar_depth')) : null,
+    // Hangar dimensions
+    square_feet:    isHangar && formData.get('square_feet')  ? Number(formData.get('square_feet'))  : null,
+    door_width:     isHangar && formData.get('door_width')   ? Number(formData.get('door_width'))   : null,
+    door_height:    isHangar && formData.get('door_height')  ? Number(formData.get('door_height'))  : null,
+    hangar_depth:   isHangar && formData.get('hangar_depth') ? Number(formData.get('hangar_depth')) : null,
+    // Home / land
+    bedrooms:       isHome && formData.get('bedrooms')   ? Number(formData.get('bedrooms'))   : null,
+    bathrooms:      isHome && formData.get('bathrooms')  ? Number(formData.get('bathrooms'))  : null,
+    home_sqft:      isHome && formData.get('home_sqft')  ? Number(formData.get('home_sqft'))  : null,
+    lot_acres:      !isHangar && formData.get('lot_acres') ? Number(formData.get('lot_acres')) : null,
+    airpark_name:   !isHangar ? (formData.get('airpark_name') as string)?.trim() || null : null,
+    has_runway_access: !isHangar ? formData.get('has_runway_access') === 'on' : false,
+    // Address
+    address:        !isHangar ? (formData.get('address')   as string)?.trim() || null : null,
+    zip_code:       !isHangar ? (formData.get('zip_code')  as string)?.trim() || null : null,
+    // Runway
     runway_length_ft: formData.get('runway_length_ft') ? Number(formData.get('runway_length_ft')) : null,
     runway_width_ft:  formData.get('runway_width_ft')  ? Number(formData.get('runway_width_ft'))  : null,
     runway_surface:   (formData.get('runway_surface') as string)?.trim() || null,
-    address:          (formData.get('address')  as string)?.trim() || null,
-    zip_code:         (formData.get('zip_code') as string)?.trim() || null,
     description:    (formData.get('description') as string)?.trim() || null,
     contact_name:   (formData.get('contact_name') as string)?.trim(),
     contact_email:  (formData.get('contact_email') as string)?.trim(),
