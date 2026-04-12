@@ -14,6 +14,20 @@ import { supabase } from '@/lib/supabase'
 import { updateListing, type UpdateState } from '@/app/actions/listings'
 
 
+const SURFACE_OPTIONS = [
+  'Asphalt',
+  'Asphalt (grooved)',
+  'Concrete',
+  'Asphalt/Concrete',
+  'Turf/Grass',
+  'Gravel',
+  'Turf/Gravel',
+  'Dirt',
+  'Water',
+  'Sand',
+  'Other',
+]
+
 type Listing = {
   id: string
   title: string
@@ -29,6 +43,9 @@ type Listing = {
   door_width: number | null
   door_height: number | null
   hangar_depth: number | null
+  runway_length_ft: number | null
+  runway_width_ft: number | null
+  runway_surface: string | null
   description: string | null
   contact_name: string
   contact_email: string
@@ -176,6 +193,27 @@ export default function EditListingPage() {
           <Field label="Hangar Depth (ft)">
             <input name="hangar_depth" type="number" min="0" defaultValue={listing.hangar_depth ?? ''} style={inputStyle} />
           </Field>
+        </div>
+
+        {/* Runway */}
+        <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #f3f4f6', paddingTop: '0.75rem' }}>
+          <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Runway Info</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+            <Field label="Runway Length (ft)">
+              <input name="runway_length_ft" type="number" min="0" defaultValue={listing.runway_length_ft ?? ''} style={inputStyle} />
+            </Field>
+            <Field label="Runway Width (ft)">
+              <input name="runway_width_ft" type="number" min="0" defaultValue={listing.runway_width_ft ?? ''} style={inputStyle} />
+            </Field>
+            <Field label="Runway Surface">
+              <select name="runway_surface" defaultValue={listing.runway_surface ?? ''} style={inputStyle}>
+                <option value="">Select…</option>
+                {SURFACE_OPTIONS.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
         </div>
 
         {/* Description */}

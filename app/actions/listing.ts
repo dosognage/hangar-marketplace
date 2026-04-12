@@ -28,6 +28,10 @@ export type ListingFormData = {
   lot_acres: string
   has_runway_access: boolean
   airpark_name: string
+  // Runway
+  runway_length_ft: string
+  runway_width_ft: string
+  runway_surface: string
   description: string
   contact_name: string
   contact_email: string
@@ -91,6 +95,10 @@ export async function createListing(data: ListingFormData): Promise<{ id: string
       lot_acres:        data.lot_acres             ? Number(data.lot_acres)   : null,
       has_runway_access: data.has_runway_access ?? false,
       airpark_name:     data.airpark_name || null,
+      // Runway
+      runway_length_ft: data.runway_length_ft ? Number(data.runway_length_ft) : null,
+      runway_width_ft:  data.runway_width_ft  ? Number(data.runway_width_ft)  : null,
+      runway_surface:   data.runway_surface   || null,
       description:      data.description  || null,
       contact_name:     data.contact_name,
       contact_email:    data.contact_email,

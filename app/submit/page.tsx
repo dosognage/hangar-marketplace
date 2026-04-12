@@ -50,11 +50,29 @@ const EMPTY_FORM = {
   home_sqft: '',
   lot_acres: '',
   airpark_name: '',
+  // Runway
+  runway_length_ft: '',
+  runway_width_ft: '',
+  runway_surface: '',
   description: '',
   contact_name: '',
   contact_email: '',
   contact_phone: '',
 }
+
+const SURFACE_OPTIONS = [
+  'Asphalt',
+  'Asphalt (grooved)',
+  'Concrete',
+  'Asphalt/Concrete',
+  'Turf/Grass',
+  'Gravel',
+  'Turf/Gravel',
+  'Dirt',
+  'Water',
+  'Sand',
+  'Other',
+]
 
 const PROPERTY_TYPE_OPTIONS = [
   { value: 'hangar',           label: 'Hangar' },
@@ -76,6 +94,7 @@ export default function SubmitPage() {
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
   const [hangarLat, setHangarLat] = useState<number | null>(null)
   const [hangarLng, setHangarLng] = useState<number | null>(null)
+  const [runwayLoading, setRunwayLoading] = useState(false)
   // Auto-geocoded airport coordinates (from ICAO lookup)
   const [airportCoords, setAirportCoords] = useState<AirportCoords | null>(null)
   const [geocoding, setGeocoding] = useState(false)
@@ -92,7 +111,7 @@ export default function SubmitPage() {
 
   // Called when the user picks an airport from the autocomplete dropdown.
   // This is the best path: we get exact coords + code from our own DB with no geocoding needed.
-  function applyAirportSelection(airport: AirportSuggestion) {
+  async function applyAirportSelection(airport: AirportSuggestion) {
     // Fill both fields
     setFormData(prev => ({
       ...prev,
@@ -103,6 +122,31 @@ export default function SubmitPage() {
     setAirportCoords({ lat: airport.latitude_deg, lng: airport.longitude_deg, icao: airport.ident })
     // Trigger the airport diagram map
     setMapIcao(airport.ident)
+    // Auto-fetch runway data
+    fetchRunwayData(airport.ident)
+  }
+
+  // Fetch runway data from AviationAPI and pre-populate fields if found
+  async function fetchRunwayData(code: string) {
+    setRunwayLoading(true)
+    try {
+      const res = await fetch(`/api/airports/runways?code=${encodeURIComponent(code)}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.source !== 'none') {
+          setFormData(prev => ({
+            ...prev,
+            runway_length_ft: data.runway_length_ft != null ? String(data.runway_length_ft) : prev.runway_length_ft,
+            runway_width_ft:  data.runway_width_ft  != null ? String(data.runway_width_ft)  : prev.runway_width_ft,
+            runway_surface:   data.runway_surface   != null ? data.runway_surface            : prev.runway_surface,
+          }))
+        }
+      }
+    } catch {
+      // Non-fatal — user can fill in manually
+    } finally {
+      setRunwayLoading(false)
+    }
   }
 
   // Auto-geocode the airport by code when typed manually (not via autocomplete).
@@ -167,6 +211,7 @@ export default function SubmitPage() {
         icaoDebounceRef.current = setTimeout(() => {
           setMapIcao(code)
           geocodeAirport(code)   // auto-capture airport lat/lng
+          fetchRunwayData(code)  // auto-populate runway dimensions
         }, 600)
       } else {
         // Code too short/long — clear any previous coords
@@ -213,6 +258,9 @@ export default function SubmitPage() {
         hangar_lng: hangarLng,
         latitude:   resolvedLat,
         longitude:  resolvedLng,
+        runway_length_ft: formData.runway_length_ft,
+        runway_width_ft:  formData.runway_width_ft,
+        runway_surface:   formData.runway_surface,
       })
 
       // If neither pin nor auto-geocode produced coords, do a final fallback
@@ -526,6 +574,50 @@ export default function SubmitPage() {
             </label>
           </Section>
         )}
+
+        {/* ── Runway Info ─────────────────────────────────────────────── */}
+        <Section title={`Runway Info${runwayLoading ? ' (loading…)' : ''}`}>
+          <p style={{ margin: '0 0 0.5rem', fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5 }}>
+            {runwayLoading
+              ? '✈ Fetching runway data from public FAA records…'
+              : 'Auto-filled from public airport data when you select an airport. Edit or clear any field if needed.'}
+          </p>
+          <TwoCol>
+            <Field label="Primary runway length (ft)">
+              <input
+                name="runway_length_ft"
+                type="number"
+                placeholder="e.g. 5000"
+                value={formData.runway_length_ft}
+                onChange={handleChange}
+                style={inputStyle}
+              />
+            </Field>
+            <Field label="Runway width (ft)">
+              <input
+                name="runway_width_ft"
+                type="number"
+                placeholder="e.g. 75"
+                value={formData.runway_width_ft}
+                onChange={handleChange}
+                style={inputStyle}
+              />
+            </Field>
+          </TwoCol>
+          <Field label="Runway surface">
+            <select
+              name="runway_surface"
+              value={formData.runway_surface}
+              onChange={handleChange}
+              style={inputStyle}
+            >
+              <option value="">Select surface type…</option>
+              {SURFACE_OPTIONS.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </Field>
+        </Section>
 
         {/* ── Description ─────────────────────────────────────────────── */}
         <Section title="Description">

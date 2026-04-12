@@ -115,6 +115,10 @@ type Listing = {
   lot_acres: number | null
   has_runway_access: boolean | null
   airpark_name: string | null
+  // Runway
+  runway_length_ft: number | null
+  runway_width_ft: number | null
+  runway_surface: string | null
   description: string | null
   is_featured: boolean
   featured_until: string | null
@@ -406,6 +410,19 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
           )}
           {typedListing.has_runway_access && (
             <DetailRow label="Runway access" value="✈ Direct runway / taxiway access" />
+          )}
+          {/* Runway dimensions */}
+          {(typedListing.runway_length_ft || typedListing.runway_width_ft) && (
+            <DetailRow
+              label="Runway dimensions"
+              value={[
+                typedListing.runway_length_ft ? `${typedListing.runway_length_ft.toLocaleString()}′ long` : null,
+                typedListing.runway_width_ft  ? `${typedListing.runway_width_ft}′ wide` : null,
+              ].filter(Boolean).join(' × ')}
+            />
+          )}
+          {typedListing.runway_surface && (
+            <DetailRow label="Runway surface" value={typedListing.runway_surface} />
           )}
         </DetailCard>
 
