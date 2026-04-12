@@ -187,6 +187,7 @@ export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsCh
   }
 
   return (
+    <div className="hide-zoom-mobile" style={{ width: '100%', height: '100%' }}>
     <MapContainer
       key="hangar-map"
       center={center}
@@ -262,5 +263,6 @@ export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsCh
         )
       })}
     </MapContainer>
+    </div>
   )
 }

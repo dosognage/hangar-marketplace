@@ -147,6 +147,8 @@ type Props = {
   editable?: boolean
   onLocationSelect?: (lat: number, lng: number) => void
   height?: string
+  /** Hide the +/− zoom buttons on mobile screens (≤768 px). Defaults to false. */
+  hideZoomMobile?: boolean
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -159,6 +161,7 @@ export default function AirportMap({
   editable = false,
   onLocationSelect,
   height = '420px',
+  hideZoomMobile = false,
 }: Props) {
   const [mounted, setMounted]             = useState(false)
   const [loadState, setLoadState]         = useState<LoadState>('idle')
@@ -306,7 +309,10 @@ export default function AirportMap({
   const defaultCenter: [number, number] = [39.5, -98.35]
 
   return (
-    <div style={{ position: 'relative', width: '100%', height, borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+    <div
+      className={hideZoomMobile ? 'hide-zoom-mobile' : undefined}
+      style={{ position: 'relative', width: '100%', height, borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}
+    >
       {/* Leaflet map — always rendered so it can receive state updates */}
       <MapContainer
         key="airport-map"

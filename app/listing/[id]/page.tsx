@@ -484,6 +484,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
             savedLng={typedListing.hangar_lng}
             editable={false}
             height="360px"
+            hideZoomMobile
           />
         </div>
       )}

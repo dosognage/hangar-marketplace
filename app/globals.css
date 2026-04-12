@@ -538,3 +538,10 @@ input, select, textarea {
     max-width: 100% !important;
   }
 }
+
+/* ── Hide Leaflet zoom buttons on mobile (pinch-to-zoom replaces them) ───── */
+@media (max-width: 768px) {
+  .hide-zoom-mobile .leaflet-control-zoom {
+    display: none !important;
+  }
+}

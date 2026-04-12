@@ -19,6 +19,7 @@ export type AirportMapClientProps = {
   editable?: boolean
   onLocationSelect?: (lat: number, lng: number) => void
   height?: string
+  hideZoomMobile?: boolean
 }
 
 export default function AirportMapClient(props: AirportMapClientProps) {
