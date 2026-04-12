@@ -253,7 +253,7 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
         {/* ── Runway Info ────────────────────────────────────────────────── */}
         <Section title="Runway Info">
           <TwoCol>
-            <Field label="Primary runway length (ft)">
+            <Field label="Runway length (ft)">
               <input name="runway_length_ft" type="number" min="0" defaultValue={listing.runway_length_ft ?? ''} placeholder="e.g. 5000" style={inputStyle} />
             </Field>
             <Field label="Runway width (ft)">

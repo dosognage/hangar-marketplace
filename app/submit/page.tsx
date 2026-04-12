@@ -714,7 +714,7 @@ export default function SubmitPage() {
               : 'Auto-filled from public airport data when you select an airport. Edit or clear any field if needed.'}
           </p>
           <TwoCol>
-            <Field label="Primary runway length (ft)">
+            <Field label="Runway length (ft)">
               <input
                 name="runway_length_ft"
                 type="number"
