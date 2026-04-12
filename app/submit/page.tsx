@@ -133,7 +133,7 @@ export default function SubmitPage() {
       const res = await fetch(`/api/airports/runways?code=${encodeURIComponent(code)}`)
       if (res.ok) {
         const data = await res.json()
-        if (data.source !== 'none') {
+        if (data.found) {
           setFormData(prev => ({
             ...prev,
             runway_length_ft: data.runway_length_ft != null ? String(data.runway_length_ft) : prev.runway_length_ft,
