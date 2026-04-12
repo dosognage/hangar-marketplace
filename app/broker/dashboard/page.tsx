@@ -304,12 +304,32 @@ export default async function BrokerDashboardPage() {
 
               return (
                 <div key={listing.id} style={{
+                  position: 'relative',
                   backgroundColor: 'white', border: '1px solid #e5e7eb',
                   borderRadius: '10px', padding: '1rem 1.25rem',
                   display: 'flex', justifyContent: 'space-between',
                   alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem',
-                }}>
-                  <div>
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                  cursor: 'pointer',
+                }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = '#a5b4fc'
+                    ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(99,102,241,0.1)'
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = '#e5e7eb'
+                    ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'none'
+                  }}
+                >
+                  {/* Stretched link — covers the whole card, sits behind buttons */}
+                  <Link
+                    href={`/listing/${listing.id}?from=broker-dashboard`}
+                    style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: '10px' }}
+                    aria-label={`View listing: ${listing.title}`}
+                  />
+
+                  {/* Card content — z-index: 1 so it sits above the stretched link */}
+                  <div style={{ position: 'relative', zIndex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
                       <span style={{ fontWeight: '700', fontSize: '0.95rem', color: '#111827' }}>{listing.title}</span>
                       <span style={{
@@ -347,20 +367,14 @@ export default async function BrokerDashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    {listing.status === 'approved' && (
-                      <Link href={`/listing/${listing.id}`} style={{
-                        fontSize: '0.8rem', color: '#6366f1', textDecoration: 'none',
-                        fontWeight: '500', padding: '0.3rem 0.75rem',
-                        border: '1px solid #c7d2fe', borderRadius: '6px',
-                      }}>
-                        View live →
-                      </Link>
-                    )}
+
+                  {/* Edit button — z-index: 2 so it's always clickable above the stretched link */}
+                  <div style={{ position: 'relative', zIndex: 2, display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <Link href={`/listing/${listing.id}/edit`} style={{
                       fontSize: '0.8rem', color: '#374151', textDecoration: 'none',
                       fontWeight: '500', padding: '0.3rem 0.75rem',
                       border: '1px solid #d1d5db', borderRadius: '6px',
+                      backgroundColor: 'white',
                     }}>
                       Edit
                     </Link>

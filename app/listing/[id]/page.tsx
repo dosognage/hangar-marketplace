@@ -20,7 +20,8 @@ export const dynamic = 'force-dynamic'
 import AirportMapClient from '@/app/components/AirportMapClient'
 
 type ListingPageProps = {
-  params: Promise<{ id: string }>
+  params:       Promise<{ id: string }>
+  searchParams: Promise<{ from?: string }>
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
@@ -135,8 +136,12 @@ function photoUrl(path: string) {
   return `${SUPABASE_STORAGE}/${path}`
 }
 
-export default async function ListingDetailPage({ params }: ListingPageProps) {
-  const { id } = await params
+export default async function ListingDetailPage({ params, searchParams }: ListingPageProps) {
+  const { id }   = await params
+  const { from } = await searchParams
+  const fromBrokerDashboard = from === 'broker-dashboard'
+  const backHref  = fromBrokerDashboard ? '/broker/dashboard' : '/'
+  const backLabel = fromBrokerDashboard ? '← Back to dashboard' : '← Back to listings'
 
   // Get current user and saved state server-side (cookie auth — reliable)
   const serverSupabase = await createServerClient()
@@ -163,7 +168,7 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
   if (error || !listing) {
     return (
       <div>
-        <Link href="/" style={{ color: '#6366f1', textDecoration: 'none' }}>← Back to listings</Link>
+        <Link href={backHref} style={{ color: '#6366f1', textDecoration: 'none' }}>{backLabel}</Link>
         <h1 style={{ marginTop: '1rem' }}>Listing Not Found</h1>
         <p>This listing does not exist or is not publicly available.</p>
       </div>
@@ -231,8 +236,8 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <Link href="/" style={{ color: '#6366f1', textDecoration: 'none', fontSize: '0.9rem' }}>
-        ← Back to listings
+      <Link href={backHref} style={{ color: '#6366f1', textDecoration: 'none', fontSize: '0.9rem' }}>
+        {backLabel}
       </Link>
 
       {/* Sample listing banner */}
