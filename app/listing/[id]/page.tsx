@@ -115,6 +115,9 @@ type Listing = {
   lot_acres: number | null
   has_runway_access: boolean | null
   airpark_name: string | null
+  // Address
+  address: string | null
+  zip_code: string | null
   // Runway
   runway_length_ft: number | null
   runway_width_ft: number | null
@@ -378,6 +381,17 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
             label="Listing type"
             value={typedListing.listing_type === 'sale' ? 'For Sale' : typedListing.listing_type === 'space' ? 'Space Available' : 'For Lease'}
           />
+          {/* Address — non-hangar listings */}
+          {typedListing.address && (
+            <DetailRow
+              label="Address"
+              value={[
+                typedListing.address,
+                typedListing.city,
+                [typedListing.state, typedListing.zip_code].filter(Boolean).join(' '),
+              ].filter(Boolean).join(', ')}
+            />
+          )}
           {typedListing.airpark_name && (
             <DetailRow label="Airpark / Community" value={typedListing.airpark_name} />
           )}

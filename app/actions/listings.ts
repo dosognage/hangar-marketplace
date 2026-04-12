@@ -98,6 +98,8 @@ export async function updateListing(
     runway_length_ft: formData.get('runway_length_ft') ? Number(formData.get('runway_length_ft')) : null,
     runway_width_ft:  formData.get('runway_width_ft')  ? Number(formData.get('runway_width_ft'))  : null,
     runway_surface:   (formData.get('runway_surface') as string)?.trim() || null,
+    address:          (formData.get('address')  as string)?.trim() || null,
+    zip_code:         (formData.get('zip_code') as string)?.trim() || null,
     description:    (formData.get('description') as string)?.trim() || null,
     contact_name:   (formData.get('contact_name') as string)?.trim(),
     contact_email:  (formData.get('contact_email') as string)?.trim(),

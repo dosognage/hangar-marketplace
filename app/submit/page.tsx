@@ -22,6 +22,16 @@ import AirportAutocomplete, { type AirportSuggestion } from '@/app/components/Ai
 
 type AirportCoords = { lat: number; lng: number; icao: string }
 
+type AddrSuggestion = {
+  display: string
+  street:  string
+  city:    string
+  state:   string
+  zip:     string
+  lat:     number
+  lng:     number
+}
+
 
 // Leaflet must be loaded client-side only
 const AirportMap = dynamic(() => import('@/app/components/AirportMap'), { ssr: false })
@@ -50,6 +60,9 @@ const EMPTY_FORM = {
   home_sqft: '',
   lot_acres: '',
   airpark_name: '',
+  // Address (non-hangar)
+  address: '',
+  zip_code: '',
   // Runway
   runway_length_ft: '',
   runway_width_ft: '',
@@ -95,6 +108,12 @@ export default function SubmitPage() {
   const [hangarLat, setHangarLat] = useState<number | null>(null)
   const [hangarLng, setHangarLng] = useState<number | null>(null)
   const [runwayLoading, setRunwayLoading] = useState(false)
+  // Address autocomplete
+  const [addrSuggestions, setAddrSuggestions] = useState<AddrSuggestion[]>([])
+  const [addrOpen, setAddrOpen] = useState(false)
+  const [addrActiveIdx, setAddrActiveIdx] = useState(-1)
+  const addrDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const addrContainerRef = useRef<HTMLDivElement>(null)
   // Auto-geocoded airport coordinates (from ICAO lookup)
   const [airportCoords, setAirportCoords] = useState<AirportCoords | null>(null)
   const [geocoding, setGeocoding] = useState(false)
@@ -108,6 +127,57 @@ export default function SubmitPage() {
       if (icaoDebounceRef.current) clearTimeout(icaoDebounceRef.current)
     }
   }, [])
+
+  // Address autocomplete — click-outside handler
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (addrContainerRef.current && !addrContainerRef.current.contains(e.target as Node)) {
+        setAddrOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  async function fetchAddrSuggestions(q: string) {
+    if (q.length < 4) { setAddrSuggestions([]); setAddrOpen(false); return }
+    try {
+      const res = await fetch(`/api/address/search?q=${encodeURIComponent(q)}`)
+      if (res.ok) {
+        const data = await res.json() as AddrSuggestion[]
+        setAddrSuggestions(data)
+        setAddrOpen(data.length > 0)
+        setAddrActiveIdx(-1)
+      }
+    } catch { /* silent */ }
+  }
+
+  function handleAddrChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value
+    setFormData(prev => ({ ...prev, address: v }))
+    if (addrDebounceRef.current) clearTimeout(addrDebounceRef.current)
+    addrDebounceRef.current = setTimeout(() => fetchAddrSuggestions(v), 350)
+  }
+
+  function handleAddrSelect(s: AddrSuggestion) {
+    setFormData(prev => ({
+      ...prev,
+      address:  s.street || s.display,
+      city:     s.city     || prev.city,
+      state:    s.state    || prev.state,
+      zip_code: s.zip      || prev.zip_code,
+    }))
+    setAddrSuggestions([])
+    setAddrOpen(false)
+  }
+
+  function handleAddrKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!addrOpen) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAddrActiveIdx(i => Math.min(i + 1, addrSuggestions.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setAddrActiveIdx(i => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter' && addrActiveIdx >= 0) { e.preventDefault(); handleAddrSelect(addrSuggestions[addrActiveIdx]) }
+    else if (e.key === 'Escape') setAddrOpen(false)
+  }
 
   // Called when the user picks an airport from the autocomplete dropdown.
   // This is the best path: we get exact coords + code from our own DB with no geocoding needed.
@@ -542,6 +612,67 @@ export default function SubmitPage() {
         {/* ── Property Details (home / land / fly-in) ──────────────────── */}
         {formData.property_type !== 'hangar' && (
           <Section title="Property Details">
+            {/* Address autocomplete */}
+            <Field label="Street address">
+              <div ref={addrContainerRef} style={{ position: 'relative' }}>
+                <input
+                  name="address"
+                  value={formData.address}
+                  onChange={handleAddrChange}
+                  onKeyDown={handleAddrKeyDown}
+                  onFocus={() => addrSuggestions.length > 0 && setAddrOpen(true)}
+                  placeholder="123 Runway Drive"
+                  autoComplete="off"
+                  style={inputStyle}
+                />
+                {addrOpen && addrSuggestions.length > 0 && (
+                  <ul style={{
+                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                    backgroundColor: 'white', border: '1px solid #e5e7eb',
+                    borderRadius: '10px', boxShadow: '0 6px 24px rgba(0,0,0,0.12)',
+                    zIndex: 2000, margin: 0, padding: '4px 0', listStyle: 'none',
+                    maxHeight: '220px', overflowY: 'auto',
+                  }}>
+                    {addrSuggestions.map((s, i) => (
+                      <li
+                        key={i}
+                        onMouseDown={() => handleAddrSelect(s)}
+                        onMouseEnter={() => setAddrActiveIdx(i)}
+                        style={{
+                          padding: '0.5rem 0.85rem',
+                          cursor: 'pointer',
+                          backgroundColor: i === addrActiveIdx ? '#f5f3ff' : 'transparent',
+                          borderLeft: i === addrActiveIdx ? '3px solid #6366f1' : '3px solid transparent',
+                          fontSize: '0.85rem',
+                          color: '#111827',
+                        }}
+                      >
+                        <div style={{ fontWeight: '500' }}>{s.street || s.display}</div>
+                        {(s.city || s.state) && (
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.1rem' }}>
+                            {[s.city, s.state, s.zip].filter(Boolean).join(', ')}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.72rem', color: '#9ca3af' }}>
+                Start typing to get address suggestions. City and state will auto-fill.
+              </p>
+            </Field>
+            <Field label="ZIP code">
+              <input
+                name="zip_code"
+                value={formData.zip_code}
+                onChange={handleChange}
+                placeholder="98101"
+                maxLength={10}
+                style={{ ...inputStyle, maxWidth: '160px' }}
+              />
+            </Field>
+
             {(formData.property_type === 'airport_home' || formData.property_type === 'fly_in_community') && (
               <>
                 <TwoCol>

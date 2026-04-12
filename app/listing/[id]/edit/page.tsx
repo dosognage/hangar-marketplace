@@ -46,6 +46,8 @@ type Listing = {
   runway_length_ft: number | null
   runway_width_ft: number | null
   runway_surface: string | null
+  address: string | null
+  zip_code: string | null
   description: string | null
   contact_name: string
   contact_email: string
@@ -193,6 +195,19 @@ export default function EditListingPage() {
           <Field label="Hangar Depth (ft)">
             <input name="hangar_depth" type="number" min="0" defaultValue={listing.hangar_depth ?? ''} style={inputStyle} />
           </Field>
+        </div>
+
+        {/* Address (non-hangar) */}
+        <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #f3f4f6', paddingTop: '0.75rem' }}>
+          <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Address</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: '1rem' }}>
+            <Field label="Street address">
+              <input name="address" defaultValue={listing.address ?? ''} placeholder="123 Runway Drive" style={inputStyle} />
+            </Field>
+            <Field label="ZIP code">
+              <input name="zip_code" defaultValue={listing.zip_code ?? ''} placeholder="98101" maxLength={10} style={inputStyle} />
+            </Field>
+          </div>
         </div>
 
         {/* Runway */}
