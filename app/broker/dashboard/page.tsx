@@ -410,7 +410,7 @@ export default async function BrokerDashboardPage() {
         </div>
 
         {/* Read-only fields */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', margin: '1.1rem 0', padding: '0.9rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #f3f4f6' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', margin: '1.1rem 0', padding: '0.9rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #f3f4f6' }}>
           {[
             ['Name', profile.full_name],
             ['Brokerage', profile.brokerage],

@@ -48,6 +48,31 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Lock headings to a consistent dark color so they're never washed out
+   by dark-mode CSS variables on devices where the page background is white */
+h1, h2, h3, h4 {
+  color: #111827;
+}
+
+/* Two-column form grid — collapses to single column on narrow phones */
+.form-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+@media (max-width: 480px) {
+  .form-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tighten main content padding on mobile so content isn't cramped */
+@media (max-width: 640px) {
+  .site-main {
+    padding: 1.25rem 1rem !important;
+  }
+}
+
 /* Ensure secondary text (#6b7280 / gray-500) is legible on mobile */
 @media (max-width: 640px) {
   /* Bump up the minimum font weight for small gray text across the app */

@@ -845,7 +845,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function TwoCol({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>{children}</div>
+  return <div className="form-two-col">{children}</div>
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

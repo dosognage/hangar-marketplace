@@ -330,7 +330,7 @@ export default async function RootLayout({
           </header>
 
           <ToastProvider>
-            <main style={{ flex: 1, maxWidth: '1100px', width: '100%', margin: '0 auto', padding: '2rem', boxSizing: 'border-box' }}>
+            <main className="site-main" style={{ flex: 1, maxWidth: '1100px', width: '100%', margin: '0 auto', padding: '2rem', boxSizing: 'border-box' }}>
               {children}
             </main>
           </ToastProvider>
