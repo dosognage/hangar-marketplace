@@ -396,11 +396,9 @@ export default function SearchFilters({
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-          {/* Spacer to match the hint text height under Radius */}
-          <span style={{ fontSize: '0.67rem', visibility: 'hidden' }}>placeholder</span>
         </div>
 
-        {/* Radius — only meaningful when a search query is entered */}
+        {/* Radius */}
         <div style={fieldGroupStyle}>
           <label style={labelStyle}>Search Radius</label>
           <select name="radius" defaultValue={initialRadius} style={selectStyle}>
@@ -409,10 +407,6 @@ export default function SearchFilters({
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-          {/* Always rendered to reserve space; hidden when not needed so other filters stay aligned */}
-          <span style={{ fontSize: '0.67rem', color: '#9ca3af', lineHeight: 1.3, visibility: initialQ ? 'hidden' : 'visible' }}>
-            Enter a city or airport code first
-          </span>
         </div>
 
         {/* Mobile-only: Apply button inside the filter panel */}
