@@ -329,14 +329,14 @@ export default async function ListingDetailPage({ params }: ListingPageProps) {
               userId={user?.id ?? null}
               initialSaved={initialSaved}
             />
-            <ShareButton title={typedListing.title} />
+            <ShareButton title={typedListing.title} listingId={typedListing.id} />
           </div>
         </div>
       </div>
 
       {/* Photo gallery */}
       {photoUrls.length > 0 ? (
-        <PhotoGallery urls={photoUrls} title={typedListing.title} />
+        <PhotoGallery urls={photoUrls} title={typedListing.title} listingId={typedListing.id} />
       ) : (
         <div style={{
           width: '100%', height: '260px', borderRadius: '12px',

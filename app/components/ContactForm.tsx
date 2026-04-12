@@ -10,6 +10,7 @@
  */
 
 import { useState } from 'react'
+import { trackEvent } from '@/lib/trackEvent'
 import { useToast } from './ToastProvider'
 
 type Props = {
@@ -40,6 +41,7 @@ export default function ContactForm({ listingId, listingTitle, sellerName, selle
     e.preventDefault()
     setStatus('loading')
     setErrorMsg('')
+    trackEvent(listingId, 'contact_click')
 
     try {
       const res = await fetch('/api/contact', {

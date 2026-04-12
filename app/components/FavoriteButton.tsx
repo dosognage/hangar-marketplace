@@ -13,6 +13,7 @@ import { toggleSavedListing } from '@/app/actions/listings'
 import HeartIcon from './HeartIcon'
 import { useToast } from './ToastProvider'
 import { useSavedCount } from './SavedCountProvider'
+import { trackEvent } from '@/lib/trackEvent'
 
 type Props = {
   listingId: string
@@ -38,9 +39,11 @@ export default function FavoriteButton({ listingId, userId, initialSaved }: Prop
         if (result.saved) {
           incrementSaved()
           addToast('Listing saved!', 'success')
+          trackEvent(listingId, 'save')
         } else {
           decrementSaved()
           addToast('Removed from saved', 'info')
+          trackEvent(listingId, 'unsave')
         }
       }
     })

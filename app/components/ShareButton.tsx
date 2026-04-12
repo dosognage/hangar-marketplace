@@ -1,16 +1,19 @@
 'use client'
 
 import { useToast } from './ToastProvider'
+import { trackEvent } from '@/lib/trackEvent'
 
 type Props = {
   title: string
+  listingId?: string
 }
 
-export default function ShareButton({ title }: Props) {
+export default function ShareButton({ title, listingId }: Props) {
   const { addToast } = useToast()
 
   async function handleShare() {
     const url = window.location.href
+    if (listingId) trackEvent(listingId, 'share')
 
     // Use native share sheet on mobile if available
     if (navigator.share) {
@@ -53,7 +56,6 @@ export default function ShareButton({ title }: Props) {
       onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f9fafb')}
       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
     >
-      {/* Share icon */}
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/>

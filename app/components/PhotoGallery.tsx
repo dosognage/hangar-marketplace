@@ -8,18 +8,31 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { trackEvent } from '@/lib/trackEvent'
 
 type Props = {
   urls: string[]
   title: string
+  listingId?: string
 }
 
-export default function PhotoGallery({ urls, title }: Props) {
+export default function PhotoGallery({ urls, title, listingId }: Props) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const prev = useCallback(() => setActiveIndex(i => Math.max(0, i - 1)), [])
   const next = useCallback(() => setActiveIndex(i => Math.min(urls.length - 1, i + 1)), [urls.length])
+
+  // Track photo views whenever the active photo changes (skip index 0 on mount)
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return }
+    if (!listingId) return
+    trackEvent(listingId, 'photo_view', {
+      photo_index: activeIndex,
+      photo_path: urls[activeIndex],
+    })
+  }, [activeIndex, listingId, urls])
 
   // Keyboard navigation inside lightbox
   useEffect(() => {

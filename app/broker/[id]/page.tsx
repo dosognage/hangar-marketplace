@@ -4,13 +4,14 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import MessageButton from './MessageButton'
+import BrokerAnalyticsDashboard from '@/app/components/BrokerAnalyticsDashboard'
 
 export const dynamic = 'force-dynamic'
 
 
 type PageProps = { params: Promise<{ id: string }> }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 
 function photoUrl(path: string) {
   return `${SUPABASE_URL}/storage/v1/object/public/listing-photos/${path}`
@@ -249,6 +250,14 @@ export default async function BrokerProfilePage({ params }: PageProps) {
             )
           })}
         </div>
+      )}
+
+      {/* ── Analytics dashboard — visible only to the broker who owns this profile ── */}
+      {currentUser?.id === broker.user_id && (
+        <BrokerAnalyticsDashboard
+          brokerProfileId={broker.id}
+          supabaseUrl={SUPABASE_URL}
+        />
       )}
     </div>
   )
