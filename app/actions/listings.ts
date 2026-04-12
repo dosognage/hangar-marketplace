@@ -125,9 +125,9 @@ export async function updateListing(
   const { error } = await supabase.from('listings').update(updates).eq('id', listingId)
   if (error) return { error: error.message }
 
-  revalidatePath('/dashboard')
+  revalidatePath('/broker/dashboard')
   revalidatePath(`/listing/${listingId}`)
-  redirect('/dashboard')
+  redirect('/broker/dashboard')
 }
 
 // ── Toggle saved listing ───────────────────────────────────────────────────
