@@ -18,9 +18,11 @@ const TYPE_LABEL: Record<string, string> = {
 
 type Props = {
   query: string
+  /** Base URL for "did you mean" suggestion links. Defaults to '/' (hangar browse). */
+  baseUrl?: string
 }
 
-export default function NoResultsSuggestions({ query }: Props) {
+export default function NoResultsSuggestions({ query, baseUrl = '/' }: Props) {
   const [suggestions, setSuggestions] = useState<AirportSuggestion[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -65,7 +67,7 @@ export default function NoResultsSuggestions({ query }: Props) {
               return (
                 <a
                   key={apt.id}
-                  href={`/?q=${encodeURIComponent(apt.ident)}`}
+                  href={`${baseUrl}?q=${encodeURIComponent(apt.ident)}`}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '0.75rem',
                     padding: '0.75rem 1rem',
@@ -113,7 +115,7 @@ export default function NoResultsSuggestions({ query }: Props) {
         </p>
       )}
 
-      <a href="/" style={{
+      <a href={baseUrl} style={{
         display: 'inline-block', marginTop: '1.25rem',
         padding: '0.55rem 1.25rem', backgroundColor: '#111827',
         color: 'white', borderRadius: '8px', textDecoration: 'none',

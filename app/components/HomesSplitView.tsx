@@ -16,6 +16,15 @@ import Link from 'next/link'
 import type { MapBounds } from './MapView'
 import { useRouter } from 'next/navigation'
 import { RADIUS_OPTIONS } from '@/lib/geocode'
+import type { AirportSuggestion } from './AirportAutocomplete'
+import NoResultsSuggestions from './NoResultsSuggestions'
+
+const TYPE_COLOR: Record<string, string> = {
+  large_airport:  '#6366f1',
+  medium_airport: '#0284c7',
+  small_airport:  '#16a34a',
+  seaplane_base:  '#0891b2',
+}
 
 const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
@@ -124,6 +133,58 @@ export default function HomesSplitView({
   const [stateFilter, setStateFilter] = useState(initialState)
   const [listingTypeFilter, setListingTypeFilter] = useState(initialListingType)
   const [radiusFilter, setRadiusFilter] = useState(initialRadius)
+
+  // ── Airport autocomplete state ─────────────────────────────────────────────
+  const [suggestions, setSuggestions] = useState<AirportSuggestion[]>([])
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(-1)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSuggestOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const fetchSuggestions = useCallback(async (q: string) => {
+    if (q.length < 2) { setSuggestions([]); setSuggestOpen(false); return }
+    try {
+      const res = await fetch(`/api/airports/search?q=${encodeURIComponent(q)}&limit=5`)
+      const data = await res.json() as AirportSuggestion[]
+      setSuggestions(data)
+      setSuggestOpen(data.length > 0)
+      setActiveIdx(-1)
+    } catch {
+      setSuggestions([]); setSuggestOpen(false)
+    }
+  }, [])
+
+  function handleQChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value
+    setSearchQ(v)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => fetchSuggestions(v), 200)
+  }
+
+  function handleSuggestionSelect(apt: AirportSuggestion) {
+    setSearchQ(apt.ident)
+    setSuggestions([]); setSuggestOpen(false)
+    setCurrentPage(1)
+    applyFilters({ q: apt.ident })
+  }
+
+  function handleQKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!suggestOpen) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, suggestions.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); handleSuggestionSelect(suggestions[activeIdx]) }
+    else if (e.key === 'Escape') setSuggestOpen(false)
+  }
 
   const handleBoundsChange = useCallback((b: MapBounds) => {
     setMapBounds(b)
@@ -343,25 +404,71 @@ export default function HomesSplitView({
 
           {/* Keyword + state search */}
           <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <input
-              type="text"
-              value={searchQ}
-              onChange={e => setSearchQ(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  setCurrentPage(1)
-                  applyFilters({ q: searchQ })
-                }
-              }}
-              placeholder="City, airport, or community…"
-              style={{
-                flex: '1 1 0', minWidth: 0,
-                padding: '0.45rem 0.7rem',
-                border: '1px solid #d1d5db', borderRadius: '7px',
-                fontSize: '0.8rem', backgroundColor: 'white',
-                outline: 'none',
-              }}
-            />
+            {/* Autocomplete wrapper */}
+            <div ref={searchContainerRef} style={{ flex: '1 1 0', minWidth: 0, position: 'relative' }}>
+              <input
+                type="text"
+                value={searchQ}
+                onChange={handleQChange}
+                onKeyDown={e => {
+                  handleQKeyDown(e)
+                  if (e.key === 'Enter' && activeIdx < 0) {
+                    setSuggestOpen(false)
+                    setCurrentPage(1)
+                    applyFilters({ q: searchQ })
+                  }
+                }}
+                onFocus={() => suggestions.length > 0 && setSuggestOpen(true)}
+                placeholder="City, airport, or community…"
+                autoComplete="off"
+                style={{
+                  width: '100%',
+                  padding: '0.45rem 0.7rem',
+                  border: '1px solid #d1d5db', borderRadius: '7px',
+                  fontSize: '0.8rem', backgroundColor: 'white',
+                  outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+              {/* Airport suggestions dropdown */}
+              {suggestOpen && suggestions.length > 0 && (
+                <ul style={{
+                  position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                  backgroundColor: 'white', border: '1px solid #e5e7eb',
+                  borderRadius: '10px', boxShadow: '0 6px 24px rgba(0,0,0,0.14)',
+                  zIndex: 2000, margin: 0, padding: '4px 0', listStyle: 'none',
+                  maxHeight: '240px', overflowY: 'auto',
+                }}>
+                  {suggestions.map((apt, i) => {
+                    const color = TYPE_COLOR[apt.type] ?? '#6b7280'
+                    const location = [apt.municipality, apt.iso_region?.replace('US-', '')].filter(Boolean).join(', ')
+                    return (
+                      <li
+                        key={apt.id}
+                        onMouseDown={() => handleSuggestionSelect(apt)}
+                        onMouseEnter={() => setActiveIdx(i)}
+                        style={{
+                          padding: '0.5rem 0.75rem', cursor: 'pointer',
+                          backgroundColor: i === activeIdx ? '#f5f3ff' : 'transparent',
+                          borderLeft: i === activeIdx ? '3px solid #6366f1' : '3px solid transparent',
+                        }}
+                      >
+                        <div style={{ fontSize: '0.8rem', fontWeight: '600', color: '#111827' }}>
+                          {apt.name}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.1rem' }}>
+                          <span style={{
+                            fontFamily: 'monospace', fontWeight: '700', fontSize: '0.68rem',
+                            color, backgroundColor: `${color}15`,
+                            padding: '0.1rem 0.35rem', borderRadius: '3px',
+                          }}>{apt.ident}</span>
+                          {location && <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>· {location}</span>}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
             <select
               value={stateFilter}
               onChange={e => {
@@ -445,31 +552,7 @@ export default function HomesSplitView({
 
         {/* ── Empty state ─────────────────────────────────────────────────── */}
         {listingCount === 0 && (
-          <div style={{ padding: '3rem 1.25rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🏡</div>
-            <p style={{ fontWeight: '700', color: '#111827', margin: '0 0 0.4rem' }}>No properties found</p>
-            <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 1.25rem' }}>
-              Try a different search or clear the filters.
-            </p>
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/airport-homes" style={{
-                display: 'inline-block', padding: '0.5rem 1.1rem',
-                backgroundColor: '#111827', color: 'white',
-                borderRadius: '7px', textDecoration: 'none',
-                fontWeight: '600', fontSize: '0.85rem',
-              }}>
-                See all properties
-              </Link>
-              <Link href="/submit" style={{
-                display: 'inline-block', padding: '0.5rem 1.1rem',
-                backgroundColor: '#6366f1', color: 'white',
-                borderRadius: '7px', textDecoration: 'none',
-                fontWeight: '600', fontSize: '0.85rem',
-              }}>
-                List your property
-              </Link>
-            </div>
-          </div>
+          <NoResultsSuggestions query={initialQ} baseUrl="/airport-homes" />
         )}
 
         {/* ── Listing cards ───────────────────────────────────────────────── */}
