@@ -306,24 +306,14 @@ export default async function BrokerDashboardPage() {
                   : 'Contact for price'
 
               return (
-                <div key={listing.id} style={{
+                <div key={listing.id} className="broker-listing-card" style={{
                   position: 'relative',
                   backgroundColor: 'white', border: '1px solid #e5e7eb',
                   borderRadius: '10px', padding: '1rem 1.25rem',
                   display: 'flex', justifyContent: 'space-between',
                   alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem',
-                  transition: 'border-color 0.15s, box-shadow 0.15s',
                   cursor: 'pointer',
-                }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = '#a5b4fc'
-                    ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(99,102,241,0.1)'
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = '#e5e7eb'
-                    ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'none'
-                  }}
-                >
+                }}>
                   {/* Stretched link — covers the whole card, sits behind buttons */}
                   <Link
                     href={`/listing/${listing.id}?from=broker-dashboard`}

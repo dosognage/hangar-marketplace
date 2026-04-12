@@ -83,6 +83,15 @@ body {
   border-color: #c7d2fe;
 }
 
+/* Broker dashboard listing card hover */
+.broker-listing-card {
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.broker-listing-card:hover {
+  border-color: #a5b4fc !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
 /* ── Header & nav ─────────────────────────────────────────────────────────── */
 
 /*
