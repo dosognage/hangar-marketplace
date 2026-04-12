@@ -684,7 +684,7 @@ export default function SubmitPage() {
                   </Field>
                 </TwoCol>
                 <Field label="Home square footage">
-                  <input name="home_sqft" type="number" placeholder="2400" value={formData.home_sqft} onChange={handleChange} style={inputStyle} />
+                  <input name="home_sqft" type="number" step="100" placeholder="2400" value={formData.home_sqft} onChange={handleChange} style={inputStyle} />
                 </Field>
               </>
             )}
