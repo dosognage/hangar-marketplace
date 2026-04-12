@@ -146,17 +146,18 @@ export default function AirportAutocomplete({
         <ul style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
           backgroundColor: 'white', border: '1px solid #e5e7eb',
-          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-          zIndex: 1000, margin: 0, padding: '4px 0', listStyle: 'none',
-          maxHeight: '320px', overflowY: 'auto',
+          borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.13)',
+          zIndex: 1000, margin: 0, padding: '6px 0', listStyle: 'none',
+          maxHeight: '340px', overflowY: 'auto',
         }}>
           {suggestions.map((apt, i) => {
-            const code = apt.ident
-            const city = apt.municipality
-            const state = stateAbbr(apt.iso_region)
+            const code      = apt.ident
+            const city      = apt.municipality
+            const state     = stateAbbr(apt.iso_region)
             const typeLabel = TYPE_LABEL[apt.type] ?? apt.type
             const typeColor = TYPE_COLOR[apt.type] ?? '#6b7280'
-            const location = [city, state].filter(Boolean).join(', ')
+            const location  = [city, state].filter(Boolean).join(', ')
+            const isActive  = i === activeIdx
 
             return (
               <li
@@ -164,45 +165,48 @@ export default function AirportAutocomplete({
                 onMouseDown={() => handleSelect(apt)}
                 onMouseEnter={() => setActiveIdx(i)}
                 style={{
-                  padding: '0.55rem 0.85rem',
+                  padding: '0.7rem 1rem',
                   cursor: 'pointer',
-                  backgroundColor: i === activeIdx ? '#f5f3ff' : 'transparent',
-                  display: 'flex', alignItems: 'center', gap: '0.6rem',
+                  backgroundColor: isActive ? '#f5f3ff' : 'transparent',
+                  borderLeft: isActive ? '3px solid #6366f1' : '3px solid transparent',
+                  transition: 'background-color 0.1s',
                 }}
               >
-                {/* Identifier badge */}
-                <span style={{
-                  flexShrink: 0, fontFamily: 'monospace', fontWeight: '700',
-                  fontSize: '0.78rem', color: typeColor,
-                  backgroundColor: `${typeColor}18`,
-                  padding: '0.15rem 0.4rem', borderRadius: '4px',
-                  minWidth: '3rem', textAlign: 'center',
+                {/* Line 1: airport name */}
+                <div style={{
+                  fontSize: '0.9rem', fontWeight: '600', color: '#111827',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  marginBottom: '0.25rem',
                 }}>
-                  {code}
-                </span>
-
-                {/* Name + location */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: '0.875rem', fontWeight: '500', color: '#111827',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>
-                    {apt.name}
-                  </div>
-                  {location && (
-                    <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: '1px' }}>
-                      {location}
-                    </div>
-                  )}
+                  {apt.name}
                 </div>
 
-                {/* Type chip */}
-                <span style={{
-                  flexShrink: 0, fontSize: '0.65rem', fontWeight: '600',
-                  color: typeColor, opacity: 0.8,
+                {/* Line 2: code badge · location · type — all muted, no competing colors */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  flexWrap: 'wrap',
                 }}>
-                  {typeLabel}
-                </span>
+                  <span style={{
+                    fontFamily: 'monospace', fontWeight: '700', fontSize: '0.75rem',
+                    color: typeColor, backgroundColor: `${typeColor}15`,
+                    padding: '0.1rem 0.45rem', borderRadius: '4px',
+                    letterSpacing: '0.03em',
+                  }}>
+                    {code}
+                  </span>
+                  {location && (
+                    <>
+                      <span style={{ color: '#d1d5db', fontSize: '0.7rem' }}>·</span>
+                      <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                        {location}
+                      </span>
+                    </>
+                  )}
+                  <span style={{ color: '#d1d5db', fontSize: '0.7rem' }}>·</span>
+                  <span style={{ fontSize: '0.72rem', color: '#9ca3af', fontStyle: 'italic' }}>
+                    {typeLabel}
+                  </span>
+                </div>
               </li>
             )
           })}
