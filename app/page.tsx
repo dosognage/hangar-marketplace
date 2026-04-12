@@ -57,7 +57,7 @@ type HomePageProps = {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 export default async function HomePage({ searchParams }: HomePageProps) {
-  const { q, type, minPrice, maxPrice, minSqft, radius } = await searchParams
+  const { q, type, minPrice, maxPrice, minSqft, radius, minRunway } = await searchParams
 
   // Get logged-in user + their saved listing IDs (server-side, cookie auth)
   const serverSupabase = await createServerClient()
@@ -74,12 +74,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const str = (v: string | string[] | undefined) =>
     Array.isArray(v) ? v[0] : v ?? ''
 
-  const qVal        = str(q)
-  const typeVal     = str(type)
-  const minPriceVal = str(minPrice)
-  const maxPriceVal = str(maxPrice)
-  const minSqftVal  = str(minSqft)
-  const radiusVal   = str(radius)
+  const qVal          = str(q)
+  const typeVal       = str(type)
+  const minPriceVal   = str(minPrice)
+  const maxPriceVal   = str(maxPrice)
+  const minSqftVal    = str(minSqft)
+  const radiusVal     = str(radius)
+  const minRunwayVal  = str(minRunway)
 
   // ── Radius geocoding ────────────────────────────────────────────────────
   // When a radius is requested, geocode the search query to a lat/lng center.
@@ -113,6 +114,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const minSq = parseFloat(minSqftVal)
   if (!isNaN(minSq) && minSq > 0) query = query.gte('square_feet', minSq)
+
+  const minRw = parseFloat(minRunwayVal)
+  if (!isNaN(minRw) && minRw > 0) query = query.gte('runway_length_ft', minRw)
 
   let { data: listings, error } = await query
 
@@ -183,6 +187,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             initialMaxPrice={maxPriceVal}
             initialMinSqft={minSqftVal}
             initialRadius={radiusVal}
+            initialMinRunway={minRunwayVal}
           />
         </Suspense>
         <SaveSearchWidget

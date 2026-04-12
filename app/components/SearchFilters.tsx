@@ -19,6 +19,16 @@ const TYPE_LABEL: Record<string, string> = {
   seaplane_base:  'Seaplane',
 }
 
+const RUNWAY_OPTIONS = [
+  { value: '1000',  label: '1,000+ ft' },
+  { value: '2000',  label: '2,000+ ft' },
+  { value: '3000',  label: '3,000+ ft' },
+  { value: '4000',  label: '4,000+ ft' },
+  { value: '5000',  label: '5,000+ ft' },
+  { value: '7500',  label: '7,500+ ft' },
+  { value: '10000', label: '10,000+ ft' },
+]
+
 type SearchFiltersProps = {
   initialQ?: string
   initialType?: string
@@ -26,6 +36,7 @@ type SearchFiltersProps = {
   initialMaxPrice?: string
   initialMinSqft?: string
   initialRadius?: string
+  initialMinRunway?: string
 }
 
 export default function SearchFilters({
@@ -35,6 +46,7 @@ export default function SearchFilters({
   initialMaxPrice = '',
   initialMinSqft = '',
   initialRadius = '',
+  initialMinRunway = '',
 }: SearchFiltersProps) {
   const router = useRouter()
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -137,7 +149,7 @@ export default function SearchFilters({
   }
 
   // Count active filters (excluding the main search query)
-  const activeFilterCount = [initialType, initialMinPrice, initialMaxPrice, initialMinSqft, initialRadius]
+  const activeFilterCount = [initialType, initialMinPrice, initialMaxPrice, initialMinSqft, initialRadius, initialMinRunway]
     .filter(Boolean).length
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -146,19 +158,21 @@ export default function SearchFilters({
     const data = new FormData(e.currentTarget)
     const params = new URLSearchParams()
 
-    const q        = qValue.trim()
-    const type     = data.get('type') as string
-    const minPrice = (data.get('minPrice') as string)?.trim()
-    const maxPrice = (data.get('maxPrice') as string)?.trim()
-    const minSqft  = (data.get('minSqft') as string)?.trim()
-    const radius   = data.get('radius') as string
+    const q          = qValue.trim()
+    const type       = data.get('type') as string
+    const minPrice   = (data.get('minPrice') as string)?.trim()
+    const maxPrice   = (data.get('maxPrice') as string)?.trim()
+    const minSqft    = (data.get('minSqft') as string)?.trim()
+    const radius     = data.get('radius') as string
+    const minRunway  = data.get('minRunway') as string
 
-    if (q)        params.set('q', q)
-    if (type)     params.set('type', type)
-    if (minPrice) params.set('minPrice', minPrice)
-    if (maxPrice) params.set('maxPrice', maxPrice)
-    if (minSqft)  params.set('minSqft', minSqft)
+    if (q)          params.set('q', q)
+    if (type)       params.set('type', type)
+    if (minPrice)   params.set('minPrice', minPrice)
+    if (maxPrice)   params.set('maxPrice', maxPrice)
+    if (minSqft)    params.set('minSqft', minSqft)
     if (radius && q) params.set('radius', radius)
+    if (minRunway)  params.set('minRunway', minRunway)
 
     const qs = params.toString()
     router.push(qs ? `/?${qs}` : '/', { scroll: false })
@@ -174,7 +188,7 @@ export default function SearchFilters({
     setFiltersOpen(false)
   }
 
-  const hasAnyFilter = Boolean(initialQ || initialType || initialMinPrice || initialMaxPrice || initialMinSqft || initialRadius)
+  const hasAnyFilter = Boolean(initialQ || initialType || initialMinPrice || initialMaxPrice || initialMinSqft || initialRadius || initialMinRunway)
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} style={wrapperStyle}>
@@ -373,6 +387,19 @@ export default function SearchFilters({
           />
         </div>
 
+        {/* Min runway length */}
+        <div style={fieldGroupStyle}>
+          <label style={labelStyle}>Min Runway</label>
+          <select name="minRunway" defaultValue={initialMinRunway} style={selectStyle}>
+            <option value="">Any length</option>
+            {RUNWAY_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          {/* Spacer to match the hint text height under Radius */}
+          <span style={{ fontSize: '0.67rem', visibility: 'hidden' }}>placeholder</span>
+        </div>
+
         {/* Radius — only meaningful when a search query is entered */}
         <div style={fieldGroupStyle}>
           <label style={labelStyle}>Search Radius</label>
@@ -382,11 +409,10 @@ export default function SearchFilters({
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-          {!initialQ && (
-            <span style={{ fontSize: '0.67rem', color: '#9ca3af', lineHeight: 1.3 }}>
-              Enter a city or airport code first
-            </span>
-          )}
+          {/* Always rendered to reserve space; hidden when not needed so other filters stay aligned */}
+          <span style={{ fontSize: '0.67rem', color: '#9ca3af', lineHeight: 1.3, visibility: initialQ ? 'hidden' : 'visible' }}>
+            Enter a city or airport code first
+          </span>
         </div>
 
         {/* Mobile-only: Apply button inside the filter panel */}
