@@ -102,6 +102,22 @@ body {
   color: #111827 !important;
 }
 
+/* Profile dropdown menu item hover */
+.dropdown-item {
+  transition: background-color 0.12s, color 0.12s;
+}
+.dropdown-item:hover {
+  background-color: #eef2ff;
+  color: #4338ca !important;
+}
+.dropdown-item-danger {
+  transition: background-color 0.12s, color 0.12s;
+}
+.dropdown-item-danger:hover {
+  background-color: #fee2e2;
+  color: #b91c1c !important;
+}
+
 /* ── Header & nav ─────────────────────────────────────────────────────────── */
 
 /*

@@ -192,6 +192,7 @@ export default function ProfileMenu({ displayName, isAdmin, isBroker, brokerProf
             <form action={logout}>
               <button
                 type="submit"
+                className="dropdown-item-danger"
                 style={{
                   width: '100%',
                   textAlign: 'left',
@@ -219,6 +220,7 @@ function DropdownLink({ href, children, onClose }: { href: string; children: Rea
     <Link
       href={href}
       onClick={onClose}
+      className="dropdown-item"
       style={{
         display: 'flex',
         alignItems: 'center',
