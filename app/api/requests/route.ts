@@ -46,45 +46,51 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json() as {
-    contact_name:  string
-    airport_code?: string
-    airport_name?: string
-    city:          string
-    state:         string
-    aircraft_type: string
-    wingspan_ft?:  number | null
+    contact_name:   string
+    contact_email?: string
+    contact_phone?: string
+    airport_code?:  string
+    airport_name?:  string
+    city:           string
+    state:          string
+    aircraft_type:  string
+    wingspan_ft?:   number | null
     door_width_ft?:  number | null
     door_height_ft?: number | null
-    monthly_budget?: string
-    duration:      string
-    move_in_date?: string | null
-    notes?:        string
+    monthly_budget?: number | null
+    duration:       string
+    move_in_date?:  string | null
+    notes?:         string
+    is_priority?:   boolean
+    // If true, status is set to pending_payment for the Stripe checkout flow
+    pending_payment?: boolean
   }
 
-  if (!body.contact_name?.trim() || !body.city?.trim() || !body.state?.trim() ||
-      !body.aircraft_type?.trim() || !body.duration?.trim()) {
+  if (!body.contact_name?.trim() || !body.city?.trim() || !body.state?.trim()) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
   const { data, error } = await supabaseAdmin
     .from('hangar_requests')
     .insert({
-      user_id:       user.id,
-      contact_name:  body.contact_name.trim(),
-      airport_code:  body.airport_code?.trim() || null,
-      airport_name:  body.airport_name?.trim() || null,
-      city:          body.city.trim(),
-      state:         body.state.trim(),
-      aircraft_type: body.aircraft_type,
-      wingspan_ft:   body.wingspan_ft   ?? null,
+      user_id:        user.id,
+      contact_name:   body.contact_name.trim(),
+      contact_email:  body.contact_email?.trim() || null,
+      contact_phone:  body.contact_phone?.trim() || null,
+      airport_code:   body.airport_code?.trim() || null,
+      airport_name:   body.airport_name?.trim() || null,
+      city:           body.city.trim(),
+      state:          body.state.trim(),
+      aircraft_type:  body.aircraft_type?.trim() || null,
+      wingspan_ft:    body.wingspan_ft   ?? null,
       door_width_ft:  body.door_width_ft  ?? null,
       door_height_ft: body.door_height_ft ?? null,
-      monthly_budget: body.monthly_budget?.trim() || null,
-      duration:      body.duration,
-      move_in_date:  body.move_in_date || null,
-      notes:         body.notes?.trim() || null,
-      status:        'open',
-      is_priority:   false,
+      monthly_budget: body.monthly_budget ?? null,
+      duration:       body.duration?.trim() || null,
+      move_in_date:   body.move_in_date || null,
+      notes:          body.notes?.trim() || null,
+      status:         body.pending_payment ? 'pending_payment' : 'open',
+      is_priority:    body.is_priority ?? false,
     })
     .select('id')
     .single()

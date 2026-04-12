@@ -10,8 +10,7 @@
  *  4. On payment success: webhook sets status to 'active'
  */
 
-import { useState, useEffect, Suspense } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import AircraftAutocomplete from '@/app/components/AircraftAutocomplete'
@@ -49,14 +48,6 @@ function NewRequestForm() {
   const [isPriority, setIsPriority] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
-  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null)
-
-  // Capture logged-in user's ID so we can associate the request with their account
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setLoggedInUserId(data.user?.id ?? null)
-    })
-  }, [])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -81,10 +72,11 @@ function NewRequestForm() {
     setStatus('loading')
     setErrorMsg('')
 
-    // Step 1: Save request with pending_payment status
-    const { data: request, error: insertError } = await supabase
-      .from('hangar_requests')
-      .insert([{
+    // Step 1: Save request via API route (uses supabaseAdmin — bypasses RLS)
+    const insertRes = await fetch('/api/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         contact_name:   form.contact_name,
         contact_email:  form.contact_email,
         contact_phone:  form.contact_phone  || null,
@@ -101,17 +93,19 @@ function NewRequestForm() {
         move_in_date:   form.move_in_date   || null,
         notes:          form.notes          || null,
         is_priority:    isPriority,
-        status:         'pending_payment',
-        ...(loggedInUserId ? { user_id: loggedInUserId } : {}),
-      }])
-      .select('id')
-      .single()
+        pending_payment: true,
+      }),
+    })
 
-    if (insertError || !request) {
-      setErrorMsg(insertError?.message ?? 'Failed to save request.')
+    const { id: requestId, error: insertError } = await insertRes.json()
+
+    if (insertError || !requestId) {
+      setErrorMsg(insertError ?? 'Failed to save request.')
       setStatus('error')
       return
     }
+
+    const request = { id: requestId }
 
     // Step 2: Create Stripe checkout session
     const res = await fetch('/api/stripe/checkout', {
