@@ -14,6 +14,9 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import AvatarUpload from './AvatarUpload'
 import BrokerProfileForm from './BrokerProfileForm'
+import BrokerAnalyticsDashboard from '@/app/components/BrokerAnalyticsDashboard'
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 
 export default async function BrokerDashboardPage() {
   const supabase = await createServerClient()
@@ -385,6 +388,12 @@ export default async function BrokerDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Analytics section */}
+      <BrokerAnalyticsDashboard
+        brokerProfileId={brokerProfileId ?? profile.id}
+        supabaseUrl={SUPABASE_URL}
+      />
 
       {/* Profile edit section */}
       <div style={{

@@ -4,7 +4,6 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import MessageButton from './MessageButton'
-import BrokerAnalyticsDashboard from '@/app/components/BrokerAnalyticsDashboard'
 
 export const dynamic = 'force-dynamic'
 
@@ -252,13 +251,6 @@ export default async function BrokerProfilePage({ params }: PageProps) {
         </div>
       )}
 
-      {/* ── Analytics dashboard — visible only to the broker who owns this profile ── */}
-      {currentUser?.id === broker.user_id && (
-        <BrokerAnalyticsDashboard
-          brokerProfileId={broker.id}
-          supabaseUrl={SUPABASE_URL}
-        />
-      )}
     </div>
   )
 }

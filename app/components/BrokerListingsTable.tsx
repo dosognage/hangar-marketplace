@@ -165,6 +165,12 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
                 letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
                 Top Photo
               </th>
+              {/* Actions — not sortable */}
+              <th style={{ padding: '0.6rem 1rem', textAlign: 'left', fontWeight: '600',
+                color: '#6b7280', fontSize: '0.7rem', textTransform: 'uppercase',
+                letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -239,6 +245,32 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
                   ) : (
                     <span style={{ color: '#d1d5db', fontSize: '0.75rem' }}>—</span>
                   )}
+                </td>
+
+                {/* Actions */}
+                <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <a
+                      href={`/listing/${row.id}?from=broker-dashboard`}
+                      style={{
+                        fontSize: '0.75rem', color: '#6366f1', textDecoration: 'none',
+                        padding: '0.25rem 0.6rem', border: '1px solid #c7d2fe',
+                        borderRadius: '5px', backgroundColor: '#eef2ff', fontWeight: '500',
+                      }}
+                    >
+                      View
+                    </a>
+                    <a
+                      href={`/listing/${row.id}/edit`}
+                      style={{
+                        fontSize: '0.75rem', color: '#374151', textDecoration: 'none',
+                        padding: '0.25rem 0.6rem', border: '1px solid #d1d5db',
+                        borderRadius: '5px', backgroundColor: 'white', fontWeight: '500',
+                      }}
+                    >
+                      Edit
+                    </a>
+                  </div>
                 </td>
               </tr>
             ))}
