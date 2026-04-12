@@ -92,6 +92,16 @@ body {
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
 }
 
+/* Broker dashboard Edit button hover */
+.broker-edit-btn {
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.broker-edit-btn:hover {
+  background-color: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+  color: #111827 !important;
+}
+
 /* ── Header & nav ─────────────────────────────────────────────────────────── */
 
 /*

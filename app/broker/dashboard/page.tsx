@@ -363,7 +363,7 @@ export default async function BrokerDashboardPage() {
 
                   {/* Edit button — z-index: 2 so it's always clickable above the stretched link */}
                   <div style={{ position: 'relative', zIndex: 2, display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <Link href={`/listing/${listing.id}/edit`} style={{
+                    <Link href={`/listing/${listing.id}/edit`} className="broker-edit-btn" style={{
                       fontSize: '0.8rem', color: '#374151', textDecoration: 'none',
                       fontWeight: '500', padding: '0.3rem 0.75rem',
                       border: '1px solid #d1d5db', borderRadius: '6px',
