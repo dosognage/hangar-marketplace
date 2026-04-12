@@ -13,6 +13,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { MapListing, MapBounds } from './MapView'
 import { toggleSavedListing } from '@/app/actions/listings'
+import NoResultsSuggestions from './NoResultsSuggestions'
 import HeartIcon from './HeartIcon'
 import { Star } from 'lucide-react'
 import { useToast } from './ToastProvider'
@@ -76,6 +77,7 @@ type Props = {
   initialMinPrice?: string
   initialMaxPrice?: string
   initialMinSqft?: string
+  searchQuery?: string
 }
 
 const PAGE_SIZE = 12
@@ -90,6 +92,7 @@ export default function SplitView({
   initialMinPrice = '',
   initialMaxPrice = '',
   initialMinSqft = '',
+  searchQuery = '',
 }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [savedSet, setSavedSet] = useState<Set<string>>(() => new Set(savedIds))
@@ -303,27 +306,7 @@ export default function SplitView({
 
         {/* ── Empty state ─────────────────────────────────────────────── */}
         {listingCount === 0 && (
-          <div style={{ padding: '2.5rem 1rem', textAlign: 'center' }}>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#d1d5db"
-                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </div>
-            <p style={{ fontSize: '1rem', fontWeight: '700', color: '#111827', margin: '0 0 0.4rem' }}>
-              No hangars found
-            </p>
-            <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 1.25rem' }}>
-              Try a different search or clear the filters.
-            </p>
-            <a href="/" style={{
-              display: 'inline-block', padding: '0.55rem 1.25rem', backgroundColor: '#111827',
-              color: 'white', borderRadius: '8px', textDecoration: 'none',
-              fontWeight: '600', fontSize: '0.875rem',
-            }}>
-              Clear all filters
-            </a>
-          </div>
+          <NoResultsSuggestions query={searchQuery} />
         )}
 
         {/* ── Listing cards ───────────────────────────────────────────── */}

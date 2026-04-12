@@ -102,6 +102,12 @@ body {
   color: #111827 !important;
 }
 
+/* No-results airport suggestion cards */
+.no-results-suggestion:hover {
+  border-color: #a5b4fc !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
 /* Profile dropdown menu item hover */
 .dropdown-item {
   transition: background-color 0.12s, color 0.12s;

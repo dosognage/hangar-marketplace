@@ -1,9 +1,23 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { RADIUS_OPTIONS } from '@/lib/geocode'
+import type { AirportSuggestion } from './AirportAutocomplete'
+
+const TYPE_COLOR: Record<string, string> = {
+  large_airport:  '#6366f1',
+  medium_airport: '#0284c7',
+  small_airport:  '#16a34a',
+  seaplane_base:  '#0891b2',
+}
+const TYPE_LABEL: Record<string, string> = {
+  large_airport:  'Large',
+  medium_airport: 'Regional',
+  small_airport:  'General Aviation',
+  seaplane_base:  'Seaplane',
+}
 
 type SearchFiltersProps = {
   initialQ?: string
@@ -25,8 +39,65 @@ export default function SearchFilters({
   const router = useRouter()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
   const [locating, setLocating] = useState(false)
+
+  // ── Airport autocomplete state ───────────────────────────────────────────
+  const [qValue, setQValue] = useState(initialQ)
+  const [suggestions, setSuggestions] = useState<AirportSuggestion[]>([])
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(-1)
+  const [suggestLoading, setSuggestLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setSuggestOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const fetchSuggestions = useCallback(async (q: string) => {
+    if (q.length < 2) { setSuggestions([]); setSuggestOpen(false); return }
+    setSuggestLoading(true)
+    try {
+      const res = await fetch(`/api/airports/search?q=${encodeURIComponent(q)}&limit=6`)
+      const data = await res.json() as AirportSuggestion[]
+      setSuggestions(data)
+      setSuggestOpen(data.length > 0)
+      setActiveIdx(-1)
+    } catch {
+      setSuggestions([])
+      setSuggestOpen(false)
+    } finally {
+      setSuggestLoading(false)
+    }
+  }, [])
+
+  function handleQChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value
+    setQValue(v)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => fetchSuggestions(v), 200)
+  }
+
+  function handleSuggestionSelect(apt: AirportSuggestion) {
+    setQValue(apt.ident)
+    setSuggestions([])
+    setSuggestOpen(false)
+    router.push(`/?q=${encodeURIComponent(apt.ident)}`, { scroll: false })
+  }
+
+  function handleQKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!suggestOpen) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, suggestions.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); handleSuggestionSelect(suggestions[activeIdx]) }
+    else if (e.key === 'Escape') setSuggestOpen(false)
+  }
 
   async function handleNearMe() {
     if (!navigator.geolocation) return
@@ -34,7 +105,6 @@ export default function SearchFilters({
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         try {
-          // Use AviationWeather nearest-station lookup to find closest airport
           const res = await fetch(
             `https://avwx.rest/api/station/near/${coords.latitude},${coords.longitude}?n=1&airport=true`,
             { headers: { Authorization: `TOKEN ${process.env.NEXT_PUBLIC_AVWX_TOKEN ?? ''}` } }
@@ -46,7 +116,6 @@ export default function SearchFilters({
             code = json?.[0]?.station?.icao ?? ''
           }
 
-          // Fallback: reverse geocode to city via nominatim (free, no key)
           if (!code) {
             const geo = await fetch(
               `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`
@@ -54,9 +123,8 @@ export default function SearchFilters({
             code = geo?.address?.city ?? geo?.address?.town ?? geo?.address?.county ?? ''
           }
 
-          if (code && inputRef.current) {
-            inputRef.current.value = code
-            // Submit immediately
+          if (code) {
+            setQValue(code)
             router.push(`/?q=${encodeURIComponent(code)}`, { scroll: false })
           }
         } finally {
@@ -74,10 +142,11 @@ export default function SearchFilters({
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setSuggestOpen(false)
     const data = new FormData(e.currentTarget)
     const params = new URLSearchParams()
 
-    const q        = (data.get('q') as string)?.trim()
+    const q        = qValue.trim()
     const type     = data.get('type') as string
     const minPrice = (data.get('minPrice') as string)?.trim()
     const maxPrice = (data.get('maxPrice') as string)?.trim()
@@ -89,7 +158,6 @@ export default function SearchFilters({
     if (minPrice) params.set('minPrice', minPrice)
     if (maxPrice) params.set('maxPrice', maxPrice)
     if (minSqft)  params.set('minSqft', minSqft)
-    // Only include radius when there's a location to center on
     if (radius && q) params.set('radius', radius)
 
     const qs = params.toString()
@@ -98,8 +166,10 @@ export default function SearchFilters({
   }
 
   function handleClear() {
-    // Reset all inputs manually so controlled defaults are cleared
     if (formRef.current) formRef.current.reset()
+    setQValue('')
+    setSuggestions([])
+    setSuggestOpen(false)
     router.push('/', { scroll: false })
     setFiltersOpen(false)
   }
@@ -111,15 +181,70 @@ export default function SearchFilters({
 
       {/* ── Row 1: Search input (full-width on mobile) ─────────────────── */}
       <div className="sf-top-row">
-        <input
-          ref={inputRef}
-          name="q"
-          type="search"
-          defaultValue={initialQ}
-          placeholder="City, state, or airport code..."
-          className="sf-search-input"
-          style={inputStyle}
-        />
+        {/* Airport autocomplete wrapper */}
+        <div ref={containerRef} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+          <input
+            name="q"
+            type="text"
+            value={qValue}
+            onChange={handleQChange}
+            onKeyDown={handleQKeyDown}
+            onFocus={() => suggestions.length > 0 && setSuggestOpen(true)}
+            placeholder="City, state, or airport code..."
+            className="sf-search-input"
+            autoComplete="off"
+            style={{ ...inputStyle, width: '100%', paddingRight: suggestLoading ? '2.2rem' : undefined }}
+          />
+          {suggestLoading && (
+            <span style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af"
+                strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}>
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+            </span>
+          )}
+          {suggestOpen && suggestions.length > 0 && (
+            <ul style={{
+              position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+              backgroundColor: 'white', border: '1px solid #e5e7eb',
+              borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.13)',
+              zIndex: 2000, margin: 0, padding: '6px 0', listStyle: 'none',
+              maxHeight: '320px', overflowY: 'auto',
+            }}>
+              {suggestions.map((apt, i) => {
+                const color = TYPE_COLOR[apt.type] ?? '#6b7280'
+                const location = [apt.municipality, apt.iso_region?.replace('US-', '')].filter(Boolean).join(', ')
+                return (
+                  <li
+                    key={apt.id}
+                    onMouseDown={() => handleSuggestionSelect(apt)}
+                    onMouseEnter={() => setActiveIdx(i)}
+                    style={{
+                      padding: '0.65rem 1rem', cursor: 'pointer',
+                      backgroundColor: i === activeIdx ? '#f5f3ff' : 'transparent',
+                      borderLeft: i === activeIdx ? '3px solid #6366f1' : '3px solid transparent',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.88rem', fontWeight: '600', color: '#111827', marginBottom: '0.2rem' }}>
+                      {apt.name}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontFamily: 'monospace', fontWeight: '700', fontSize: '0.73rem',
+                        color: color, backgroundColor: `${color}15`,
+                        padding: '0.1rem 0.4rem', borderRadius: '4px',
+                      }}>{apt.ident}</span>
+                      {location && <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>· {location}</span>}
+                      <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontStyle: 'italic' }}>
+                        · {TYPE_LABEL[apt.type] ?? apt.type}
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
 
         {/* Near me button */}
         <button

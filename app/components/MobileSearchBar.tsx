@@ -1,7 +1,15 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import type { AirportSuggestion } from './AirportAutocomplete'
+
+const TYPE_COLOR: Record<string, string> = {
+  large_airport:  '#6366f1',
+  medium_airport: '#0284c7',
+  small_airport:  '#16a34a',
+  seaplane_base:  '#0891b2',
+}
 
 type Props = {
   initialQ?: string
@@ -22,14 +30,67 @@ export default function MobileSearchBar({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
+  // ── Airport autocomplete state ──────────────────────────────────────────
+  const [qValue, setQValue] = useState(initialQ)
+  const [suggestions, setSuggestions] = useState<AirportSuggestion[]>([])
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(-1)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setSuggestOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const fetchSuggestions = useCallback(async (q: string) => {
+    if (q.length < 2) { setSuggestions([]); setSuggestOpen(false); return }
+    try {
+      const res = await fetch(`/api/airports/search?q=${encodeURIComponent(q)}&limit=5`)
+      const data = await res.json() as AirportSuggestion[]
+      setSuggestions(data)
+      setSuggestOpen(data.length > 0)
+      setActiveIdx(-1)
+    } catch {
+      setSuggestions([]); setSuggestOpen(false)
+    }
+  }, [])
+
+  function handleQChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value
+    setQValue(v)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => fetchSuggestions(v), 200)
+  }
+
+  function handleSuggestionSelect(apt: AirportSuggestion) {
+    setQValue(apt.ident)
+    setSuggestions([]); setSuggestOpen(false)
+    router.push(`/?q=${encodeURIComponent(apt.ident)}`, { scroll: false })
+  }
+
+  function handleQKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!suggestOpen) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, suggestions.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); handleSuggestionSelect(suggestions[activeIdx]) }
+    else if (e.key === 'Escape') setSuggestOpen(false)
+  }
+
   const activeCount = [initialType, initialMinPrice, initialMaxPrice, initialMinSqft]
     .filter(Boolean).length
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setSuggestOpen(false)
     const data = new FormData(e.currentTarget)
     const params = new URLSearchParams()
-    const q        = (data.get('q') as string)?.trim()
+    const q        = qValue.trim()
     const type     = data.get('type') as string
     const minPrice = (data.get('minPrice') as string)?.trim()
     const maxPrice = (data.get('maxPrice') as string)?.trim()
@@ -46,6 +107,8 @@ export default function MobileSearchBar({
 
   function handleClear() {
     if (formRef.current) formRef.current.reset()
+    setQValue('')
+    setSuggestions([]); setSuggestOpen(false)
     router.push('/', { scroll: false })
     setFiltersOpen(false)
   }
@@ -53,7 +116,7 @@ export default function MobileSearchBar({
   const hasActiveFilters = Boolean(initialType || initialMinPrice || initialMaxPrice || initialMinSqft)
 
   return (
-    <div style={{
+    <div ref={containerRef} style={{
       position: 'absolute',
       top: '20px',
       left: '12px',
@@ -83,8 +146,11 @@ export default function MobileSearchBar({
 
           <input
             name="q"
-            type="search"
-            defaultValue={initialQ}
+            type="text"
+            value={qValue}
+            onChange={handleQChange}
+            onKeyDown={handleQKeyDown}
+            onFocus={() => suggestions.length > 0 && setSuggestOpen(true)}
             placeholder="City, state, or airport code..."
             autoComplete="off"
             style={{
@@ -98,6 +164,46 @@ export default function MobileSearchBar({
               fontFamily: 'system-ui, Arial, sans-serif',
             }}
           />
+
+          {/* Airport suggestions dropdown */}
+          {suggestOpen && suggestions.length > 0 && (
+            <ul style={{
+              position: 'absolute', top: '60px', left: 0, right: 0,
+              backgroundColor: 'white', border: '1px solid #e5e7eb',
+              borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              zIndex: 2000, margin: 0, padding: '6px 0', listStyle: 'none',
+              maxHeight: '280px', overflowY: 'auto',
+            }}>
+              {suggestions.map((apt, i) => {
+                const color = TYPE_COLOR[apt.type] ?? '#6b7280'
+                const location = [apt.municipality, apt.iso_region?.replace('US-', '')].filter(Boolean).join(', ')
+                return (
+                  <li
+                    key={apt.id}
+                    onMouseDown={() => handleSuggestionSelect(apt)}
+                    onMouseEnter={() => setActiveIdx(i)}
+                    style={{
+                      padding: '0.7rem 1.1rem', cursor: 'pointer',
+                      backgroundColor: i === activeIdx ? '#f5f3ff' : 'transparent',
+                      borderLeft: i === activeIdx ? '3px solid #6366f1' : '3px solid transparent',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#111827', marginBottom: '0.2rem' }}>
+                      {apt.name}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontFamily: 'monospace', fontWeight: '700', fontSize: '0.73rem',
+                        color: color, backgroundColor: `${color}15`,
+                        padding: '0.1rem 0.4rem', borderRadius: '4px',
+                      }}>{apt.ident}</span>
+                      {location && <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>· {location}</span>}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
 
           {/* Search submit */}
           <button

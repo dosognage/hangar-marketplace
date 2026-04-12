@@ -205,6 +205,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           initialMinPrice={minPriceVal}
           initialMaxPrice={maxPriceVal}
           initialMinSqft={minSqftVal}
+          searchQuery={qVal}
         />
       </div>
     </div>

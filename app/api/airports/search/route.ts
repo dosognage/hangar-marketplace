@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic'
 
 // Matches identifiers like KPAE, S36, 2W1, 3W0, W16, 1WA8 etc.
 const LOOKS_LIKE_CODE = /^[A-Z0-9]{2,6}$/i
+// Matches 2-letter US state abbreviations
+const LOOKS_LIKE_STATE = /^[A-Z]{2}$/i
 
 export async function GET(req: NextRequest) {
   const q     = (req.nextUrl.searchParams.get('q') ?? '').trim()
@@ -21,9 +23,23 @@ export async function GET(req: NextRequest) {
     .select('id, ident, name, type, municipality, iso_region, latitude_deg, longitude_deg, gps_code, local_code')
     .limit(limit)
 
-  if (isCode) {
+  // Handle "City, State" format e.g. "Seattle, WA" or "Enumclaw, WA"
+  if (q.includes(',')) {
+    const [cityPart, statePart] = q.split(',').map(s => s.trim())
+    if (cityPart && statePart) {
+      const stateCode = statePart.toUpperCase()
+      query = query
+        .ilike('municipality', `%${cityPart}%`)
+        .ilike('iso_region', `%${stateCode}%`)
+    } else {
+      query = query.or(`name.ilike.%${q}%,municipality.ilike.%${q}%`)
+    }
+  } else if (isCode) {
     // Ident prefix match first, fall back to name contains
     query = query.or(`ident.ilike.${q.toUpperCase()}%,name.ilike.%${q}%`)
+  } else if (LOOKS_LIKE_STATE.test(q)) {
+    // 2-letter state abbreviation — return airports in that state
+    query = query.ilike('iso_region', `%-${q.toUpperCase()}`)
   } else {
     // Name contains, or municipality contains
     query = query.or(`name.ilike.%${q}%,municipality.ilike.%${q}%`)
