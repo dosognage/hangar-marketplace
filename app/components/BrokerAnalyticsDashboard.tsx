@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import BrokerListingsTable from './BrokerListingsTable'
 
 type Listing = {
   id: string
@@ -143,21 +144,25 @@ export default async function BrokerAnalyticsDashboard({ brokerProfileId, supaba
   // Per-listing event counts
   const contactsByListing: Record<string, number> = {}
   const savesByListing:    Record<string, number> = {}
+  const sharesByListing:   Record<string, number> = {}
   for (const ev of allEvents) {
     if (ev.event_type === 'contact_click') contactsByListing[ev.listing_id] = (contactsByListing[ev.listing_id] ?? 0) + 1
     if (ev.event_type === 'save')          savesByListing[ev.listing_id]    = (savesByListing[ev.listing_id]    ?? 0) + 1
+    if (ev.event_type === 'share')         sharesByListing[ev.listing_id]   = (sharesByListing[ev.listing_id]   ?? 0) + 1
   }
 
-  // Most-viewed photo per listing
+  // Photo views per listing — total count + most-viewed path
   const photoViewsByListing: Record<string, Record<string, number>> = {}
+  const photoViewCountByListing: Record<string, number> = {}
   for (const ev of (photoViewsRaw ?? [])) {
     const lid   = ev.listing_id
     const path  = (ev.metadata as { photo_path?: string } | null)?.photo_path ?? ''
+    photoViewCountByListing[lid] = (photoViewCountByListing[lid] ?? 0) + 1
     if (!path) continue
     photoViewsByListing[lid] ??= {}
     photoViewsByListing[lid][path] = (photoViewsByListing[lid][path] ?? 0) + 1
   }
-  function topPhoto(listingId: string): string | null {
+  function topPhotoPath(listingId: string): string | null {
     const byPath = photoViewsByListing[listingId]
     if (!byPath) return null
     return Object.entries(byPath).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
@@ -214,113 +219,36 @@ export default async function BrokerAnalyticsDashboard({ brokerProfileId, supaba
         </div>
       </div>
 
-      {/* ── Per-listing breakdown ───────────────────────────────────────── */}
-      <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden' }}>
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f3f4f6' }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: '700', color: '#374151' }}>
-            Listing Breakdown
-          </span>
-        </div>
+      {/* ── Per-listing breakdown (sortable client component) ──────────── */}
+      <BrokerListingsTable
+        rows={safeListings.map(listing => {
+          const views    = listing.view_count ?? 0
+          const contacts = contactsByListing[listing.id] ?? 0
+          const saves    = savesByListing[listing.id]    ?? 0
+          const shares   = sharesByListing[listing.id]   ?? 0
+          const pViews   = photoViewCountByListing[listing.id] ?? 0
+          const topPath  = topPhotoPath(listing.id)
+          const coverPath = listing.listing_photos
+            .slice().sort((a, b) => a.display_order - b.display_order)[0]?.storage_path ?? null
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f9fafb' }}>
-                {['Listing', 'Status', 'Views', 'Inquiries', 'Saves', 'Top Photo'].map(h => (
-                  <th key={h} style={{
-                    padding: '0.6rem 1rem', textAlign: 'left', fontWeight: '600',
-                    color: '#6b7280', fontSize: '0.72rem', textTransform: 'uppercase',
-                    letterSpacing: '0.04em', whiteSpace: 'nowrap',
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {safeListings.map((listing, i) => {
-                const topPhotoPath = topPhoto(listing.id)
-                const coverPath    = listing.listing_photos
-                  .slice().sort((a, b) => a.display_order - b.display_order)[0]?.storage_path
-
-                const statusColor: Record<string, string> = {
-                  approved: '#16a34a', pending: '#d97706', rejected: '#dc2626',
-                }
-
-                return (
-                  <tr key={listing.id} style={{
-                    borderTop: i === 0 ? 'none' : '1px solid #f3f4f6',
-                    transition: 'background 0.1s',
-                  }}>
-                    {/* Listing name */}
-                    <td style={{ padding: '0.85rem 1rem', maxWidth: '220px' }}>
-                      <a href={`/listing/${listing.id}`} style={{
-                        fontWeight: '600', color: '#111827', textDecoration: 'none',
-                        display: 'block', overflow: 'hidden', textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {listing.title}
-                      </a>
-                      <span style={{ color: '#9ca3af', fontSize: '0.72rem' }}>
-                        {listing.airport_code} · {listing.city}, {listing.state}
-                      </span>
-                    </td>
-
-                    {/* Status badge */}
-                    <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '0.15rem 0.55rem', borderRadius: '20px', fontSize: '0.7rem',
-                        fontWeight: '700', textTransform: 'capitalize',
-                        color: statusColor[listing.status] ?? '#6b7280',
-                        backgroundColor: `${statusColor[listing.status] ?? '#6b7280'}18`,
-                      }}>
-                        {listing.status}
-                      </span>
-                    </td>
-
-                    {/* Views */}
-                    <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: '#111827' }}>
-                      {(listing.view_count ?? 0).toLocaleString()}
-                    </td>
-
-                    {/* Inquiries */}
-                    <td style={{ padding: '0.85rem 1rem', color: '#374151' }}>
-                      {contactsByListing[listing.id] ?? 0}
-                    </td>
-
-                    {/* Saves */}
-                    <td style={{ padding: '0.85rem 1rem', color: '#374151' }}>
-                      {savesByListing[listing.id] ?? 0}
-                    </td>
-
-                    {/* Top photo */}
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      {(topPhotoPath || coverPath) ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <img
-                            src={photoUrl(supabaseUrl, topPhotoPath ?? coverPath!)}
-                            alt="Top photo"
-                            style={{
-                              width: '40px', height: '32px', objectFit: 'cover',
-                              borderRadius: '4px', border: '1px solid #e5e7eb',
-                            }}
-                          />
-                          {topPhotoPath && (
-                            <span style={{ fontSize: '0.65rem', color: '#9ca3af' }}>
-                              most viewed
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span style={{ color: '#d1d5db', fontSize: '0.75rem' }}>—</span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          return {
+            id:             listing.id,
+            title:          listing.title,
+            airport_code:   listing.airport_code,
+            city:           listing.city,
+            state:          listing.state,
+            status:         listing.status,
+            views,
+            contacts,
+            saves,
+            shares,
+            photoViews:     pViews,
+            conversionRate: views > 0 ? (contacts / views) * 100 : 0,
+            topPhotoUrl:    topPath  ? photoUrl(supabaseUrl, topPath)   : null,
+            coverPhotoUrl:  coverPath ? photoUrl(supabaseUrl, coverPath) : null,
+          }
+        })}
+      />
     </section>
   )
 }
