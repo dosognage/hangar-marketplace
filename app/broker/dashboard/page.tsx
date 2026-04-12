@@ -15,6 +15,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import AvatarUpload from './AvatarUpload'
 import BrokerProfileForm from './BrokerProfileForm'
 import BrokerAnalyticsDashboard from '@/app/components/BrokerAnalyticsDashboard'
+import SponsorButton from '@/app/components/SponsorButton'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 
@@ -41,7 +42,7 @@ export default async function BrokerDashboardPage() {
   // Fetch all listings tagged to this broker profile
   const { data: listings } = await supabaseAdmin
     .from('listings')
-    .select('id, title, airport_code, city, state, listing_type, asking_price, monthly_lease, status, created_at, view_count, is_sponsored, sponsored_until')
+    .select('id, title, airport_code, city, state, listing_type, asking_price, monthly_lease, status, created_at, view_count, is_sponsored, sponsored_until, stripe_customer_id')
     .eq('broker_profile_id', brokerProfileId ?? profile.id)
     .order('created_at', { ascending: false })
 
@@ -59,6 +60,7 @@ export default async function BrokerDashboardPage() {
     view_count: number
     is_sponsored: boolean
     sponsored_until: string | null
+    stripe_customer_id: string | null
   }>
 
   // Fetch inquiries for all broker listings
@@ -361,8 +363,13 @@ export default async function BrokerDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Edit button — z-index: 2 so it's always clickable above the stretched link */}
+                  {/* Actions — z-index: 2 so always clickable above the stretched link */}
                   <div style={{ position: 'relative', zIndex: 2, display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <SponsorButton
+                      listingId={listing.id}
+                      sponsoredUntil={listing.sponsored_until}
+                      hasStripeCustomer={!!listing.stripe_customer_id}
+                    />
                     <Link href={`/listing/${listing.id}/edit`} className="broker-edit-btn" style={{
                       fontSize: '0.8rem', color: '#374151', textDecoration: 'none',
                       fontWeight: '500', padding: '0.3rem 0.75rem',
