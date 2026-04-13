@@ -17,7 +17,8 @@ import AdminListingsManager from './AdminListingsManager'
 import AdminHomesManager, { type AdminHomeListing } from './AdminHomesManager'
 import AdminUsersManager, { type AdminUser } from './AdminUsersManager'
 import AdminBrokersManager, { type AdminBrokerProfile } from './AdminBrokersManager'
-import { Star, Building2, Users, Home } from 'lucide-react'
+import AdminRequestsManager, { type AdminRequest } from './AdminRequestsManager'
+import { Star, Building2, Users, Home, MessageSquare } from 'lucide-react'
 
 type BrokerApp = {
   id: string
@@ -85,6 +86,12 @@ export default async function AdminPage() {
     if (row.user_id) countByUser[row.user_id] = (countByUser[row.user_id] ?? 0) + 1
   }
 
+  // Fetch all hangar requests
+  const { data: hangarRequests } = await supabaseAdmin
+    .from('hangar_requests')
+    .select('id, contact_name, contact_email, contact_phone, airport_code, airport_name, city, state, aircraft_type, wingspan_ft, monthly_budget, duration, move_in_date, notes, status, is_priority, created_at')
+    .order('created_at', { ascending: false })
+
   // Broker profiles — full detail for admin broker panel + keyed by user_id for users table
   const { data: brokerProfiles } = await supabaseAdmin
     .from('broker_profiles')
@@ -144,7 +151,7 @@ export default async function AdminPage() {
         <div>
           <h1 style={{ marginBottom: '0.25rem' }}>Admin</h1>
           <p style={{ color: '#6b7280', margin: 0 }}>
-            {pendingCount} pending review · {(allListings ?? []).length} hangars · {(homeListings ?? []).length} homes/land · {adminUsers.length} users · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
+            {pendingCount} pending review · {(allListings ?? []).length} hangars · {(homeListings ?? []).length} homes/land · {(hangarRequests ?? []).length} requests · {adminUsers.length} users · {pendingApps.length} broker application{pendingApps.length !== 1 ? 's' : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -266,6 +273,33 @@ export default async function AdminPage() {
         </div>
         <div style={{ padding: '1rem', backgroundColor: 'white' }}>
           <AdminHomesManager initialListings={(homeListings ?? []) as AdminHomeListing[]} />
+        </div>
+      </div>
+
+      {/* ── Hangar Requests ──────────────────────────────────────────────── */}
+      <div style={{ borderRadius: '12px', border: '1px solid #e9d5ff', overflow: 'hidden', marginBottom: '2rem' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+          padding: '0.85rem 1.25rem',
+          backgroundColor: '#faf5ff', borderBottom: '1px solid #e9d5ff',
+        }}>
+          <MessageSquare size={16} style={{ color: '#7c3aed', flexShrink: 0 }} />
+          <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#7c3aed' }}>Hangar Requests</span>
+          <span style={{
+            marginLeft: '0.35rem', fontSize: '0.75rem', fontWeight: 600,
+            backgroundColor: '#ede9fe', color: '#7c3aed',
+            border: '1px solid #ddd6fe', borderRadius: '20px',
+            padding: '0.1rem 0.55rem',
+          }}>
+            {(hangarRequests ?? []).length}
+          </span>
+          <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: '#7c3aed' }}>
+            {(hangarRequests ?? []).filter(r => r.status === 'active').length} active ·{' '}
+            {(hangarRequests ?? []).filter(r => r.status === 'pending_payment').length} pending payment
+          </span>
+        </div>
+        <div style={{ padding: '1rem', backgroundColor: 'white' }}>
+          <AdminRequestsManager initialRequests={(hangarRequests ?? []) as AdminRequest[]} />
         </div>
       </div>
 

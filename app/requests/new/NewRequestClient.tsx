@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import AircraftAutocomplete from '@/app/components/AircraftAutocomplete'
 import type { AircraftSpec } from '@/lib/aircraft-data'
+import AirportAutocomplete from '@/app/components/AirportAutocomplete'
+import type { AirportSuggestion } from '@/app/components/AirportAutocomplete'
 
 const DURATIONS = ['Month-to-month', '3 months', '6 months', '1 year', 'Permanent']
 
@@ -42,6 +44,17 @@ function NewRequestForm() {
   ) {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  function handleAirportSelect(airport: AirportSuggestion) {
+    const state = airport.iso_region ? airport.iso_region.replace('US-', '') : ''
+    setForm(prev => ({
+      ...prev,
+      airport_name: airport.name,
+      airport_code: airport.ident,
+      city:         airport.municipality ?? '',
+      state,
+    }))
   }
 
   function handleAircraftSelect(spec: AircraftSpec) {
@@ -165,26 +178,50 @@ function NewRequestForm() {
         </Section>
 
         <Section title="Airport">
-          <TwoCol>
-            <Field label="Airport code *">
-              <input name="airport_code" value={form.airport_code} onChange={handleChange}
-                required placeholder="KPAE" maxLength={6} style={inputStyle} />
-            </Field>
-            <Field label="Airport name *">
-              <input name="airport_name" value={form.airport_name} onChange={handleChange}
-                required placeholder="Paine Field" style={inputStyle} />
-            </Field>
-          </TwoCol>
-          <TwoCol>
-            <Field label="City">
-              <input name="city" value={form.city} onChange={handleChange}
-                placeholder="Everett" style={inputStyle} />
-            </Field>
-            <Field label="State">
-              <input name="state" value={form.state} onChange={handleChange}
-                placeholder="WA" maxLength={2} style={inputStyle} />
-            </Field>
-          </TwoCol>
+          <Field label="Search airport *">
+            <AirportAutocomplete
+              value={form.airport_name}
+              onChange={v => setForm(prev => ({ ...prev, airport_name: v }))}
+              onSelect={handleAirportSelect}
+              placeholder="Paine Field, KPAE, Everett…"
+              required
+              inputStyle={inputStyle}
+            />
+          </Field>
+          {/* Confirmation row — shown once an airport is selected */}
+          {form.airport_code && (
+            <div style={{
+              display: 'flex', gap: '0.5rem', flexWrap: 'wrap',
+              padding: '0.5rem 0.75rem', backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0', borderRadius: '6px',
+              fontSize: '0.8rem', color: '#166534',
+            }}>
+              <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{form.airport_code}</span>
+              <span>·</span>
+              <span>{form.airport_name}</span>
+              {form.city && <><span>·</span><span>{form.city}, {form.state}</span></>}
+              <button
+                type="button"
+                onClick={() => setForm(prev => ({ ...prev, airport_code: '', airport_name: '', city: '', state: '' }))}
+                style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#166534', fontSize: '0.8rem', padding: 0 }}
+              >
+                ✕ Clear
+              </button>
+            </div>
+          )}
+          {/* Manual fallback — hidden until user clears autocomplete selection */}
+          {!form.airport_code && form.airport_name && (
+            <TwoCol>
+              <Field label="Airport code *">
+                <input name="airport_code" value={form.airport_code} onChange={handleChange}
+                  required placeholder="KPAE" maxLength={6} style={inputStyle} />
+              </Field>
+              <Field label="State">
+                <input name="state" value={form.state} onChange={handleChange}
+                  placeholder="WA" maxLength={2} style={inputStyle} />
+              </Field>
+            </TwoCol>
+          )}
         </Section>
 
         <Section title="Aircraft Info">
