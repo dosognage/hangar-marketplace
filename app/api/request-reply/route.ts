@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 
 const RESEND_API    = 'https://api.resend.com/emails'
 const FROM_ADDRESS  = 'Hangar Marketplace <notify@hangarmarketplace.com>'
