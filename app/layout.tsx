@@ -376,6 +376,7 @@ export default async function RootLayout({
                     <FooterLink href="/pricing">Pricing</FooterLink>
                   </FooterCol>
                   <FooterCol title="Company">
+                    <FooterLink href="/about">About Us</FooterLink>
                     <FooterLink href="/blog">Blog</FooterLink>
                     <FooterLink href="/privacy">Privacy Policy</FooterLink>
                     <FooterLink href="/unsubscribe">Unsubscribe</FooterLink>
