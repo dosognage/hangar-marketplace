@@ -73,7 +73,7 @@ export default function AboutPage() {
       <section style={sectionStyle}>
         <h2 style={h2Style}>Credentials</h2>
         <div style={credGridStyle}>
-          <CredCard icon="✈️" title="Diverse Flight Experience" body="Commercial airliners, warbirds, tailwheel aircraft, seaplanes, and high-performance piston twins" />
+          <CredCard icon="✈️" title="~7,500 Hours" body="Total flight time across commercial, general aviation, warbirds, seaplanes, and tailwheel aircraft" />
           <CredCard icon="🏫" title="Active CFI" body="Certified Flight Instructor, still active in flight training and the general aviation community" />
           <CredCard icon="🛫" title="Alaska Airlines" body="Active line pilot since 2022, based in the Seattle area, flying the Boeing 737" />
           <CredCard icon="🎓" title="Industry Since 2017" body="Former airline recruiter and pilot interviewer at the regional level" />
