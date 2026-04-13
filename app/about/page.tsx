@@ -72,12 +72,12 @@ export default function AboutPage() {
       {/* ── Credentials strip ────────────────────────────────────────── */}
       <section style={sectionStyle}>
         <h2 style={h2Style}>Credentials</h2>
-        <div style={credGridStyle}>
-          <CredCard icon="✈️" title="~7,500 Hours" body="Total flight time across commercial, general aviation, warbirds, seaplanes, and tailwheel aircraft" />
-          <CredCard icon="🏫" title="Active CFI" body="Certified Flight Instructor, still active in flight training and the general aviation community" />
-          <CredCard icon="🛫" title="Alaska Airlines" body="Active line pilot since 2022, based in the Seattle area, flying the Boeing 737" />
-          <CredCard icon="🎓" title="Industry Since 2017" body="Former airline recruiter and pilot interviewer at the regional level" />
-        </div>
+        <ul style={credListStyle}>
+          <li style={credItemStyle}>Diverse flight experience across commercial, general aviation, warbirds, seaplanes, and tailwheel aircraft</li>
+          <li style={credItemStyle}><strong>Active CFI</strong> — Certified Flight Instructor, still active in flight training and the general aviation community</li>
+          <li style={credItemStyle}><strong>Alaska Airlines</strong> — Active line pilot since 2022, based in the Seattle area, flying the Boeing 737</li>
+          <li style={credItemStyle}><strong>Industry Since 2019</strong> — Former airline recruiter and pilot interviewer at the regional level</li>
+        </ul>
       </section>
 
       {/* ── Mission ──────────────────────────────────────────────────── */}
@@ -105,15 +105,6 @@ export default function AboutPage() {
   )
 }
 
-function CredCard({ icon, title, body }: { icon: string; title: string; body: string }) {
-  return (
-    <div style={credCardStyle}>
-      <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>{icon}</div>
-      <p style={{ margin: '0 0 0.35rem', fontWeight: '700', fontSize: '0.9rem', color: '#111827' }}>{title}</p>
-      <p style={{ margin: 0, fontSize: '0.8rem', color: '#6b7280', lineHeight: 1.6 }}>{body}</p>
-    </div>
-  )
-}
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
@@ -185,17 +176,16 @@ const photoPlaceholderStyle: React.CSSProperties = {
   border: '3px solid #254e7a',
 }
 
-const credGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-  gap: '1rem',
+const credListStyle: React.CSSProperties = {
+  margin: '0',
+  paddingLeft: '1.25rem',
 }
 
-const credCardStyle: React.CSSProperties = {
-  backgroundColor: 'white',
-  border: '1px solid #e5e7eb',
-  borderRadius: '10px',
-  padding: '1.25rem',
+const credItemStyle: React.CSSProperties = {
+  fontSize: '0.925rem',
+  color: '#374151',
+  lineHeight: 1.8,
+  marginBottom: '0.5rem',
 }
 
 const ctaBtnStyle: React.CSSProperties = {
