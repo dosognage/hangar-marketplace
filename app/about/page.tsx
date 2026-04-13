@@ -23,16 +23,16 @@ export default function AboutPage() {
       <section style={sectionStyle}>
         <h2 style={h2Style}>The problem we kept running into</h2>
         <p style={bodyStyle}>
-          As pilots, we've always known the hangar search experience is broken. You check Craigslist,
-          scroll Facebook groups, email FBOs, and ask around the ramp. And after all of that, you
-          still might not find anything. Meanwhile, if you have space available, you're posting in
-          five different places and hoping the right person sees it.
+          As pilots, we've always known the hangar search experience is broken. You check general
+          listing sites, scroll Facebook groups, email FBOs, and ask around the ramp. And after all
+          of that, you still might not find anything. Meanwhile, if you have space available, you're
+          posting in five different places and hoping the right person sees it.
         </p>
         <p style={bodyStyle}>
           The aviation real estate world has been relying on word-of-mouth and generic platforms for
-          decades. LoopNet buries hangar listings under a mountain of commercial real estate. Craigslist
-          offers no filtering by aircraft type, door size, or airport. Facebook groups are scattered,
-          unverified, and impossible to search effectively.
+          decades. General commercial real estate sites bury hangar listings and offer no filtering
+          by aircraft type, door size, or airport. Facebook groups are scattered, unverified, and
+          impossible to search effectively.
         </p>
         <p style={bodyStyle}>
           There was no central place. So we built one.
@@ -56,16 +56,16 @@ export default function AboutPage() {
         </div>
 
         <p style={bodyStyle}>
-          <strong style={{ color: '#111827' }}>Andre Dosogne</strong> is an active Alaska Airlines pilot based in the Seattle area. He started flying at 15, soloed at 16, and left for flight school at 19. By 21 he was an airline pilot flying for an American Airlines regional carrier, one of the youngest in his class. At 23 he was hired at Alaska Airlines, where he continues to fly today.
+          <strong style={{ color: '#111827' }}>Andre Dosogne</strong> is an active Alaska Airlines pilot based in the Seattle area. He started flying at 15, soloed at 16, and left for flight school at 19. By 21 he was an airline pilot flying for an American Airlines regional carrier. At 23 he was hired at Alaska Airlines, where he continues to fly today.
         </p>
         <p style={bodyStyle}>
-          With around 7,500 hours across everything from the Boeing 737 to warbirds, tailwheel aircraft, seaplanes, and high-performance piston twins, Andre has spent more of his life in cockpits than out of them. He has been in the aviation industry since 2019, including time as a recruiter and conducting pilot interviews for regional carriers, and remains active as a Certified Flight Instructor (CFI), flying tailwheel aircraft around the Pacific Northwest in his time off.
+          With extensive hours across everything from the Boeing 737 to warbirds, tailwheel aircraft, seaplanes, and high-performance piston twins, Andre has built a wide range of experience across the full spectrum of aviation. He has been in the industry since 2017, including time as a recruiter and conducting pilot interviews for his regional carrier, and remains active as a Certified Flight Instructor (CFI), flying tailwheel aircraft around the Pacific Northwest in his time off.
         </p>
         <p style={bodyStyle}>
           When he began pursuing his real estate license, something clicked. The best-performing real estate platforms serve niche markets, and aviation properties are as niche as it gets. As both a buyer looking for hangar space and someone learning the real estate industry from the inside, he saw the gap clearly: there was no nationwide, aviation-specific marketplace for hangars and airport properties.
         </p>
         <p style={{ ...bodyStyle, marginBottom: 0 }}>
-          Hangar Marketplace is the result of that frustration turned into something useful. It's built for the pilot who's tired of hunting across five platforms and coming up empty, and for the owner who deserves better than a Craigslist post.
+          Hangar Marketplace is the result of that frustration turned into something useful. It's built for the pilot who's tired of hunting across five platforms and coming up empty, and for the owner who deserves a better way to get their space in front of the right people.
         </p>
       </section>
 
@@ -73,12 +73,10 @@ export default function AboutPage() {
       <section style={sectionStyle}>
         <h2 style={h2Style}>Credentials</h2>
         <div style={credGridStyle}>
-          <CredCard icon="✈️" title="~7,500 Hours" body="Total flight time across commercial, general aviation, warbirds, seaplanes, and tailwheel aircraft" />
+          <CredCard icon="✈️" title="Diverse Flight Experience" body="Commercial airliners, warbirds, tailwheel aircraft, seaplanes, and high-performance piston twins" />
           <CredCard icon="🏫" title="Active CFI" body="Certified Flight Instructor, still active in flight training and the general aviation community" />
           <CredCard icon="🛫" title="Alaska Airlines" body="Active line pilot since 2022, based in the Seattle area, flying the Boeing 737" />
-          <CredCard icon="🎓" title="Industry Since 2019" body="Former airline recruiter and pilot interviewer at the regional level" />
-          <CredCard icon="🏠" title="Real Estate" body="Pursuing a real estate license with a focus on aviation and airport properties" />
-          <CredCard icon="📍" title="Pacific Northwest" body="Based in Bellevue, WA. Flying tailwheel aircraft around the PNW on days off" />
+          <CredCard icon="🎓" title="Industry Since 2017" body="Former airline recruiter and pilot interviewer at the regional level" />
         </div>
       </section>
 
