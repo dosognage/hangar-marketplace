@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { CheckCircle, ClipboardList, Search, ArrowRight } from 'lucide-react'
+import { CheckCircle, ClipboardList, Search, ArrowRight, Zap } from 'lucide-react'
 import type { Metadata } from 'next'
+import { createServerClient } from '@/lib/supabase-server'
 
 export const metadata: Metadata = {
   title: 'Listing Submitted | Hangar Marketplace',
@@ -14,6 +15,24 @@ export default async function SubmitSuccessPage({ searchParams }: Props) {
   const { photos } = await searchParams
   const photoCount = parseInt(photos ?? '0', 10)
 
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const isBroker = user?.user_metadata?.is_broker === true
+
+  const dashboardHref = isBroker ? '/broker/dashboard' : '/dashboard'
+
+  const steps = isBroker
+    ? [
+        { icon: <Zap size={18} />, title: 'Live immediately', desc: 'As a verified broker your listing is approved automatically — pilots can find it right now.' },
+        { icon: <Search size={18} />, title: 'Pilots find you', desc: 'Anyone searching at your airport will see your listing in results.' },
+        { icon: <ClipboardList size={18} />, title: 'Manage from your dashboard', desc: 'Edit details, track views, and respond to inquiries from your broker dashboard.' },
+      ]
+    : [
+        { icon: <ClipboardList size={18} />, title: 'Review', desc: 'Our team reviews your listing for accuracy and completeness, usually within 24 hours.' },
+        { icon: <CheckCircle size={18} />, title: 'Approval email', desc: "You'll get an email the moment your listing goes live on Hangar Marketplace." },
+        { icon: <Search size={18} />, title: 'Pilots find you', desc: 'Pilots searching at your airport will see your listing immediately after approval.' },
+      ]
+
   return (
     <div style={{
       maxWidth: '560px',
@@ -21,24 +40,20 @@ export default async function SubmitSuccessPage({ searchParams }: Props) {
       textAlign: 'center',
       padding: '0 1rem',
     }}>
-      {/* Icon */}
       <div style={{ marginBottom: '1.5rem', color: '#16a34a' }}>
         <CheckCircle size={64} strokeWidth={1.5} />
       </div>
 
-      {/* Heading */}
       <h1 style={{ margin: '0 0 0.75rem', fontSize: '1.75rem', color: '#111827', fontWeight: '800' }}>
-        Listing submitted!
+        {isBroker ? 'Listing is live!' : 'Listing submitted!'}
       </h1>
       <p style={{ margin: '0 0 2rem', color: '#6b7280', fontSize: '1rem', lineHeight: 1.6 }}>
-        {photoCount > 0
-          ? `Your listing has been submitted with ${photoCount} photo${photoCount !== 1 ? 's' : ''}. `
-          : 'Your listing has been submitted. '}
-        Our team will review it and it will go live typically within 24 hours.
-        You&apos;ll receive an email confirmation once it&apos;s approved.
+        {isBroker
+          ? `Your listing is now live on Hangar Marketplace${photoCount > 0 ? ` with ${photoCount} photo${photoCount !== 1 ? 's' : ''}` : ''}. Pilots can find it immediately.`
+          : `${photoCount > 0 ? `Your listing has been submitted with ${photoCount} photo${photoCount !== 1 ? 's' : ''}. ` : 'Your listing has been submitted. '}Our team will review it and it will go live typically within 24 hours. You'll receive an email confirmation once it's approved.`
+        }
       </p>
 
-      {/* Steps card */}
       <div style={{
         backgroundColor: 'white',
         border: '1px solid #e5e7eb',
@@ -51,11 +66,7 @@ export default async function SubmitSuccessPage({ searchParams }: Props) {
           What happens next
         </p>
 
-        {[
-          { icon: <ClipboardList size={18} />, title: 'Review', desc: 'Our team reviews your listing for accuracy and completeness, usually within 24 hours.' },
-          { icon: <CheckCircle size={18} />, title: 'Approval email', desc: "You'll get an email the moment your listing goes live on Hangar Marketplace." },
-          { icon: <Search size={18} />, title: 'Pilots find you', desc: 'Pilots searching at your airport will see your listing immediately after approval.' },
-        ].map((step, i) => (
+        {steps.map((step, i) => (
           <div
             key={i}
             style={{
@@ -63,7 +74,7 @@ export default async function SubmitSuccessPage({ searchParams }: Props) {
               gap: '0.875rem',
               alignItems: 'flex-start',
               padding: '0.875rem 0',
-              borderBottom: i < 2 ? '1px solid #f3f4f6' : 'none',
+              borderBottom: i < steps.length - 1 ? '1px solid #f3f4f6' : 'none',
             }}
           >
             <div style={{ color: '#6366f1', flexShrink: 0, marginTop: '2px' }}>
@@ -81,10 +92,9 @@ export default async function SubmitSuccessPage({ searchParams }: Props) {
         ))}
       </div>
 
-      {/* Actions */}
       <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
         <Link
-          href="/dashboard"
+          href={dashboardHref}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
             padding: '0.65rem 1.35rem',
