@@ -24,7 +24,7 @@ export default function AboutPage() {
         <h2 style={h2Style}>The problem we kept running into</h2>
         <p style={bodyStyle}>
           As pilots, we've always known the hangar search experience is broken. You check Craigslist,
-          scroll Facebook groups, email FBOs, and ask around the ramp — and after all of that, you
+          scroll Facebook groups, email FBOs, and ask around the ramp. And after all of that, you
           still might not find anything. Meanwhile, if you have space available, you're posting in
           five different places and hoping the right person sees it.
         </p>
@@ -56,16 +56,16 @@ export default function AboutPage() {
         </div>
 
         <p style={bodyStyle}>
-          <strong style={{ color: '#111827' }}>Andre Dosogne</strong> is an active Alaska Airlines pilot based in the Seattle area. He started flying at 15, soloed at 16, and left for flight school at 19. By 21 he was flying for an American Airlines regional carrier — one of the youngest in his class. At 23 he was hired at Alaska Airlines, where he continues to fly today.
+          <strong style={{ color: '#111827' }}>Andre Dosogne</strong> is an active Alaska Airlines pilot based in the Seattle area. He started flying at 15, soloed at 16, and left for flight school at 19. By 21 he was flying for an American Airlines regional carrier, one of the youngest in his class. At 23 he was hired at Alaska Airlines, where he continues to fly today.
         </p>
         <p style={bodyStyle}>
-          With around 7,500 hours across everything from the Boeing 737 to warbirds, tailwheel aircraft, seaplanes, and high-performance piston twins, Andre has spent more of his life in cockpits than out of them. He's been in the aviation industry since 2019 — including time as a recruiter and conducting pilot interviews for regional carriers — and remains active as a Certified Flight Instructor (CFI), flying tailwheel aircraft around the Pacific Northwest in his time off.
+          With around 7,500 hours across everything from the Boeing 737 to warbirds, tailwheel aircraft, seaplanes, and high-performance piston twins, Andre has spent more of his life in cockpits than out of them. He has been in the aviation industry since 2019, including time as a recruiter and conducting pilot interviews for regional carriers, and remains active as a Certified Flight Instructor (CFI), flying tailwheel aircraft around the Pacific Northwest in his time off.
         </p>
         <p style={bodyStyle}>
-          When he began pursuing his real estate license, something clicked. The best-performing real estate platforms serve niche markets — and aviation properties are as niche as it gets. As both a buyer looking for hangar space and someone learning the real estate industry from the inside, he saw the gap clearly: there was no nationwide, aviation-specific marketplace for hangars and airport properties.
+          When he began pursuing his real estate license, something clicked. The best-performing real estate platforms serve niche markets, and aviation properties are as niche as it gets. As both a buyer looking for hangar space and someone learning the real estate industry from the inside, he saw the gap clearly: there was no nationwide, aviation-specific marketplace for hangars and airport properties.
         </p>
         <p style={{ ...bodyStyle, marginBottom: 0 }}>
-          Hangar Marketplace is the result of that frustration turned into something useful. It's built for the pilot who's tired of hunting across five platforms and coming up empty — and for the owner who deserves better than a Craigslist post.
+          Hangar Marketplace is the result of that frustration turned into something useful. It's built for the pilot who's tired of hunting across five platforms and coming up empty, and for the owner who deserves better than a Craigslist post.
         </p>
       </section>
 
@@ -74,11 +74,11 @@ export default function AboutPage() {
         <h2 style={h2Style}>Credentials</h2>
         <div style={credGridStyle}>
           <CredCard icon="✈️" title="~7,500 Hours" body="Total flight time across commercial, general aviation, warbirds, seaplanes, and tailwheel aircraft" />
-          <CredCard icon="🏫" title="Active CFI" body="Certified Flight Instructor — still active in flight training and the general aviation community" />
+          <CredCard icon="🏫" title="Active CFI" body="Certified Flight Instructor, still active in flight training and the general aviation community" />
           <CredCard icon="🛫" title="Alaska Airlines" body="Active line pilot since 2022, based in the Seattle area, flying the Boeing 737" />
           <CredCard icon="🎓" title="Industry Since 2019" body="Former airline recruiter and pilot interviewer at the regional level" />
           <CredCard icon="🏠" title="Real Estate" body="Pursuing a real estate license with a focus on aviation and airport properties" />
-          <CredCard icon="📍" title="Pacific Northwest" body="Based in Bellevue, WA — flying tailwheel aircraft around the PNW on days off" />
+          <CredCard icon="📍" title="Pacific Northwest" body="Based in Bellevue, WA. Flying tailwheel aircraft around the PNW on days off" />
         </div>
       </section>
 
@@ -86,7 +86,7 @@ export default function AboutPage() {
       <section style={{ ...sectionStyle, borderTop: '2px solid #1a3a5c', paddingTop: '2.5rem' }}>
         <h2 style={h2Style}>Our mission</h2>
         <p style={bodyStyle}>
-          To become the go-to marketplace for aviation real estate in the United States — a platform where pilots find hangar space without the runaround, owners get their listings in front of the right buyers, and brokers have a professional home for their aviation inventory.
+          To become the go-to marketplace for aviation real estate in the United States: a platform where pilots find hangar space without the runaround, owners get their listings in front of the right buyers, and brokers have a professional home for their aviation inventory.
         </p>
         <p style={{ ...bodyStyle, marginBottom: 0 }}>
           Listing is free. Always. You keep everything you earn. We're here to make the aviation real estate market work the way it should have all along.
