@@ -128,6 +128,8 @@ type Listing = {
   is_sponsored: boolean
   sponsored_until: string | null
   stripe_customer_id: string | null
+  user_id: string | null
+  broker_profile_id: string | null
   contact_name: string
   contact_email: string
   contact_phone: string | null
