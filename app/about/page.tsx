@@ -56,7 +56,7 @@ export default function AboutPage() {
         </div>
 
         <p style={bodyStyle}>
-          <strong style={{ color: '#111827' }}>Andre Dosogne</strong> is an active Alaska Airlines pilot based in the Seattle area. He started flying at 15, soloed at 16, and left for flight school at 19. By 21 he was flying for an American Airlines regional carrier, one of the youngest in his class. At 23 he was hired at Alaska Airlines, where he continues to fly today.
+          <strong style={{ color: '#111827' }}>Andre Dosogne</strong> is an active Alaska Airlines pilot based in the Seattle area. He started flying at 15, soloed at 16, and left for flight school at 19. By 21 he was an airline pilot flying for an American Airlines regional carrier, one of the youngest in his class. At 23 he was hired at Alaska Airlines, where he continues to fly today.
         </p>
         <p style={bodyStyle}>
           With around 7,500 hours across everything from the Boeing 737 to warbirds, tailwheel aircraft, seaplanes, and high-performance piston twins, Andre has spent more of his life in cockpits than out of them. He has been in the aviation industry since 2019, including time as a recruiter and conducting pilot interviews for regional carriers, and remains active as a Certified Flight Instructor (CFI), flying tailwheel aircraft around the Pacific Northwest in his time off.
