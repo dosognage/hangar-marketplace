@@ -264,7 +264,9 @@ export default function AirportMap({
   }
 
   // When notfound, show tile map if we have a fallback center (e.g. from auto-geocode)
-  const hasTileFallback = loadState === 'notfound' && centerLat != null && centerLng != null
+  // Fall back to satellite tiles when: no OSM aerodrome found, OR Overpass API error —
+  // as long as we have fallback coords (e.g. from airport DB selection).
+  const hasTileFallback = (loadState === 'notfound' || loadState === 'error') && centerLat != null && centerLng != null
 
   // ── Overlay messages ──────────────────────────────────────────────────────
   const overlayContent = (() => {
@@ -286,7 +288,7 @@ export default function AirportMap({
         </p>
       </div>
     )
-    if (loadState === 'error') return (
+    if (loadState === 'error' && !hasTileFallback) return (
       <div style={overlayStyle}>
         <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
         <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem', textAlign: 'center' }}>
@@ -406,7 +408,7 @@ export default function AirportMap({
           padding: '0.3rem 0.85rem', fontSize: '0.72rem', color: '#6b7280',
           fontWeight: '500', pointerEvents: 'none', whiteSpace: 'nowrap',
         }}>
-          No diagram available for {icao.toUpperCase()} — satellite map shown
+          {loadState === 'error' ? `Diagram unavailable for ${icao.toUpperCase()} — satellite map shown` : `No diagram available for ${icao.toUpperCase()} — satellite map shown`}
         </div>
       )}
 

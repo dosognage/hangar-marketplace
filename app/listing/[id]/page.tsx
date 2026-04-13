@@ -360,14 +360,19 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
         </div>
       )}
 
-      {/* Sponsor CTA — shown to listing owners to boost visibility */}
-      <div id="sponsor" style={{ marginBottom: '1.5rem' }}>
-        <SponsorButton
-          listingId={typedListing.id}
-          sponsoredUntil={typedListing.sponsored_until}
-          hasStripeCustomer={!!typedListing.stripe_customer_id}
-        />
-      </div>
+      {/* Sponsor CTA — only shown to the listing owner */}
+      {user && (
+        user.id === typedListing.user_id ||
+        (user.user_metadata?.broker_profile_id && user.user_metadata.broker_profile_id === typedListing.broker_profile_id)
+      ) && (
+        <div id="sponsor" style={{ marginBottom: '1.5rem' }}>
+          <SponsorButton
+            listingId={typedListing.id}
+            sponsoredUntil={typedListing.sponsored_until}
+            hasStripeCustomer={!!typedListing.stripe_customer_id}
+          />
+        </div>
+      )}
 
       {/* Details card — 2 columns on desktop, 1 on mobile (see globals.css .detail-grid) */}
       <div className="detail-grid">
