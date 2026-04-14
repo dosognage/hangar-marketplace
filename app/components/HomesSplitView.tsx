@@ -290,7 +290,7 @@ export default function HomesSplitView({
         )}
 
         {/* Layer toggle — segmented pill control */}
-        <div style={{
+        <div className="map-layer-toggle" style={{
           position: 'absolute', top: '12px', right: '12px', zIndex: 500,
           display: 'flex',
           backgroundColor: 'rgba(255,255,255,0.95)',

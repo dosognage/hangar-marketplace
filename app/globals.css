@@ -619,3 +619,12 @@ input, select, textarea {
     display: none !important;
   }
 }
+
+/* ── Map layer toggle: move below search bar on mobile ───────────────────── */
+@media (max-width: 640px) {
+  .map-layer-toggle {
+    top: 70px !important;
+    right: 12px !important;
+    z-index: 1002 !important;
+  }
+}
