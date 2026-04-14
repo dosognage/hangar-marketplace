@@ -319,7 +319,7 @@ export default function HomesSplitView({
                 whiteSpace: 'nowrap' as const,
               }}
             >
-              {layer === 'osm' ? 'Street' : 'VFR Sectional'}
+              {layer === 'osm' ? 'Street' : 'Aviation'}
             </button>
           ))}
         </div>

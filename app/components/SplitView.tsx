@@ -274,7 +274,7 @@ export default function SplitView({
                 whiteSpace: 'nowrap' as const,
               }}
             >
-              {layer === 'osm' ? 'Street' : 'VFR Sectional'}
+              {layer === 'osm' ? 'Street' : 'Aviation'}
             </button>
           ))}
         </div>

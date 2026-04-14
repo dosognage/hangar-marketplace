@@ -94,9 +94,11 @@ export type MapListing = {
 
 export type MapLayer = 'osm' | 'sectional'
 
+const OPENAIP_KEY = process.env.NEXT_PUBLIC_OPENAIP_API_KEY ?? ''
+
 const TILE_URLS: Record<MapLayer, string> = {
   osm:       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  sectional: 'https://wms.chartbundle.com/tms/1.0.0/sec/{z}/{x}/{y}.png',
+  sectional: `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${OPENAIP_KEY}`,
 }
 
 type Props = {
@@ -203,27 +205,25 @@ export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsCh
       style={{ width: '100%', height: '100%', minHeight: '400px', borderRadius: '0' }}
       scrollWheelZoom
     >
-      {/* OSM base — faint fallback visible while sectional tiles are loading */}
-      {mapLayer === 'sectional' && (
+      {/* OSM base — always shown, OpenAIP overlays on top in aviation mode */}
+      <TileLayer
+        key="osm"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        maxZoom={19}
+      />
+
+      {/* OpenAIP aviation overlay — airspace, navaids, airports */}
+      {mapLayer === 'sectional' && OPENAIP_KEY && (
         <TileLayer
-          key="osm-under"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution=""
-          maxZoom={19}
-          opacity={0.25}
+          key="openaip"
+          url={TILE_URLS.sectional}
+          attribution='Aviation data &copy; <a href="https://www.openaip.net" target="_blank" rel="noreferrer">OpenAIP</a>'
+          maxZoom={17}
+          opacity={1}
+          crossOrigin=""
         />
       )}
-
-      <TileLayer
-        key={mapLayer}
-        url={TILE_URLS[mapLayer]}
-        attribution={mapLayer === 'sectional'
-          ? 'FAA VFR Sectional &copy; FAA / ChartBundle'
-          : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}
-        maxNativeZoom={mapLayer === 'sectional' ? 11 : 19}
-        maxZoom={19}
-        crossOrigin=""
-      />
 
       <BoundsUpdater listings={mapped} />
       <InvalidateSize />
