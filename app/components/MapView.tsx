@@ -96,7 +96,7 @@ export type MapLayer = 'osm' | 'sectional'
 
 const TILE_URLS: Record<MapLayer, string> = {
   osm:       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  sectional: 'https://wms.chartbundle.com/tms/1.0.0/sec/{z}/{x}/{y}.png',
+  sectional: 'https://tiles.arcgis.com/tiles/ssFJjBXIUyZDrSYZ/arcgis/rest/services/VFR_Sectional/MapServer/tile/{z}/{y}/{x}',
 }
 
 type Props = {
@@ -209,8 +209,8 @@ export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsCh
         attribution={mapLayer === 'sectional'
           ? 'FAA VFR Sectional via <a href="https://chartbundle.com" target="_blank" rel="noreferrer">ChartBundle</a>'
           : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}
-        maxNativeZoom={mapLayer === 'sectional' ? 11 : 19}
-        maxZoom={mapLayer === 'sectional' ? 12 : 19}
+        maxNativeZoom={mapLayer === 'sectional' ? 13 : 19}
+        maxZoom={mapLayer === 'sectional' ? 14 : 19}
       />
 
       <BoundsUpdater listings={mapped} />
