@@ -289,27 +289,39 @@ export default function HomesSplitView({
           />
         )}
 
-        {/* Layer toggle — external to Leaflet, floats above map */}
-        <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 500 }}>
-          <select
-            value={mapLayer}
-            onChange={e => setMapLayer(e.target.value as MapLayer)}
-            style={{
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              color: '#1a3a5c',
-              backgroundColor: 'rgba(255,255,255,0.97)',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              padding: '0.35rem 0.65rem',
-              cursor: 'pointer',
-              boxShadow: '0 1px 6px rgba(0,0,0,0.14)',
-              outline: 'none',
-            }}
-          >
-            <option value="osm">Street Map</option>
-            <option value="sectional">VFR Sectional</option>
-          </select>
+        {/* Layer toggle — segmented pill control */}
+        <div style={{
+          position: 'absolute', top: '12px', right: '12px', zIndex: 500,
+          display: 'flex',
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          borderRadius: '999px',
+          padding: '3px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.6)',
+          gap: '2px',
+        }}>
+          {(['osm', 'sectional'] as MapLayer[]).map(layer => (
+            <button
+              key={layer}
+              onClick={() => setMapLayer(layer)}
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: '600',
+                letterSpacing: '0.01em',
+                padding: '0.3rem 0.75rem',
+                borderRadius: '999px',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background 0.18s, color 0.18s',
+                backgroundColor: mapLayer === layer ? '#1a3a5c' : 'transparent',
+                color: mapLayer === layer ? 'white' : '#6b7280',
+                whiteSpace: 'nowrap' as const,
+              }}
+            >
+              {layer === 'osm' ? 'Street' : 'VFR Sectional'}
+            </button>
+          ))}
         </div>
       </div>
 
