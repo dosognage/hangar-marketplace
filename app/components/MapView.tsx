@@ -92,11 +92,19 @@ export type MapListing = {
   sponsored_until?: string | null
 }
 
+export type MapLayer = 'osm' | 'sectional'
+
+const TILE_URLS: Record<MapLayer, string> = {
+  osm:       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  sectional: 'https://wms.chartbundle.com/tms/1.0.0/sec/{z}/{x}/{y}.png',
+}
+
 type Props = {
   listings: MapListing[]
   hoveredId: string | null
   onMarkerClick: (id: string) => void
   onBoundsChange?: (bounds: MapBounds) => void
+  mapLayer?: MapLayer
 }
 
 // Auto-fit the map bounds whenever listings change.
@@ -162,7 +170,7 @@ function BoundsTracker({ onBoundsChange }: { onBoundsChange: (b: MapBounds) => v
   return null
 }
 
-export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsChange }: Props) {
+export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsChange, mapLayer = 'osm' }: Props) {
   // Only render Leaflet after the browser has finished its first paint.
   // This prevents "this.getPane().appendChild" and "container reused" errors.
   const [mounted, setMounted] = useState(false)
@@ -196,8 +204,13 @@ export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsCh
       scrollWheelZoom
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        key={mapLayer}
+        url={TILE_URLS[mapLayer]}
+        attribution={mapLayer === 'sectional'
+          ? 'FAA VFR Sectional via <a href="https://chartbundle.com" target="_blank" rel="noreferrer">ChartBundle</a>'
+          : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}
+        maxNativeZoom={mapLayer === 'sectional' ? 11 : 19}
+        maxZoom={mapLayer === 'sectional' ? 12 : 19}
       />
 
       <BoundsUpdater listings={mapped} />

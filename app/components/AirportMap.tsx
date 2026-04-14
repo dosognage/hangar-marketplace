@@ -135,10 +135,6 @@ function ClickHandler({ onLocationSelect }: { onLocationSelect: (lat: number, ln
 
 // ── Load state ────────────────────────────────────────────────────────────────
 type LoadState = 'idle' | 'loading' | 'loaded' | 'notfound' | 'error'
-type MapView   = 'diagram' | 'sectional'
-
-// ── VFR Sectional tile URL (FAA charts via ChartBundle) ───────────────────────
-const VFR_SECTIONAL_URL = 'https://wms.chartbundle.com/tms/1.0.0/sec/{z}/{x}/{y}.png'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 type Props = {
@@ -174,7 +170,7 @@ export default function AirportMap({
   const [markerPos, setMarkerPos]         = useState<[number, number] | null>(
     savedLat != null && savedLng != null ? [savedLat, savedLng] : null
   )
-  const [mapView, setMapView]             = useState<MapView>('diagram')
+
   const prevIcao = useRef<string>('')
   const geoJsonKey = useRef(0)
 
@@ -337,22 +333,9 @@ export default function AirportMap({
           <CenterMap lat={centerLat as number} lng={centerLng as number} zoom={15} />
         )}
 
-        {/* VFR Sectional tile layer — shown when user selects sectional view */}
-        {mapView === 'sectional' && (
+        {/* OSM tile layer — shown only when no aerodrome diagram is available */}
+        {hasTileFallback && (
           <TileLayer
-            key="sectional"
-            url={VFR_SECTIONAL_URL}
-            attribution='FAA VFR Sectional via <a href="https://chartbundle.com" target="_blank" rel="noreferrer">ChartBundle</a>'
-            maxZoom={12}
-            maxNativeZoom={11}
-            opacity={1}
-          />
-        )}
-
-        {/* OSM tile layer — shown in diagram mode when no aerodrome diagram is available */}
-        {mapView === 'diagram' && hasTileFallback && (
-          <TileLayer
-            key="osm"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             maxZoom={19}
@@ -430,44 +413,14 @@ export default function AirportMap({
         </div>
       )}
 
-      {/* Map layer dropdown */}
-      {loadState !== 'idle' && (
-        <div style={{
-          position: 'absolute', top: '10px', right: '10px', zIndex: 1000,
-        }}>
-          <select
-            value={mapView}
-            onChange={e => setMapView(e.target.value as MapView)}
-            style={{
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              color: '#1a3a5c',
-              backgroundColor: 'rgba(255,255,255,0.95)',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              padding: '0.3rem 0.6rem',
-              cursor: 'pointer',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-              outline: 'none',
-            }}
-          >
-            <option value="diagram">Airport Diagram</option>
-            <option value="sectional">VFR Sectional</option>
-          </select>
-        </div>
-      )}
-
-      {/* Attribution */}
-      {(loadState === 'loaded' || hasTileFallback || mapView === 'sectional') && (
+      {/* Attribution (Overpass / OSM) */}
+      {(loadState === 'loaded' || hasTileFallback) && (
         <div style={{
           position: 'absolute', bottom: 0, right: 0, zIndex: 999,
           backgroundColor: 'rgba(255,255,255,0.7)',
           fontSize: '0.6rem', color: '#6b7280', padding: '2px 6px',
         }}>
-          {mapView === 'sectional'
-            ? <>FAA VFR Sectional via <a href="https://chartbundle.com" target="_blank" rel="noreferrer" style={{ color: '#6b7280' }}>ChartBundle</a></>
-            : <>&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" style={{ color: '#6b7280' }}>OpenStreetMap</a> contributors</>
-          }
+          © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" style={{ color: '#6b7280' }}>OpenStreetMap</a> contributors
         </div>
       )}
 

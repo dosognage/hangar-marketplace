@@ -11,7 +11,7 @@
 import { useState, useRef, useCallback, useEffect, useTransition, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import type { MapListing, MapBounds } from './MapView'
+import type { MapListing, MapBounds, MapLayer } from './MapView'
 import { toggleSavedListing } from '@/app/actions/listings'
 import NoResultsSuggestions from './NoResultsSuggestions'
 import HeartIcon from './HeartIcon'
@@ -112,6 +112,7 @@ export default function SplitView({
 
   // Map viewport — used to geo-filter sponsored listings to top
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
+  const [mapLayer, setMapLayer]   = useState<MapLayer>('osm')
 
   const handleBoundsChange = useCallback((b: MapBounds) => {
     setMapBounds(b)
@@ -239,8 +240,32 @@ export default function SplitView({
             hoveredId={hoveredId}
             onMarkerClick={handleMarkerClick}
             onBoundsChange={handleBoundsChange}
+            mapLayer={mapLayer}
           />
         )}
+
+        {/* Layer toggle — external to Leaflet, floats above map */}
+        <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 500 }}>
+          <select
+            value={mapLayer}
+            onChange={e => setMapLayer(e.target.value as MapLayer)}
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              color: '#1a3a5c',
+              backgroundColor: 'rgba(255,255,255,0.97)',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              padding: '0.35rem 0.65rem',
+              cursor: 'pointer',
+              boxShadow: '0 1px 6px rgba(0,0,0,0.14)',
+              outline: 'none',
+            }}
+          >
+            <option value="osm">Street Map</option>
+            <option value="sectional">VFR Sectional</option>
+          </select>
+        </div>
       </div>
 
       {/* ── Mobile floating search bar (hidden on desktop via CSS) ──────── */}
