@@ -69,16 +69,6 @@ export default function AboutPage() {
         </p>
       </section>
 
-      {/* ── Credentials strip ────────────────────────────────────────── */}
-      <section style={sectionStyle}>
-        <h2 style={h2Style}>Credentials</h2>
-        <ul style={credListStyle}>
-          <li style={credItemStyle}>Diverse flight experience across commercial, general aviation, warbirds, seaplanes, and tailwheel aircraft</li>
-          <li style={credItemStyle}><strong>Active CFI</strong> — Certified Flight Instructor, still active in flight training and the general aviation community</li>
-          <li style={credItemStyle}><strong>Alaska Airlines</strong> — Active line pilot since 2022, based in the Seattle area, flying the Boeing 737</li>
-          <li style={credItemStyle}><strong>Industry Since 2019</strong> — Former airline recruiter and pilot interviewer at the regional level</li>
-        </ul>
-      </section>
 
       {/* ── Mission ──────────────────────────────────────────────────── */}
       <section style={{ ...sectionStyle, borderTop: '2px solid #1a3a5c', paddingTop: '2.5rem' }}>
@@ -176,17 +166,6 @@ const photoPlaceholderStyle: React.CSSProperties = {
   border: '3px solid #254e7a',
 }
 
-const credListStyle: React.CSSProperties = {
-  margin: '0',
-  paddingLeft: '1.25rem',
-}
-
-const credItemStyle: React.CSSProperties = {
-  fontSize: '0.925rem',
-  color: '#374151',
-  lineHeight: 1.8,
-  marginBottom: '0.5rem',
-}
 
 const ctaBtnStyle: React.CSSProperties = {
   display: 'inline-block',
