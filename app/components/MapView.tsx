@@ -203,31 +203,14 @@ export default function MapView({ listings, hoveredId, onMarkerClick, onBoundsCh
       style={{ width: '100%', height: '100%', minHeight: '400px', borderRadius: '0' }}
       scrollWheelZoom
     >
-      {/* OSM base layer — always present so there's a background when sectional is loading */}
-      {mapLayer === 'sectional' && (
-        <TileLayer
-          key="osm-base"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          maxZoom={19}
-          opacity={0.3}
-        />
-      )}
-
       <TileLayer
         key={mapLayer}
         url={TILE_URLS[mapLayer]}
         attribution={mapLayer === 'sectional'
-          ? 'FAA VFR Sectional &copy; FAA'
+          ? 'FAA VFR Sectional via <a href="https://chartbundle.com" target="_blank" rel="noreferrer">ChartBundle</a>'
           : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}
-        // tileSize 512 + zoomOffset -1 requests tiles one level higher than displayed,
-        // giving 4x more detail on screen and eliminating the grainy/blurry look
-        tileSize={mapLayer === 'sectional' ? 512 : 256}
-        zoomOffset={mapLayer === 'sectional' ? -1 : 0}
-        maxNativeZoom={mapLayer === 'sectional' ? 11 : 19}
-        maxZoom={19}
-        minZoom={mapLayer === 'sectional' ? 5 : 0}
-        detectRetina
+        maxNativeZoom={mapLayer === 'sectional' ? 13 : 19}
+        maxZoom={mapLayer === 'sectional' ? 14 : 19}
       />
 
       <BoundsUpdater listings={mapped} />
