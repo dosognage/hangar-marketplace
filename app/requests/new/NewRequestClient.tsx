@@ -257,10 +257,6 @@ function NewRequestForm() {
 
         <Section title="Terms & Timing">
           <TwoCol>
-            <Field label="Monthly budget ($)">
-              <input name="monthly_budget" type="number" value={form.monthly_budget}
-                onChange={handleChange} placeholder="350" min="0" style={inputStyle} />
-            </Field>
             <Field label="Duration">
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input
@@ -283,6 +279,24 @@ function NewRequestForm() {
                   <option value="months">Months</option>
                 </select>
               </div>
+            </Field>
+            <Field label={
+              form.duration_unit === 'days'   ? 'Daily budget ($)' :
+              form.duration_unit === 'weeks'  ? 'Weekly budget ($)' :
+                                                'Monthly budget ($)'
+            }>
+              <input
+                name="monthly_budget"
+                type="number"
+                value={form.monthly_budget}
+                onChange={handleChange}
+                placeholder={
+                  form.duration_unit === 'days'  ? '50' :
+                  form.duration_unit === 'weeks' ? '200' : '350'
+                }
+                min="0"
+                style={inputStyle}
+              />
             </Field>
           </TwoCol>
           <Field label="Desired move-in date">
