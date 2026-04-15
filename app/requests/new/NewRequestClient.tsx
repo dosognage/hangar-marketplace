@@ -8,24 +8,23 @@ import type { AircraftSpec } from '@/lib/aircraft-data'
 import AirportAutocomplete from '@/app/components/AirportAutocomplete'
 import type { AirportSuggestion } from '@/app/components/AirportAutocomplete'
 
-const DURATIONS = ['Month-to-month', '3 months', '6 months', '1 year', 'Permanent']
-
 const EMPTY = {
-  contact_name:   '',
-  contact_email:  '',
-  contact_phone:  '',
-  airport_code:   '',
-  airport_name:   '',
-  city:           '',
-  state:          '',
-  aircraft_type:  '',
-  wingspan_ft:    '',
-  door_width_ft:  '',
-  door_height_ft: '',
-  monthly_budget: '',
-  duration:       '',
-  move_in_date:   '',
-  notes:          '',
+  contact_name:    '',
+  contact_email:   '',
+  contact_phone:   '',
+  airport_code:    '',
+  airport_name:    '',
+  city:            '',
+  state:           '',
+  aircraft_type:   '',
+  wingspan_ft:     '',
+  door_width_ft:   '',
+  door_height_ft:  '',
+  monthly_budget:  '',
+  duration_value:  '',
+  duration_unit:   'days',
+  move_in_date:    '',
+  notes:           '',
 }
 
 type Status = 'idle' | 'loading' | 'error'
@@ -88,7 +87,11 @@ function NewRequestForm() {
         door_width_ft:  form.door_width_ft  ? Number(form.door_width_ft)  : null,
         door_height_ft: form.door_height_ft ? Number(form.door_height_ft) : null,
         monthly_budget: form.monthly_budget ? Number(form.monthly_budget) : null,
-        duration:       form.duration       || null,
+        duration:       form.duration_value
+                          ? `${form.duration_value} ${Number(form.duration_value) === 1
+                              ? form.duration_unit.replace(/s$/, '')
+                              : form.duration_unit}`
+                          : null,
         move_in_date:   form.move_in_date   || null,
         notes:          form.notes          || null,
         is_priority:    isPriority,
@@ -259,10 +262,27 @@ function NewRequestForm() {
                 onChange={handleChange} placeholder="350" min="0" style={inputStyle} />
             </Field>
             <Field label="Duration">
-              <select name="duration" value={form.duration} onChange={handleChange} style={inputStyle}>
-                <option value="">Not sure</option>
-                {DURATIONS.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  name="duration_value"
+                  type="number"
+                  value={form.duration_value}
+                  onChange={handleChange}
+                  placeholder="e.g. 3"
+                  min="1"
+                  style={{ ...inputStyle, width: '40%' }}
+                />
+                <select
+                  name="duration_unit"
+                  value={form.duration_unit}
+                  onChange={handleChange}
+                  style={{ ...inputStyle, width: '60%' }}
+                >
+                  <option value="days">Days</option>
+                  <option value="weeks">Weeks</option>
+                  <option value="months">Months</option>
+                </select>
+              </div>
             </Field>
           </TwoCol>
           <Field label="Desired move-in date">
