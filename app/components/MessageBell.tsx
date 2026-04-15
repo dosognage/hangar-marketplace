@@ -135,6 +135,11 @@ export default function MessageBell({
     }
   }, [])
 
+  // ── Fetch on mount so conversations are ready before the panel opens ─────────
+  useEffect(() => {
+    fetchConvos()
+  }, [fetchConvos])
+
   // ── Refresh when ChatDrawer sends a message ───────────────────────────────
   useEffect(() => {
     window.addEventListener('conversations-updated', fetchConvos)
