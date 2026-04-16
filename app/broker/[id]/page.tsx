@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import MessageButton from './MessageButton'
+import ShowingRequestButton from '@/app/components/ShowingRequestButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +36,7 @@ export default async function BrokerProfilePage({ params }: PageProps) {
 
   const { data: broker } = await supabase
     .from('broker_profiles')
-    .select('id, user_id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at')
+    .select('id, user_id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at, is_verified, specialty_airports')
     .eq('id', id)
     .single()
 
@@ -95,18 +96,19 @@ export default async function BrokerProfilePage({ params }: PageProps) {
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
             <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{broker.full_name}</h1>
-            {/* Verified badge */}
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-              padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.75rem',
-              fontWeight: '700', backgroundColor: '#dbeafe', color: '#1e40af',
-              border: '1px solid #bfdbfe',
-            }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M20 6L9 17l-5-5"/>
-              </svg>
-              Verified Broker
-            </span>
+            {(broker as { is_verified?: boolean }).is_verified && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.75rem',
+                fontWeight: '700', backgroundColor: '#dbeafe', color: '#1e40af',
+                border: '1px solid #bfdbfe',
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                Verified Broker
+              </span>
+            )}
           </div>
 
           <p style={{ margin: '0 0 0.5rem', fontWeight: '600', color: '#374151' }}>{broker.brokerage}</p>
@@ -140,6 +142,13 @@ export default async function BrokerProfilePage({ params }: PageProps) {
                 Sign in to message
               </a>
             ) : null}
+            {/* Request a showing — shown to all visitors */}
+            {(!currentUser || currentUser.id !== (broker as { user_id?: string }).user_id) && (
+              <ShowingRequestButton
+                brokerProfileId={broker.id}
+                brokerName={broker.full_name}
+              />
+            )}
             {broker.phone && (
               <a href={`tel:${broker.phone}`} style={contactBtnStyle}>
                 📞 {broker.phone}
@@ -156,6 +165,29 @@ export default async function BrokerProfilePage({ params }: PageProps) {
               </a>
             )}
           </div>
+
+          {/* Specialty airports */}
+          {((broker as { specialty_airports?: string[] }).specialty_airports ?? []).length > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <p style={{ margin: '0 0 0.4rem', fontSize: '0.72rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Specialty Airports
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {((broker as { specialty_airports?: string[] }).specialty_airports ?? []).map(code => (
+                  <Link key={code} href={`/hangars/airport/${code}`}
+                    style={{
+                      display: 'inline-block', padding: '0.25rem 0.65rem',
+                      backgroundColor: '#eff6ff', color: '#1d4ed8',
+                      border: '1px solid #bfdbfe', borderRadius: '999px',
+                      fontSize: '0.775rem', fontWeight: '700', textDecoration: 'none',
+                    }}
+                  >
+                    {code}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

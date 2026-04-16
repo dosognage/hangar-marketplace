@@ -35,10 +35,19 @@ export async function saveBrokerProfile(
   const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
   if (!brokerProfileId) return { error: 'Broker profile not found.' }
 
-  const phone         = (formData.get('phone')         as string | null)?.trim() ?? ''
-  const contact_email = (formData.get('contact_email') as string | null)?.trim() ?? ''
-  const website       = (formData.get('website')       as string | null)?.trim() ?? ''
-  const bio           = (formData.get('bio')           as string | null)?.trim() ?? ''
+  const phone              = (formData.get('phone')              as string | null)?.trim() ?? ''
+  const contact_email      = (formData.get('contact_email')      as string | null)?.trim() ?? ''
+  const website            = (formData.get('website')            as string | null)?.trim() ?? ''
+  const bio                = (formData.get('bio')                as string | null)?.trim() ?? ''
+  const license_number     = (formData.get('license_number')     as string | null)?.trim() ?? ''
+  const specialty_airports_raw = (formData.get('specialty_airports') as string | null)?.trim() ?? ''
+
+  // Parse specialty airports — comma-separated ICAO codes, uppercase, max 10
+  const specialty_airports = specialty_airports_raw
+    .split(',')
+    .map(s => s.trim().toUpperCase())
+    .filter(s => /^[A-Z0-9]{2,5}$/.test(s))
+    .slice(0, 10)
 
   // Basic email format check
   if (contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact_email)) {
@@ -48,10 +57,12 @@ export async function saveBrokerProfile(
   const { error: updateError } = await supabaseAdmin
     .from('broker_profiles')
     .update({
-      phone:         phone         || null,
-      contact_email: contact_email || null,
-      website:       website       || null,
-      bio:           bio           || null,
+      phone:              phone              || null,
+      contact_email:      contact_email      || null,
+      website:            website            || null,
+      bio:                bio                || null,
+      license_number:     license_number     || null,
+      specialty_airports: specialty_airports,
     })
     .eq('id', brokerProfileId)
 

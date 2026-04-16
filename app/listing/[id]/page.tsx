@@ -344,6 +344,25 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
               initialSaved={initialSaved}
             />
             <ShareButton title={typedListing.title} listingId={typedListing.id} />
+            <a
+              href={`/listing/${typedListing.id}/print`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Print or save as PDF"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.35rem 0.85rem',
+                border: '1px solid #d1d5db', borderRadius: '6px',
+                backgroundColor: 'white', color: '#374151',
+                fontSize: '0.825rem', fontWeight: '500', textDecoration: 'none',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="8"/>
+              </svg>
+              Print
+            </a>
           </div>
         </div>
       </div>

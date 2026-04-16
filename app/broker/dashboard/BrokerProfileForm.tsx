@@ -4,11 +4,14 @@ import { useActionState } from 'react'
 import { saveBrokerProfile, type BrokerProfileState } from '@/app/actions/broker'
 
 interface Props {
-  profileId:        string
-  currentPhone:     string | null
-  currentEmail:     string | null
-  currentWebsite:   string | null
-  currentBio:       string | null
+  profileId:               string
+  currentPhone:            string | null
+  currentEmail:            string | null
+  currentWebsite:          string | null
+  currentBio:              string | null
+  currentLicenseNumber:    string | null
+  currentSpecialtyAirports: string[]
+  isVerified:              boolean
 }
 
 const INITIAL: BrokerProfileState = {}
@@ -41,6 +44,9 @@ export default function BrokerProfileForm({
   currentEmail,
   currentWebsite,
   currentBio,
+  currentLicenseNumber,
+  currentSpecialtyAirports,
+  isVerified,
 }: Props) {
   const [state, action, isPending] = useActionState(saveBrokerProfile, INITIAL)
 
@@ -130,6 +136,43 @@ export default function BrokerProfileForm({
             placeholder="Tell buyers a bit about your experience, focus areas, or specialties…"
             style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6 }}
           />
+        </div>
+
+        {/* License number */}
+        <div>
+          <label htmlFor="bp-license" style={labelStyle}>
+            Real Estate License #
+            {isVerified && (
+              <span style={{ marginLeft: '0.4rem', color: '#2563eb', fontWeight: '700' }}>✓ Verified</span>
+            )}
+          </label>
+          <input
+            id="bp-license"
+            name="license_number"
+            type="text"
+            defaultValue={currentLicenseNumber ?? ''}
+            placeholder="e.g. SA12345"
+            style={inputStyle}
+          />
+          <p style={{ margin: '0.3rem 0 0', fontSize: '0.72rem', color: '#9ca3af' }}>
+            Submitted for verification — displays a Verified badge on your profile once approved
+          </p>
+        </div>
+
+        {/* Specialty airports */}
+        <div>
+          <label htmlFor="bp-airports" style={labelStyle}>Specialty Airports</label>
+          <input
+            id="bp-airports"
+            name="specialty_airports"
+            type="text"
+            defaultValue={currentSpecialtyAirports.join(', ')}
+            placeholder="KBFI, KPAE, KSEA"
+            style={inputStyle}
+          />
+          <p style={{ margin: '0.3rem 0 0', fontSize: '0.72rem', color: '#9ca3af' }}>
+            Comma-separated ICAO codes for your primary markets (up to 10)
+          </p>
         </div>
       </div>
 

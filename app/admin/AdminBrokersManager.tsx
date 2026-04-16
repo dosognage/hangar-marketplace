@@ -4,20 +4,37 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 export type AdminBrokerProfile = {
-  id:            string
-  user_id:       string | null
-  full_name:     string
-  brokerage:     string
-  license_state: string
-  is_hidden:     boolean
-  avatar_url:    string | null
-  created_at:    string
-  listing_count: number
+  id:             string
+  user_id:        string | null
+  full_name:      string
+  brokerage:      string
+  license_state:  string
+  license_number: string | null
+  is_hidden:      boolean
+  is_verified:    boolean
+  avatar_url:     string | null
+  created_at:     string
+  listing_count:  number
 }
 
 export default function AdminBrokersManager({ brokers: initial }: { brokers: AdminBrokerProfile[] }) {
   const [brokers, setBrokers] = useState<AdminBrokerProfile[]>(initial)
   const [loading, setLoading] = useState<Record<string, boolean>>({})
+
+  async function toggleVerified(profile: AdminBrokerProfile) {
+    setLoading(prev => ({ ...prev, [`v_${profile.id}`]: true }))
+    const res = await fetch('/api/admin/broker-profiles', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: profile.id, is_verified: !profile.is_verified }),
+    })
+    if (res.ok) {
+      setBrokers(prev =>
+        prev.map(b => b.id === profile.id ? { ...b, is_verified: !b.is_verified } : b)
+      )
+    }
+    setLoading(prev => ({ ...prev, [`v_${profile.id}`]: false }))
+  }
 
   async function toggleVisibility(profile: AdminBrokerProfile) {
     setLoading(prev => ({ ...prev, [profile.id]: true }))
@@ -90,6 +107,16 @@ export default function AdminBrokersManager({ brokers: initial }: { brokers: Adm
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: '600', fontSize: '0.9rem', color: '#111827' }}>{broker.full_name}</span>
+                    {broker.is_verified && (
+                      <span style={{
+                        fontSize: '0.68rem', fontWeight: '700',
+                        backgroundColor: '#dbeafe', color: '#1e40af',
+                        border: '1px solid #bfdbfe', borderRadius: '4px',
+                        padding: '0.1rem 0.4rem',
+                      }}>
+                        VERIFIED
+                      </span>
+                    )}
                     {broker.is_hidden && (
                       <span style={{
                         fontSize: '0.68rem', fontWeight: '700',
@@ -103,6 +130,7 @@ export default function AdminBrokersManager({ brokers: initial }: { brokers: Adm
                   </div>
                   <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>
                     {broker.brokerage} · Licensed in {broker.license_state}
+                    {broker.license_number && ` · #${broker.license_number}`}
                     {broker.listing_count > 0 && ` · ${broker.listing_count} listing${broker.listing_count !== 1 ? 's' : ''}`}
                   </p>
                 </div>
@@ -124,6 +152,22 @@ export default function AdminBrokersManager({ brokers: initial }: { brokers: Adm
                 >
                   View ↗
                 </Link>
+                <button
+                  disabled={!!loading[`v_${broker.id}`]}
+                  onClick={() => toggleVerified(broker)}
+                  title={broker.is_verified ? 'Remove verification' : `Verify${broker.license_number ? ` (License: #${broker.license_number})` : ''}`}
+                  style={{
+                    fontSize: '0.78rem', fontWeight: '600',
+                    padding: '0.3rem 0.7rem', borderRadius: '6px',
+                    cursor: loading[`v_${broker.id}`] ? 'not-allowed' : 'pointer',
+                    border: broker.is_verified ? '1px solid #bfdbfe' : '1px solid #d1d5db',
+                    backgroundColor: broker.is_verified ? '#dbeafe' : '#f9fafb',
+                    color: broker.is_verified ? '#1e40af' : '#374151',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {broker.is_verified ? '✓ Verified' : 'Verify'}
+                </button>
                 <button
                   disabled={isLoading}
                   onClick={() => toggleVisibility(broker)}

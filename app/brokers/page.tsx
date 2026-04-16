@@ -24,6 +24,8 @@ type BrokerProfile = {
   avatar_url: string | null
   bio: string | null
   created_at: string
+  is_verified: boolean
+  specialty_airports: string[]
   listings: { id: string; status: string }[]
 }
 
@@ -56,7 +58,7 @@ export default async function BrokersPage({ searchParams }: PageProps) {
   // Fetch all visible broker profiles with their listings (for active count)
   let query = supabase
     .from('broker_profiles')
-    .select('id, user_id, full_name, brokerage, license_state, avatar_url, bio, created_at, listings(id, status)')
+    .select('id, user_id, full_name, brokerage, license_state, avatar_url, bio, created_at, is_verified, specialty_airports, listings(id, status)')
     .eq('is_hidden', false)
     .order('created_at', { ascending: false })
 
@@ -139,6 +141,50 @@ export default async function BrokersPage({ searchParams }: PageProps) {
           </a>
         )}
       </form>
+
+      {/* Founding member spotlight — shown when no search active */}
+      {!qVal && !stateVal && brokers.some(b => b.is_verified) && (
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.85rem' }}>
+            <span style={{
+              padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.7rem',
+              fontWeight: '800', backgroundColor: '#1a3a5c', color: 'white',
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+            }}>Founding Members</span>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: '#9ca3af' }}>
+              Our first verified aviation brokers
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {brokers.filter(b => b.is_verified).map(b => (
+              <Link key={b.id} href={`/broker/${b.id}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.6rem',
+                  padding: '0.6rem 1rem',
+                  backgroundColor: 'white', border: '1px solid #dbeafe',
+                  borderRadius: '999px', textDecoration: 'none',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                }}
+              >
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  backgroundColor: '#1a3a5c', overflow: 'hidden', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'white', fontSize: '0.75rem', fontWeight: '700',
+                }}>
+                  {b.avatar_url
+                    ? <img src={b.avatar_url} alt={b.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : b.full_name.charAt(0)}
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: '700', color: '#1e40af' }}>{b.full_name}</p>
+                  <p style={{ margin: 0, fontSize: '0.7rem', color: '#6b7280' }}>{b.brokerage}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Result count */}
       <p style={{ margin: '0 0 1.25rem', fontSize: '0.85rem', color: '#6b7280' }}>
@@ -223,19 +269,21 @@ export default async function BrokersPage({ searchParams }: PageProps) {
                         }}>
                           {broker.full_name}
                         </span>
-                        {/* Verified badge */}
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
-                          padding: '0.1rem 0.45rem', borderRadius: '999px',
-                          fontSize: '0.62rem', fontWeight: '700',
-                          backgroundColor: '#dbeafe', color: '#1e40af',
-                          border: '1px solid #bfdbfe', whiteSpace: 'nowrap',
-                        }}>
-                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                            <path d="M20 6L9 17l-5-5"/>
-                          </svg>
-                          Verified
-                        </span>
+                        {/* Verified badge — only if verified */}
+                        {broker.is_verified && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                            padding: '0.1rem 0.45rem', borderRadius: '999px',
+                            fontSize: '0.62rem', fontWeight: '700',
+                            backgroundColor: '#dbeafe', color: '#1e40af',
+                            border: '1px solid #bfdbfe', whiteSpace: 'nowrap',
+                          }}>
+                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                            Verified
+                          </span>
+                        )}
                       </div>
                       <p style={{ margin: '0.1rem 0 0', fontSize: '0.8rem', color: '#6b7280', lineHeight: 1.3 }}>
                         {broker.brokerage}
@@ -258,6 +306,19 @@ export default async function BrokersPage({ searchParams }: PageProps) {
                       {broker.bio}
                     </p>
                   </Link>
+                )}
+
+                {/* Specialty airports */}
+                {broker.specialty_airports?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                    {broker.specialty_airports.slice(0, 5).map(code => (
+                      <span key={code} style={{
+                        padding: '0.15rem 0.5rem', borderRadius: '999px', fontSize: '0.68rem',
+                        fontWeight: '700', backgroundColor: '#eff6ff', color: '#1d4ed8',
+                        border: '1px solid #bfdbfe',
+                      }}>{code}</span>
+                    ))}
+                  </div>
                 )}
 
                 {/* Footer: state + listing count + message */}

@@ -37,6 +37,7 @@ type SearchFiltersProps = {
   initialMinSqft?: string
   initialRadius?: string
   initialMinRunway?: string
+  initialBrokerOnly?: string
 }
 
 export default function SearchFilters({
@@ -47,6 +48,7 @@ export default function SearchFilters({
   initialMinSqft = '',
   initialRadius = '',
   initialMinRunway = '',
+  initialBrokerOnly = '',
 }: SearchFiltersProps) {
   const router = useRouter()
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -149,7 +151,7 @@ export default function SearchFilters({
   }
 
   // Count active filters (excluding the main search query)
-  const activeFilterCount = [initialType, initialMinPrice, initialMaxPrice, initialMinSqft, initialRadius, initialMinRunway]
+  const activeFilterCount = [initialType, initialMinPrice, initialMaxPrice, initialMinSqft, initialRadius, initialMinRunway, initialBrokerOnly]
     .filter(Boolean).length
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -165,6 +167,7 @@ export default function SearchFilters({
     const minSqft    = (data.get('minSqft') as string)?.trim()
     const radius     = data.get('radius') as string
     const minRunway  = data.get('minRunway') as string
+    const brokerOnly = data.get('brokerOnly') as string
 
     if (q)          params.set('q', q)
     if (type)       params.set('type', type)
@@ -173,6 +176,7 @@ export default function SearchFilters({
     if (minSqft)    params.set('minSqft', minSqft)
     if (radius && q) params.set('radius', radius)
     if (minRunway)  params.set('minRunway', minRunway)
+    if (brokerOnly) params.set('brokerOnly', '1')
 
     const qs = params.toString()
     router.push(qs ? `/?${qs}` : '/', { scroll: false })
@@ -188,7 +192,7 @@ export default function SearchFilters({
     setFiltersOpen(false)
   }
 
-  const hasAnyFilter = Boolean(initialQ || initialType || initialMinPrice || initialMaxPrice || initialMinSqft || initialRadius || initialMinRunway)
+  const hasAnyFilter = Boolean(initialQ || initialType || initialMinPrice || initialMaxPrice || initialMinSqft || initialRadius || initialMinRunway || initialBrokerOnly)
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} style={wrapperStyle}>
@@ -407,6 +411,25 @@ export default function SearchFilters({
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+        </div>
+
+        {/* Broker-only listings */}
+        <div style={{ ...fieldGroupStyle, gridColumn: '1 / -1' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              name="brokerOnly"
+              value="1"
+              defaultChecked={initialBrokerOnly === '1'}
+              style={{ width: '16px', height: '16px', accentColor: '#1a3a5c', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '0.825rem', fontWeight: '600', color: '#374151' }}>
+              Broker-represented listings only
+            </span>
+          </label>
+          <p style={{ margin: '0.2rem 0 0 1.6rem', fontSize: '0.72rem', color: '#9ca3af' }}>
+            Only show listings posted by a verified aviation broker
+          </p>
         </div>
 
         {/* Mobile-only: Apply button inside the filter panel */}

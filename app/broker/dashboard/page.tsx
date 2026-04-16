@@ -429,6 +429,9 @@ export default async function BrokerDashboardPage() {
           currentEmail={(profile as { contact_email?: string | null }).contact_email ?? null}
           currentWebsite={profile.website ?? null}
           currentBio={profile.bio ?? null}
+          currentLicenseNumber={(profile as { license_number?: string | null }).license_number ?? null}
+          currentSpecialtyAirports={(profile as { specialty_airports?: string[] }).specialty_airports ?? []}
+          isVerified={(profile as { is_verified?: boolean }).is_verified ?? false}
         />
       </div>
     </div>

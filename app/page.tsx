@@ -57,7 +57,7 @@ type HomePageProps = {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 export default async function HomePage({ searchParams }: HomePageProps) {
-  const { q, type, minPrice, maxPrice, minSqft, radius, minRunway } = await searchParams
+  const { q, type, minPrice, maxPrice, minSqft, radius, minRunway, brokerOnly } = await searchParams
 
   // Get logged-in user + their saved listing IDs (server-side, cookie auth)
   const serverSupabase = await createServerClient()
@@ -81,6 +81,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const minSqftVal    = str(minSqft)
   const radiusVal     = str(radius)
   const minRunwayVal  = str(minRunway)
+  const brokerOnlyVal = str(brokerOnly)
+
+  // Fetch featured brokers for spotlight (approved, with bio or avatar)
+  const { data: featuredBrokers } = await supabase
+    .from('broker_profiles')
+    .select('id, full_name, brokerage, avatar_url, bio, specialty_airports, is_verified')
+    .eq('status', 'approved')
+    .order('created_at', { ascending: true })
+    .limit(6)
 
   // ── Radius geocoding ────────────────────────────────────────────────────
   // When a radius is requested, geocode the search query to a lat/lng center.
@@ -117,6 +126,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const minRw = parseFloat(minRunwayVal)
   if (!isNaN(minRw) && minRw > 0) query = query.gte('runway_length_ft', minRw)
+  if (brokerOnlyVal === '1') query = query.not('broker_profile_id', 'is', null)
 
   let { data: listings, error } = await query
 
@@ -188,6 +198,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             initialMinSqft={minSqftVal}
             initialRadius={radiusVal}
             initialMinRunway={minRunwayVal}
+            initialBrokerOnly={brokerOnlyVal}
           />
         </Suspense>
         <SaveSearchWidget
