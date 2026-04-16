@@ -97,8 +97,89 @@ export default async function BrokerDashboardPage() {
     rejected: { label: 'Rejected',       color: '#991b1b', bg: '#fee2e2' },
   }
 
+  // ── Setup progress (for banner) ─────────────────────────────────────────────
+  const airports = (profile as { specialty_airports?: string[] }).specialty_airports ?? []
+  const bio      = (profile as { bio?: string }).bio ?? ''
+  const radius   = (profile as { alert_radius_miles?: number }).alert_radius_miles ?? 0
+  const setupChecks = [
+    !!profile.avatar_url,
+    !!(profile.brokerage && profile.phone && (profile as { contact_email?: string }).contact_email),
+    bio.trim().length > 10,
+    airports.length > 0,
+    radius > 0,
+    safeListings.length > 0,
+  ]
+  const setupDone  = setupChecks.filter(Boolean).length
+  const setupTotal = setupChecks.length
+  const setupPct   = Math.round((setupDone / setupTotal) * 100)
+  const setupComplete = setupDone === setupTotal
+
   return (
     <div>
+      {/* ── Setup progress banner ── */}
+      {!setupComplete && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          padding: '0.9rem 1.25rem',
+          marginBottom: '1.25rem',
+          backgroundColor: 'white',
+          border: '1px solid #dbeafe',
+          borderRadius: '12px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          flexWrap: 'wrap',
+        }}>
+          {/* Progress ring visual */}
+          <div style={{ position: 'relative', flexShrink: 0, width: '44px', height: '44px' }}>
+            <svg width="44" height="44" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="18" fill="none" stroke="#e0e7ff" strokeWidth="4"/>
+              <circle
+                cx="22" cy="22" r="18" fill="none"
+                stroke="#3b82f6" strokeWidth="4"
+                strokeDasharray={`${2 * Math.PI * 18}`}
+                strokeDashoffset={`${2 * Math.PI * 18 * (1 - setupPct / 100)}`}
+                strokeLinecap="round"
+                transform="rotate(-90 22 22)"
+              />
+            </svg>
+            <span style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.65rem', fontWeight: '800', color: '#1d4ed8',
+            }}>
+              {setupPct}%
+            </span>
+          </div>
+
+          <div style={{ flex: 1, minWidth: '160px' }}>
+            <p style={{ margin: '0 0 0.15rem', fontSize: '0.875rem', fontWeight: '700', color: '#111827' }}>
+              Complete your broker setup — {setupDone}/{setupTotal} steps done
+            </p>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>
+              Finish setting up your profile so pilots can find you and you start receiving request alerts.
+            </p>
+          </div>
+
+          <a
+            href="/broker/dashboard/setup"
+            style={{
+              flexShrink: 0,
+              padding: '0.45rem 1rem',
+              backgroundColor: '#1a3a5c',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '7px',
+              fontSize: '0.8rem',
+              fontWeight: '600',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Continue setup →
+          </a>
+        </div>
+      )}
+
       {/* Hero header */}
       <div style={{
         background: 'linear-gradient(135deg, #1a3a5c 0%, #1e40af 100%)',
