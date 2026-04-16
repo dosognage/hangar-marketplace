@@ -1,7 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { saveBrokerProfile, type BrokerProfileState } from '@/app/actions/broker'
+import { useToast } from '@/app/components/ToastProvider'
 
 interface Props {
   profileId:               string
@@ -62,39 +63,17 @@ export default function BrokerProfileForm({
   currentAlertRadius,
   isVerified,
 }: Props) {
+  const { addToast } = useToast()
   const [state, action, isPending] = useActionState(saveBrokerProfile, INITIAL)
+
+  // Fire toast whenever the action resolves with a result
+  useEffect(() => {
+    if (state.success) addToast(state.success, 'success')
+    if (state.error)   addToast(state.error,   'error')
+  }, [state])
 
   return (
     <form action={action}>
-      {/* Success / error banner */}
-      {state.success && (
-        <div style={{
-          marginBottom: '1rem',
-          padding: '0.65rem 0.9rem',
-          borderRadius: '7px',
-          backgroundColor: '#f0fdf4',
-          border: '1px solid #bbf7d0',
-          color: '#166534',
-          fontSize: '0.85rem',
-          fontWeight: '500',
-        }}>
-          ✓ {state.success}
-        </div>
-      )}
-      {state.error && (
-        <div style={{
-          marginBottom: '1rem',
-          padding: '0.65rem 0.9rem',
-          borderRadius: '7px',
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
-          fontSize: '0.85rem',
-          fontWeight: '500',
-        }}>
-          {state.error}
-        </div>
-      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
         {/* Company / Brokerage name — full width */}
