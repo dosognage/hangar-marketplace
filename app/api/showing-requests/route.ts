@@ -39,13 +39,14 @@ export async function POST(req: Request) {
 
   // Create in-app notification for the broker
   if (broker?.user_id) {
-    await supabaseAdmin.from('notifications').insert({
+    const { error: notifErr } = await supabaseAdmin.from('notifications').insert({
       user_id: broker.user_id,
       type: 'showing_request',
       title: 'New showing request',
       body: `${requester_name} wants to schedule a showing${listing_id ? ' of your listing' : ''}.`,
       link: '/broker/dashboard',
-    }).catch(err => console.error('[showing-requests] notification insert:', err))
+    })
+    if (notifErr) console.error('[showing-requests] notification insert:', notifErr)
   }
 
   const brokerEmail = broker?.contact_email
