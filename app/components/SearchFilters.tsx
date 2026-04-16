@@ -413,23 +413,29 @@ export default function SearchFilters({
           </select>
         </div>
 
-        {/* Broker-only listings */}
-        <div style={{ ...fieldGroupStyle, gridColumn: '1 / -1' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+        {/* Broker-only listings — compact inline toggle */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '1px' }}>
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: '0.45rem',
+            cursor: 'pointer', whiteSpace: 'nowrap',
+            padding: '0 0.75rem',
+            height: '40px',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            backgroundColor: '#f9fafb',
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            color: '#374151',
+          }}>
             <input
               type="checkbox"
               name="brokerOnly"
               value="1"
               defaultChecked={initialBrokerOnly === '1'}
-              style={{ width: '16px', height: '16px', accentColor: '#1a3a5c', cursor: 'pointer' }}
+              style={{ width: '14px', height: '14px', accentColor: '#1a3a5c', cursor: 'pointer', flexShrink: 0 }}
             />
-            <span style={{ fontSize: '0.825rem', fontWeight: '600', color: '#374151' }}>
-              Broker-represented listings only
-            </span>
+            Broker listings only
           </label>
-          <p style={{ margin: '0.2rem 0 0 1.6rem', fontSize: '0.72rem', color: '#9ca3af' }}>
-            Only show listings posted by a verified aviation broker
-          </p>
         </div>
 
         {/* Mobile-only: Apply button inside the filter panel */}
