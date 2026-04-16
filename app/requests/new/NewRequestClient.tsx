@@ -7,6 +7,7 @@ import AircraftAutocomplete from '@/app/components/AircraftAutocomplete'
 import type { AircraftSpec } from '@/lib/aircraft-data'
 import AirportAutocomplete from '@/app/components/AirportAutocomplete'
 import type { AirportSuggestion } from '@/app/components/AirportAutocomplete'
+import DatePicker from '@/app/components/DatePicker'
 
 const EMPTY = {
   contact_name:    '',
@@ -300,8 +301,12 @@ function NewRequestForm() {
             </Field>
           </TwoCol>
           <Field label="Desired move-in date">
-            <input name="move_in_date" type="date" value={form.move_in_date}
-              onChange={handleChange} style={inputStyle} />
+            <DatePicker
+              name="move_in_date"
+              value={form.move_in_date}
+              onChange={handleChange}
+              placeholder="Select a date"
+            />
           </Field>
         </Section>
 

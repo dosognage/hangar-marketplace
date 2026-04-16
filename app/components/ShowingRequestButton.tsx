@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useToast } from './ToastProvider'
+import DatePicker from './DatePicker'
 
 type Props = {
   brokerProfileId: string
@@ -120,8 +121,12 @@ export default function ShowingRequestButton({ brokerProfileId, brokerName, list
                 </div>
                 <div>
                   <label style={labelStyle}>Preferred date</label>
-                  <input name="preferred_date" type="date" value={form.preferred_date} onChange={handleChange}
-                    style={inputStyle} />
+                  <DatePicker
+                    name="preferred_date"
+                    value={form.preferred_date}
+                    onChange={handleChange}
+                    placeholder="Select a date"
+                  />
                 </div>
               </div>
 
