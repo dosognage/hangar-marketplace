@@ -49,12 +49,12 @@ export async function POST(req: Request) {
     if (notifErr) console.error('[showing-requests] notification insert:', notifErr)
   }
 
+  const dateStr = preferred_date
+    ? new Date(preferred_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    : 'Flexible'
+
   const brokerEmail = broker?.contact_email
   if (brokerEmail) {
-    const dateStr = preferred_date
-      ? new Date(preferred_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-      : 'Flexible'
-
     await sendEmail({
       to: brokerEmail,
       subject: `Showing request from ${requester_name} — Hangar Marketplace`,
@@ -98,6 +98,55 @@ export async function POST(req: Request) {
 </html>`,
     })
   }
+
+  // Send confirmation email to the requester
+  await sendEmail({
+    to: requester_email,
+    subject: `Your showing request was received — Hangar Marketplace`,
+    html: `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:white;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <tr><td style="background:#1a3a5c;padding:24px 40px;">
+          <p style="margin:0;color:white;font-size:20px;font-weight:700;">✈ Hangar Marketplace</p>
+          <p style="margin:3px 0 0;color:#93c5fd;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">Aviation Properties</p>
+        </td></tr>
+        <tr><td style="padding:36px 40px;">
+          <h1 style="margin:0 0 8px;font-size:20px;color:#111827;">We've received your showing request!</h1>
+          <p style="margin:0 0 24px;color:#6b7280;font-size:14px;">
+            Hi ${requester_name}, your request has been sent to ${broker?.full_name ?? 'the broker'}.
+            They'll be in touch with you shortly to confirm a time.
+          </p>
+
+          <table style="width:100%;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+            <tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Broker</td><td style="padding:10px 16px;font-size:14px;color:#111827;">${broker?.full_name ?? '—'}</td></tr>
+            <tr><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Preferred date</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#111827;">${dateStr}</td></tr>
+            ${preferred_time ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Preferred time</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#111827;">${preferred_time}</td></tr>` : ''}
+            ${message ? `<tr><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Your message</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#374151;">${message}</td></tr>` : ''}
+          </table>
+
+          <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.6;">
+            Questions? You can reach the broker directly${broker?.contact_email ? ` at <a href="mailto:${broker.contact_email}" style="color:#2563eb;">${broker.contact_email}</a>` : ''}${broker?.phone ? ` or by phone at <a href="tel:${broker.phone}" style="color:#2563eb;">${broker.phone}</a>` : ''}.
+          </p>
+
+          <a href="https://hangarmarketplace.com" style="display:inline-block;padding:11px 26px;background:#1a3a5c;color:white;text-decoration:none;border-radius:7px;font-size:14px;font-weight:600;">
+            Browse more listings →
+          </a>
+        </td></tr>
+        <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">
+            <a href="https://hangarmarketplace.com" style="color:#9ca3af;">hangarmarketplace.com</a>
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  })
 
   return NextResponse.json({ success: true })
 }
