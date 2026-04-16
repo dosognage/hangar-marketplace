@@ -5,6 +5,7 @@ import { saveBrokerProfile, type BrokerProfileState } from '@/app/actions/broker
 
 interface Props {
   profileId:               string
+  currentBrokerage:        string | null
   currentPhone:            string | null
   currentEmail:            string | null
   currentWebsite:          string | null
@@ -40,6 +41,7 @@ const inputStyle: React.CSSProperties = {
 
 export default function BrokerProfileForm({
   profileId,
+  currentBrokerage,
   currentPhone,
   currentEmail,
   currentWebsite,
@@ -83,6 +85,19 @@ export default function BrokerProfileForm({
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        {/* Company / Brokerage name — full width */}
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label htmlFor="bp-brokerage" style={labelStyle}>Company Name</label>
+          <input
+            id="bp-brokerage"
+            name="brokerage"
+            type="text"
+            defaultValue={currentBrokerage ?? ''}
+            placeholder="e.g. Seitz Aviation"
+            style={inputStyle}
+          />
+        </div>
+
         {/* Phone */}
         <div>
           <label htmlFor="bp-phone" style={labelStyle}>Phone</label>

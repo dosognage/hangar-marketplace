@@ -425,6 +425,7 @@ export default async function BrokerDashboardPage() {
 
         <BrokerProfileForm
           profileId={profile.id}
+          currentBrokerage={profile.brokerage ?? null}
           currentPhone={profile.phone ?? null}
           currentEmail={(profile as { contact_email?: string | null }).contact_email ?? null}
           currentWebsite={profile.website ?? null}

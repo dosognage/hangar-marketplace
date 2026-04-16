@@ -35,6 +35,7 @@ export async function saveBrokerProfile(
   const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
   if (!brokerProfileId) return { error: 'Broker profile not found.' }
 
+  const brokerage          = (formData.get('brokerage')          as string | null)?.trim() ?? ''
   const phone              = (formData.get('phone')              as string | null)?.trim() ?? ''
   const contact_email      = (formData.get('contact_email')      as string | null)?.trim() ?? ''
   const website            = (formData.get('website')            as string | null)?.trim() ?? ''
@@ -57,6 +58,7 @@ export async function saveBrokerProfile(
   const { error: updateError } = await supabaseAdmin
     .from('broker_profiles')
     .update({
+      brokerage:          brokerage          || null,
       phone:              phone              || null,
       contact_email:      contact_email      || null,
       website:            website            || null,
