@@ -5,6 +5,7 @@ export type NotificationType =
   | 'listing_approved'
   | 'listing_rejected'
   | 'broker_approved'
+  | 'broker_request_alert'
 
 export async function createNotification({
   userId,

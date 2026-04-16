@@ -5,6 +5,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { sendEmail, brokerApprovedEmail, brokerRejectedEmail } from '@/lib/email'
 import { createNotification } from '@/lib/notifications'
+import { geocodeLocation } from '@/lib/geocode'
 
 function isAdmin(email: string | undefined): boolean {
   const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
@@ -36,6 +37,7 @@ export async function saveBrokerProfile(
   if (!brokerProfileId) return { error: 'Broker profile not found.' }
 
   const brokerage          = (formData.get('brokerage')          as string | null)?.trim() ?? ''
+  const alert_radius_miles = parseInt((formData.get('alert_radius_miles') as string | null) ?? '100', 10) || 0
   const phone              = (formData.get('phone')              as string | null)?.trim() ?? ''
   const contact_email      = (formData.get('contact_email')      as string | null)?.trim() ?? ''
   const website            = (formData.get('website')            as string | null)?.trim() ?? ''
@@ -58,21 +60,48 @@ export async function saveBrokerProfile(
   const { error: updateError } = await supabaseAdmin
     .from('broker_profiles')
     .update({
-      brokerage:          brokerage          || null,
-      phone:              phone              || null,
-      contact_email:      contact_email      || null,
-      website:            website            || null,
-      bio:                bio                || null,
-      license_number:     license_number     || null,
-      specialty_airports: specialty_airports,
+      brokerage:           brokerage           || null,
+      phone:               phone               || null,
+      contact_email:       contact_email       || null,
+      website:             website             || null,
+      bio:                 bio                 || null,
+      license_number:      license_number      || null,
+      specialty_airports:  specialty_airports,
+      alert_radius_miles:  alert_radius_miles,
     })
     .eq('id', brokerProfileId)
 
   if (updateError) return { error: 'Failed to save: ' + updateError.message }
 
+  // Geocode specialty airports in the background and cache their coords.
+  // Fire-and-forget — don't block the response.
+  if (specialty_airports.length > 0) {
+    void cacheAirportCoords(brokerProfileId, specialty_airports)
+  }
+
   revalidatePath('/broker/dashboard')
   revalidatePath(`/broker/${brokerProfileId}`)
   return { success: 'Profile updated successfully.' }
+}
+
+/**
+ * Geocode each ICAO code in the list and persist the results as a JSONB object
+ * on the broker's profile. Respects Nominatim's 1 req/sec rate limit.
+ * Called fire-and-forget from saveBrokerProfile.
+ */
+async function cacheAirportCoords(brokerProfileId: string, icaoCodes: string[]) {
+  const coords: Record<string, { lat: number; lng: number }> = {}
+  for (const code of icaoCodes) {
+    const geo = await geocodeLocation(code)
+    if (geo) coords[code] = { lat: geo.lat, lng: geo.lng }
+    // Nominatim rate-limit: wait 1.1 seconds between requests
+    await new Promise(r => setTimeout(r, 1100))
+  }
+  if (Object.keys(coords).length === 0) return
+  await supabaseAdmin
+    .from('broker_profiles')
+    .update({ specialty_airports_coords: coords })
+    .eq('id', brokerProfileId)
 }
 
 /**

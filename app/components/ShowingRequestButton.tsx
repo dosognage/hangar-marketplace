@@ -20,7 +20,10 @@ export default function ShowingRequestButton({ brokerProfileId, brokerName, list
     name: '', email: '', phone: '', preferred_date: '', preferred_time: '', message: '',
   })
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+      | { target: { name: string; value: string } }
+  ) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 

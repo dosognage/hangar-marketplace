@@ -12,8 +12,19 @@ interface Props {
   currentBio:              string | null
   currentLicenseNumber:    string | null
   currentSpecialtyAirports: string[]
+  currentAlertRadius:      number
   isVerified:              boolean
 }
+
+const RADIUS_OPTIONS = [
+  { value: '0',    label: 'Off — no email alerts' },
+  { value: '25',   label: 'Within 25 miles' },
+  { value: '50',   label: 'Within 50 miles' },
+  { value: '100',  label: 'Within 100 miles' },
+  { value: '250',  label: 'Within 250 miles' },
+  { value: '500',  label: 'Within 500 miles' },
+  { value: '9999', label: 'Any distance' },
+]
 
 const INITIAL: BrokerProfileState = {}
 
@@ -48,6 +59,7 @@ export default function BrokerProfileForm({
   currentBio,
   currentLicenseNumber,
   currentSpecialtyAirports,
+  currentAlertRadius,
   isVerified,
 }: Props) {
   const [state, action, isPending] = useActionState(saveBrokerProfile, INITIAL)
@@ -188,6 +200,44 @@ export default function BrokerProfileForm({
           <p style={{ margin: '0.3rem 0 0', fontSize: '0.72rem', color: '#9ca3af' }}>
             Comma-separated ICAO codes for your primary markets (up to 10)
           </p>
+        </div>
+      </div>
+
+      {/* ── Notification Settings ────────────────────────────── */}
+      <div style={{
+        marginTop: '1.5rem',
+        padding: '1rem 1.25rem',
+        border: '1px solid #e5e7eb',
+        borderRadius: '9px',
+        backgroundColor: '#f9fafb',
+      }}>
+        <p style={{
+          margin: '0 0 0.75rem',
+          fontSize: '0.75rem',
+          fontWeight: '700',
+          color: '#374151',
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+        }}>
+          Notification Settings
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', alignItems: 'start' }}>
+          <div>
+            <label htmlFor="bp-alert-radius" style={labelStyle}>Hangar request alerts</label>
+            <select
+              id="bp-alert-radius"
+              name="alert_radius_miles"
+              defaultValue={String(currentAlertRadius)}
+              style={inputStyle}
+            >
+              {RADIUS_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <p style={{ margin: '0.3rem 0 0', fontSize: '0.72rem', color: '#9ca3af' }}>
+              Get emailed + notified when a pilot posts a request within this radius of any of your specialty airports.
+            </p>
+          </div>
         </div>
       </div>
 

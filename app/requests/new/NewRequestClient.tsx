@@ -41,6 +41,7 @@ function NewRequestForm() {
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+      | { target: { name: string; value: string } }
   ) {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
