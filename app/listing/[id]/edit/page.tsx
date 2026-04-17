@@ -10,6 +10,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import EditListingForm from './EditListingForm'
+import EditPhotoManager from './EditPhotoManager'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,10 +24,10 @@ export default async function EditListingPage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/login?next=/listing/${id}/edit`)
 
-  // Fetch listing via admin client to bypass RLS for broker-profile listings
+  // Fetch listing + photos via admin client to bypass RLS
   const { data: listing, error } = await supabaseAdmin
     .from('listings')
-    .select('*')
+    .select('*, listing_photos(id, storage_path, display_order)')
     .eq('id', id)
     .single()
 
@@ -41,5 +42,14 @@ export default async function EditListingPage({ params }: PageProps) {
     redirect('/broker/dashboard')
   }
 
-  return <EditListingForm listing={listing} />
+  const photos = (listing.listing_photos ?? []) as { id: string; storage_path: string; display_order: number }[]
+
+  return (
+    <div style={{ maxWidth: '700px' }}>
+      <EditPhotoManager listingId={id} initialPhotos={photos} />
+      <div style={{ marginTop: '1.25rem' }}>
+        <EditListingForm listing={listing} />
+      </div>
+    </div>
+  )
 }

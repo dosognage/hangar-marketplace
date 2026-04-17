@@ -8,10 +8,11 @@
  * Saving resets the listing to "pending" for admin review.
  */
 
-import { useState, useActionState } from 'react'
+import { useState, useActionState, useRef } from 'react'
 import Link from 'next/link'
 import { updateListing, type UpdateState } from '@/app/actions/listings'
 import FeetInchesInput from '@/app/components/FeetInchesInput'
+import AirportAutocomplete, { type AirportSuggestion } from '@/app/components/AirportAutocomplete'
 
 const SURFACE_OPTIONS = [
   'Asphalt', 'Asphalt (grooved)', 'Concrete', 'Asphalt/Concrete',
@@ -56,28 +57,97 @@ type Listing = {
   contact_name: string
   contact_email: string
   contact_phone: string | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
 }
+
+const stateAbbr = (region: string | null) => region ? region.replace('US-', '') : ''
 
 export default function EditListingForm({ listing }: { listing: Listing }) {
   const [propertyType, setPropertyType] = useState(listing.property_type ?? 'hangar')
   const [listingType, setListingType]   = useState(listing.listing_type  ?? 'sale')
 
+  // Controlled airport fields (needed for auto-fill)
+  const [airportName, setAirportName] = useState(listing.airport_name ?? '')
+  const [airportCode, setAirportCode] = useState(listing.airport_code ?? '')
+  const [city, setCity]               = useState(listing.city ?? '')
+  const [state, setState]             = useState(listing.state ?? '')
+
+  // Runway auto-fill state
+  const [runwayLength, setRunwayLength] = useState(listing.runway_length_ft != null ? String(listing.runway_length_ft) : '')
+  const [runwayWidth,  setRunwayWidth]  = useState(listing.runway_width_ft  != null ? String(listing.runway_width_ft)  : '')
+  const [runwaySurface, setRunwaySurface] = useState(listing.runway_surface ?? '')
+  const [runwayLoading, setRunwayLoading] = useState(false)
+
+  const icaoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const boundUpdate = updateListing.bind(null, listing.id)
-  const [state, formAction, isPending] = useActionState<UpdateState, FormData>(boundUpdate, null)
+  const [state2, formAction, isPending] = useActionState<UpdateState, FormData>(boundUpdate, null)
 
   const isHangar = propertyType === 'hangar'
   const isHome   = propertyType === 'airport_home' || propertyType === 'fly_in_community'
   const isRental = listingType === 'lease' || listingType === 'space'
 
+  // Called when user picks an airport from the autocomplete dropdown
+  async function applyAirportSelection(airport: AirportSuggestion) {
+    setAirportName(airport.name)
+    setAirportCode(airport.ident)
+    if (airport.municipality) setCity(airport.municipality)
+    const st = stateAbbr(airport.iso_region)
+    if (st) setState(st)
+    fetchRunwayData(airport.ident)
+  }
+
+  // Auto-geocode: when code typed manually, try to fill city/state + runway
+  async function lookupAirportCode(code: string) {
+    if (code.length < 3) return
+    try {
+      const res = await fetch(`/api/airports/search?q=${encodeURIComponent(code)}&limit=1`)
+      if (!res.ok) return
+      const data = await res.json()
+      const match = data[0]
+      if (match && match.ident.toUpperCase() === code.toUpperCase()) {
+        if (airportName === listing.airport_code || !airportName) setAirportName(match.name)
+        if (match.municipality) setCity(match.municipality)
+        const st = stateAbbr(match.iso_region)
+        if (st) setState(st)
+        fetchRunwayData(code)
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  async function fetchRunwayData(code: string) {
+    setRunwayLoading(true)
+    try {
+      const res = await fetch(`/api/airports/runways?code=${encodeURIComponent(code)}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.found) {
+          if (data.runway_length_ft != null) setRunwayLength(String(data.runway_length_ft))
+          if (data.runway_width_ft  != null) setRunwayWidth(String(data.runway_width_ft))
+          if (data.runway_surface   != null) setRunwaySurface(data.runway_surface)
+        }
+      }
+    } catch { /* non-fatal */ }
+    finally { setRunwayLoading(false) }
+  }
+
+  function handleCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value.toUpperCase()
+    setAirportCode(val)
+    if (icaoDebounceRef.current) clearTimeout(icaoDebounceRef.current)
+    icaoDebounceRef.current = setTimeout(() => lookupAirportCode(val), 700)
+  }
+
   return (
-    <div style={{ maxWidth: '700px' }}>
+    <>
       <Link href="/broker/dashboard" style={backLink}>← Back to dashboard</Link>
       <h1 style={{ margin: '1rem 0 0.25rem' }}>Edit Listing</h1>
       <p style={{ color: '#6b7280', marginTop: 0, marginBottom: '1.5rem', fontSize: '0.875rem' }}>
         Saving will reset your listing to <strong>pending review</strong> so the admin can approve your changes.
       </p>
 
-      {state?.error && <div style={errorBox}>{state.error}</div>}
+      {state2?.error && <div style={errorBox}>{state2.error}</div>}
 
       <form action={formAction} style={{ display: 'grid', gap: '1.25rem' }}>
 
@@ -114,19 +184,42 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
           </Field>
           <TwoCol>
             <Field label="Airport name *">
-              <input name="airport_name" defaultValue={listing.airport_name} required style={inputStyle} />
+              {/* Hidden input carries the value into FormData */}
+              <input type="hidden" name="airport_name" value={airportName} />
+              <AirportAutocomplete
+                value={airportName}
+                onChange={setAirportName}
+                onSelect={applyAirportSelection}
+                placeholder="Search airport name…"
+                required
+                inputStyle={inputStyle}
+              />
             </Field>
             <Field label="Airport code *">
-              <input name="airport_code" defaultValue={listing.airport_code} required style={inputStyle}
-                onChange={e => e.target.value = e.target.value.toUpperCase()} />
+              <div style={{ position: 'relative' }}>
+                <input
+                  name="airport_code"
+                  placeholder="KBFI"
+                  value={airportCode}
+                  onChange={handleCodeChange}
+                  required
+                  maxLength={6}
+                  style={{ ...inputStyle, paddingRight: runwayLoading ? '2.5rem' : undefined }}
+                />
+                {runwayLoading && (
+                  <span style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: '#9ca3af' }}>
+                    ✦
+                  </span>
+                )}
+              </div>
             </Field>
           </TwoCol>
           <TwoCol>
             <Field label="City *">
-              <input name="city" defaultValue={listing.city} required style={inputStyle} />
+              <input name="city" value={city} onChange={e => setCity(e.target.value)} required style={inputStyle} />
             </Field>
             <Field label="State *">
-              <input name="state" defaultValue={listing.state} required style={inputStyle} />
+              <input name="state" value={state} onChange={e => setState(e.target.value)} required style={inputStyle} maxLength={2} />
             </Field>
           </TwoCol>
           <Field label="Listing type *">
@@ -252,17 +345,21 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
         )}
 
         {/* ── Runway Info ────────────────────────────────────────────────── */}
-        <Section title="Runway Info">
+        <Section title={`Runway Info${runwayLoading ? ' (loading…)' : ''}`}>
           <TwoCol>
             <Field label="Runway length (ft)">
-              <input name="runway_length_ft" type="number" min="0" defaultValue={listing.runway_length_ft ?? ''} placeholder="e.g. 5000" style={inputStyle} />
+              <input name="runway_length_ft" type="number" min="0"
+                value={runwayLength} onChange={e => setRunwayLength(e.target.value)}
+                placeholder="e.g. 5000" style={inputStyle} />
             </Field>
             <Field label="Runway width (ft)">
-              <input name="runway_width_ft" type="number" min="0" defaultValue={listing.runway_width_ft ?? ''} placeholder="e.g. 75" style={inputStyle} />
+              <input name="runway_width_ft" type="number" min="0"
+                value={runwayWidth} onChange={e => setRunwayWidth(e.target.value)}
+                placeholder="e.g. 75" style={inputStyle} />
             </Field>
           </TwoCol>
           <Field label="Runway surface">
-            <select name="runway_surface" defaultValue={listing.runway_surface ?? ''} style={inputStyle}>
+            <select name="runway_surface" value={runwaySurface} onChange={e => setRunwaySurface(e.target.value)} style={inputStyle}>
               <option value="">Select surface type…</option>
               {SURFACE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -303,7 +400,7 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
           <Link href="/broker/dashboard" style={cancelLink}>Cancel</Link>
         </div>
       </form>
-    </div>
+    </>
   )
 }
 
