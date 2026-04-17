@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import FeetInchesInput from '@/app/components/FeetInchesInput'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
@@ -269,7 +270,7 @@ export default function SubmitPage() {
   }
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> | { target: { name: string; value: string } }
   ) {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -593,16 +594,16 @@ export default function SubmitPage() {
               <Field label=""><span /></Field>
             </TwoCol>
             <TwoCol>
-              <Field label="Door width (ft)">
-                <input name="door_width" type="number" placeholder="40" value={formData.door_width} onChange={handleChange} style={inputStyle} />
+              <Field label="Door width">
+                <FeetInchesInput name="door_width" placeholder="40" value={formData.door_width} onChange={handleChange} style={inputStyle} />
               </Field>
-              <Field label="Door height (ft)">
-                <input name="door_height" type="number" placeholder="14" value={formData.door_height} onChange={handleChange} style={inputStyle} />
+              <Field label="Door height">
+                <FeetInchesInput name="door_height" placeholder="14" value={formData.door_height} onChange={handleChange} style={inputStyle} />
               </Field>
             </TwoCol>
             <TwoCol>
-              <Field label="Hangar depth (ft)">
-                <input name="hangar_depth" type="number" placeholder="45" value={formData.hangar_depth} onChange={handleChange} style={inputStyle} />
+              <Field label="Hangar depth">
+                <FeetInchesInput name="hangar_depth" placeholder="45" value={formData.hangar_depth} onChange={handleChange} style={inputStyle} />
               </Field>
               <Field label=""><span /></Field>
             </TwoCol>

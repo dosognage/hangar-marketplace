@@ -19,6 +19,7 @@ import { Star } from 'lucide-react'
 import { useToast } from './ToastProvider'
 import { useSavedCount } from './SavedCountProvider'
 import MobileSearchBar from './MobileSearchBar'
+import { formatFtIn } from '@/lib/dimensions'
 
 // Load the map lazily — Leaflet requires a browser environment
 const MapView = dynamic(() => import('./MapView'), {
@@ -487,7 +488,7 @@ export default function SplitView({
                         <span style={specStyle}>📐 {listing.square_feet.toLocaleString()} sq ft</span>
                       )}
                       {(listing.door_width || listing.door_height) && (
-                        <span style={specStyle}>🚪 {listing.door_width ?? '?'}′ × {listing.door_height ?? '?'}′</span>
+                        <span style={specStyle}>🚪 {formatFtIn(listing.door_width)} × {formatFtIn(listing.door_height)}</span>
                       )}
                     </div>
                     {listing.broker_profile_id && (

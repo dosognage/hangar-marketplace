@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const {
-      title, listing_type, airport_code, airport_name, city, state,
-      asking_price, monthly_lease, square_feet, door_width, door_height,
+      title, listing_type, ownership_type, airport_code, airport_name, city, state,
+      asking_price, monthly_lease, square_feet, door_width, door_height, hangar_depth,
       contact_name, contact_email, contact_phone, description,
       broker_profile_id, broker_user_id,
     } = body
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       .insert({
         title,
         listing_type,
+        ownership_type: ownership_type || 'Private',
         property_type: 'hangar',
         airport_code: airport_code.toUpperCase(),
         airport_name: airport_name || airport_code.toUpperCase(),
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
         square_feet:    square_feet    ? Number(square_feet)    : null,
         door_width:     door_width     ? Number(door_width)     : null,
         door_height:    door_height    ? Number(door_height)    : null,
+        hangar_depth:   hangar_depth   ? Number(hangar_depth)   : null,
         contact_name,
         contact_email,
         contact_phone:  contact_phone  || null,

@@ -11,6 +11,7 @@
 import { useState, useActionState } from 'react'
 import Link from 'next/link'
 import { updateListing, type UpdateState } from '@/app/actions/listings'
+import FeetInchesInput from '@/app/components/FeetInchesInput'
 
 const SURFACE_OPTIONS = [
   'Asphalt', 'Asphalt (grooved)', 'Concrete', 'Asphalt/Concrete',
@@ -191,16 +192,16 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
               <Field label=""><span /></Field>
             </TwoCol>
             <TwoCol>
-              <Field label="Door width (ft)">
-                <input name="door_width" type="number" min="0" defaultValue={listing.door_width ?? ''} style={inputStyle} />
+              <Field label="Door width">
+                <FeetInchesInput name="door_width" defaultValue={listing.door_width} style={inputStyle} />
               </Field>
-              <Field label="Door height (ft)">
-                <input name="door_height" type="number" min="0" defaultValue={listing.door_height ?? ''} style={inputStyle} />
+              <Field label="Door height">
+                <FeetInchesInput name="door_height" defaultValue={listing.door_height} style={inputStyle} />
               </Field>
             </TwoCol>
             <TwoCol>
-              <Field label="Hangar depth (ft)">
-                <input name="hangar_depth" type="number" min="0" defaultValue={listing.hangar_depth ?? ''} style={inputStyle} />
+              <Field label="Hangar depth">
+                <FeetInchesInput name="hangar_depth" defaultValue={listing.hangar_depth} style={inputStyle} />
               </Field>
               <Field label=""><span /></Field>
             </TwoCol>

@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic'
 
 
 import AirportMapClient from '@/app/components/AirportMapClient'
+import { formatFtIn } from '@/lib/dimensions'
 
 type ListingPageProps = {
   params:       Promise<{ id: string }>
@@ -429,10 +430,10 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
             <DetailRow label="Square feet" value={`${typedListing.square_feet.toLocaleString()} sq ft`} />
           )}
           {typedListing.property_type === 'hangar' && (typedListing.door_width || typedListing.door_height) && (
-            <DetailRow label="Door dimensions" value={`${typedListing.door_width ?? '?'}′ W × ${typedListing.door_height ?? '?'}′ H`} />
+            <DetailRow label="Door dimensions" value={`${formatFtIn(typedListing.door_width)} W × ${formatFtIn(typedListing.door_height)} H`} />
           )}
           {typedListing.property_type === 'hangar' && typedListing.hangar_depth && (
-            <DetailRow label="Hangar depth" value={`${typedListing.hangar_depth}′`} />
+            <DetailRow label="Hangar depth" value={formatFtIn(typedListing.hangar_depth)} />
           )}
           {/* Home-specific */}
           {typedListing.bedrooms != null && (

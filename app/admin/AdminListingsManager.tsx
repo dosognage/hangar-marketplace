@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import FeetInchesInput from '@/app/components/FeetInchesInput'
 
 export type AdminListing = {
   id: string
@@ -74,9 +75,12 @@ const btnStyle = (color: string, bg: string, border: string): React.CSSPropertie
 
 // ── Create Listing Modal ─────────────────────────────────────────────────────
 
+const OWNERSHIP_TYPES = ['Private', 'Municipal', 'Condo / Fractional', 'Airport Authority', 'Other']
+
 type CreateForm = {
   title: string
   listing_type: string
+  ownership_type: string
   airport_code: string
   airport_name: string
   city: string
@@ -86,6 +90,7 @@ type CreateForm = {
   square_feet: string
   door_width: string
   door_height: string
+  hangar_depth: string
   contact_name: string
   contact_email: string
   contact_phone: string
@@ -94,9 +99,9 @@ type CreateForm = {
 }
 
 const EMPTY_FORM: CreateForm = {
-  title: '', listing_type: 'lease', airport_code: '', airport_name: '',
+  title: '', listing_type: 'lease', ownership_type: '', airport_code: '', airport_name: '',
   city: '', state: '', asking_price: '', monthly_lease: '', square_feet: '',
-  door_width: '', door_height: '', contact_name: '', contact_email: '',
+  door_width: '', door_height: '', hangar_depth: '', contact_name: '', contact_email: '',
   contact_phone: '', description: '', broker_profile_id: '',
 }
 
@@ -128,14 +133,16 @@ function CreateListingModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          broker_user_id: selectedBroker?.user_id ?? null,
-          asking_price:  form.asking_price  || null,
-          monthly_lease: form.monthly_lease || null,
-          square_feet:   form.square_feet   || null,
-          door_width:    form.door_width    || null,
-          door_height:   form.door_height   || null,
-          contact_phone: form.contact_phone || null,
-          description:   form.description   || null,
+          broker_user_id:    selectedBroker?.user_id ?? null,
+          asking_price:      form.asking_price      || null,
+          monthly_lease:     form.monthly_lease     || null,
+          square_feet:       form.square_feet       || null,
+          door_width:        form.door_width        || null,
+          door_height:       form.door_height       || null,
+          hangar_depth:      form.hangar_depth      || null,
+          ownership_type:    form.ownership_type    || null,
+          contact_phone:     form.contact_phone     || null,
+          description:       form.description       || null,
           broker_profile_id: form.broker_profile_id || null,
         }),
       })
@@ -221,6 +228,16 @@ function CreateListingModal({
               </label>
             </div>
 
+            {/* Ownership type */}
+            <div>
+              <label style={label('Ownership Type *')}>
+                <select required value={form.ownership_type} onChange={e => set('ownership_type', e.target.value)} style={inputStyle}>
+                  <option value="">— Select —</option>
+                  {OWNERSHIP_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </label>
+            </div>
+
             {/* Airport code */}
             <div>
               <label style={label('Airport Code (ICAO/FAA) *')}>
@@ -266,16 +283,18 @@ function CreateListingModal({
               </label>
             </div>
 
-            {/* Door width / height */}
+            {/* Door width / height / depth */}
             <div>
-              <label style={label('Door Width (ft)')}>
-                <input type="number" value={form.door_width} onChange={e => set('door_width', e.target.value)} placeholder="40" style={inputStyle} />
-              </label>
+              <span style={label('Door Width')}>Door Width</span>
+              <FeetInchesInput name="door_width" placeholder="40" value={form.door_width} onChange={e => set(e.target.name as keyof CreateForm, e.target.value)} style={inputStyle} />
             </div>
             <div>
-              <label style={label('Door Height (ft)')}>
-                <input type="number" value={form.door_height} onChange={e => set('door_height', e.target.value)} placeholder="12" style={inputStyle} />
-              </label>
+              <span style={label('Door Height')}>Door Height</span>
+              <FeetInchesInput name="door_height" placeholder="12" value={form.door_height} onChange={e => set(e.target.name as keyof CreateForm, e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <span style={label('Hangar Depth')}>Hangar Depth</span>
+              <FeetInchesInput name="hangar_depth" placeholder="45" value={form.hangar_depth} onChange={e => set(e.target.name as keyof CreateForm, e.target.value)} style={inputStyle} />
             </div>
 
             {/* Contact */}
