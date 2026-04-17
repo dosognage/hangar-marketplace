@@ -244,7 +244,7 @@ export default async function BrokerAnalyticsDashboard({ brokerProfileId, supaba
             shares,
             photoViews:     pViews,
             conversionRate: views > 0 ? (contacts / views) * 100 : 0,
-            topPhotoUrl:    topPath  ? photoUrl(supabaseUrl, topPath)   : null,
+            topPhotoUrl:    topPath  ? topPath : null,  // photo_path is stored as full URL by PhotoGallery
             coverPhotoUrl:  coverPath ? photoUrl(supabaseUrl, coverPath) : null,
           }
         })}
