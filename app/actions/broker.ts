@@ -26,62 +26,79 @@ export async function saveBrokerProfile(
   _prev: BrokerProfileState,
   formData: FormData,
 ): Promise<BrokerProfileState> {
-  const supabase = await createServerClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return { error: 'You must be logged in.' }
+  try {
+    const supabase = await createServerClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) return { error: 'You must be logged in.' }
 
-  const isBroker = user.user_metadata?.is_broker === true
-  if (!isBroker) return { error: 'Not a verified broker.' }
+    const isBroker = user.user_metadata?.is_broker === true
+    if (!isBroker) return { error: 'Not a verified broker.' }
 
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
-  if (!brokerProfileId) return { error: 'Broker profile not found.' }
+    const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+    if (!brokerProfileId) return { error: 'Broker profile not found.' }
 
-  const brokerage          = (formData.get('brokerage')          as string | null)?.trim() ?? ''
-  const alert_radius_miles = parseInt((formData.get('alert_radius_miles') as string | null) ?? '100', 10) || 0
-  const phone              = (formData.get('phone')              as string | null)?.trim() ?? ''
-  const contact_email      = (formData.get('contact_email')      as string | null)?.trim() ?? ''
-  const website            = (formData.get('website')            as string | null)?.trim() ?? ''
-  const bio                = (formData.get('bio')                as string | null)?.trim() ?? ''
-  const license_number     = (formData.get('license_number')     as string | null)?.trim() ?? ''
-  const specialty_airports_raw = (formData.get('specialty_airports') as string | null)?.trim() ?? ''
+    const brokerage          = (formData.get('brokerage')          as string | null)?.trim() ?? ''
+    const phone              = (formData.get('phone')              as string | null)?.trim() ?? ''
+    const contact_email      = (formData.get('contact_email')      as string | null)?.trim() ?? ''
+    const website            = (formData.get('website')            as string | null)?.trim() ?? ''
+    const bio                = (formData.get('bio')                as string | null)?.trim() ?? ''
+    const license_number     = (formData.get('license_number')     as string | null)?.trim() ?? ''
+    const specialty_airports_raw = (formData.get('specialty_airports') as string | null)?.trim() ?? ''
+    const alert_radius_raw   = (formData.get('alert_radius_miles') as string | null)?.trim() ?? ''
 
-  // Parse specialty airports — comma-separated ICAO codes, uppercase, max 10
-  const specialty_airports = specialty_airports_raw
-    .split(',')
-    .map(s => s.trim().toUpperCase())
-    .filter(s => /^[A-Z0-9]{2,5}$/.test(s))
-    .slice(0, 10)
+    // Parse specialty airports — comma-separated ICAO codes, uppercase, max 10
+    const specialty_airports = specialty_airports_raw
+      .split(',')
+      .map(s => s.trim().toUpperCase())
+      .filter(s => /^[A-Z0-9]{2,5}$/.test(s))
+      .slice(0, 10)
 
-  // Basic email format check
-  if (contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact_email)) {
-    return { error: 'Please enter a valid contact email address.' }
+    // Basic email format check
+    if (contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact_email)) {
+      return { error: 'Please enter a valid contact email address.' }
+    }
+
+    // ── Core fields (always exist in schema) ─────────────────────────────
+    const { error: updateError } = await supabaseAdmin
+      .from('broker_profiles')
+      .update({
+        brokerage:          brokerage          || null,
+        phone:              phone              || null,
+        contact_email:      contact_email      || null,
+        website:            website            || null,
+        bio:                bio                || null,
+        license_number:     license_number     || null,
+        specialty_airports: specialty_airports,
+      })
+      .eq('id', brokerProfileId)
+
+    if (updateError) return { error: 'Failed to save: ' + updateError.message }
+
+    // ── New columns (added by migration — update separately so a missing
+    //    migration doesn't break the core save above) ────────────────────
+    if (alert_radius_raw !== '') {
+      const alert_radius_miles = Math.max(0, parseInt(alert_radius_raw, 10) || 0)
+      await supabaseAdmin
+        .from('broker_profiles')
+        .update({ alert_radius_miles })
+        .eq('id', brokerProfileId)
+        // Intentionally ignoring error — column may not exist yet if
+        // migration hasn't been applied. Core save already succeeded.
+    }
+
+    // Geocode specialty airports in the background and cache their coords.
+    if (specialty_airports.length > 0) {
+      void cacheAirportCoords(brokerProfileId, specialty_airports)
+    }
+
+    revalidatePath('/broker/dashboard')
+    revalidatePath(`/broker/${brokerProfileId}`)
+    return { success: 'Profile updated successfully.' }
+
+  } catch (err) {
+    console.error('[saveBrokerProfile] unexpected error:', err)
+    return { error: 'Something went wrong. Please try again.' }
   }
-
-  const { error: updateError } = await supabaseAdmin
-    .from('broker_profiles')
-    .update({
-      brokerage:           brokerage           || null,
-      phone:               phone               || null,
-      contact_email:       contact_email       || null,
-      website:             website             || null,
-      bio:                 bio                 || null,
-      license_number:      license_number      || null,
-      specialty_airports:  specialty_airports,
-      alert_radius_miles:  alert_radius_miles,
-    })
-    .eq('id', brokerProfileId)
-
-  if (updateError) return { error: 'Failed to save: ' + updateError.message }
-
-  // Geocode specialty airports in the background and cache their coords.
-  // Fire-and-forget — don't block the response.
-  if (specialty_airports.length > 0) {
-    void cacheAirportCoords(brokerProfileId, specialty_airports)
-  }
-
-  revalidatePath('/broker/dashboard')
-  revalidatePath(`/broker/${brokerProfileId}`)
-  return { success: 'Profile updated successfully.' }
 }
 
 /**
@@ -116,10 +133,18 @@ export async function submitBrokerApplication(formData: {
   phone: string
   website: string
   bio: string
+  is_unlicensed?: boolean
 }): Promise<{ error?: string }> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'You must be logged in to apply.' }
+
+  const isUnlicensed = formData.is_unlicensed === true
+
+  // License fields required unless applicant is an unlicensed hangar specialist
+  if (!isUnlicensed && (!formData.license_state?.trim() || !formData.license_number?.trim())) {
+    return { error: 'License state and license number are required for licensed brokers.' }
+  }
 
   const { error } = await supabaseAdmin
     .from('broker_applications')
@@ -128,11 +153,12 @@ export async function submitBrokerApplication(formData: {
       email:          user.email,
       full_name:      formData.full_name,
       brokerage:      formData.brokerage,
-      license_state:  formData.license_state,
-      license_number: formData.license_number,
+      license_state:  isUnlicensed ? null : formData.license_state,
+      license_number: isUnlicensed ? null : formData.license_number,
       phone:          formData.phone || null,
       website:        formData.website || null,
       bio:            formData.bio || null,
+      is_unlicensed:  isUnlicensed,
       status:         'pending',
     }])
 
@@ -189,6 +215,7 @@ export async function approveBrokerApplication(applicationId: string, userId: st
         phone:          app.phone,
         website:        app.website,
         bio:            app.bio,
+        is_unlicensed:  app.is_unlicensed ?? false,
       }])
       .select('id')
       .single()

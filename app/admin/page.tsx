@@ -26,11 +26,12 @@ type BrokerApp = {
   email: string
   full_name: string
   brokerage: string
-  license_state: string
-  license_number: string
+  license_state: string | null
+  license_number: string | null
   phone: string | null
   website: string | null
   bio: string | null
+  is_unlicensed: boolean
   status: string
   created_at: string
 }
@@ -201,9 +202,18 @@ export default async function AdminPage() {
                     <p style={{ margin: '0 0 0.2rem', fontSize: '0.875rem', color: '#374151' }}>
                       <strong>{app.brokerage}</strong>
                     </p>
-                    <p style={{ margin: '0 0 0.2rem', fontSize: '0.875rem', color: '#374151' }}>
-                      License: {app.license_state} #{app.license_number}
-                    </p>
+                    {app.is_unlicensed ? (
+                      <p style={{ margin: '0 0 0.2rem', fontSize: '0.875rem' }}>
+                        <span style={{ display: 'inline-block', backgroundColor: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', padding: '0.1rem 0.5rem', marginRight: '0.4rem' }}>
+                          ⚠ No RE License
+                        </span>
+                        Hangar / personal property specialist
+                      </p>
+                    ) : (
+                      <p style={{ margin: '0 0 0.2rem', fontSize: '0.875rem', color: '#374151' }}>
+                        License: {app.license_state} #{app.license_number}
+                      </p>
+                    )}
                     <p style={{ margin: '0 0 0.2rem', fontSize: '0.875rem', color: '#6b7280' }}>
                       {app.email}{app.phone ? ` · ${app.phone}` : ''}
                     </p>

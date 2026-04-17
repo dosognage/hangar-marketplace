@@ -17,6 +17,7 @@ export default function ApplyBrokerForm() {
     website:        '',
     bio:            '',
   })
+  const [isUnlicensed, setIsUnlicensed] = useState(false)
   const [status, setStatus]     = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const router = useRouter()
@@ -31,7 +32,7 @@ export default function ApplyBrokerForm() {
     setStatus('loading')
     setErrorMsg('')
 
-    const { error } = await submitBrokerApplication(form)
+    const { error } = await submitBrokerApplication({ ...form, is_unlicensed: isUnlicensed })
 
     if (error) {
       setErrorMsg(error)
@@ -52,7 +53,7 @@ export default function ApplyBrokerForm() {
         <h1 style={{ margin: '0 0 0.4rem' }}>Apply for Broker Verification</h1>
         <p style={{ margin: 0, color: '#6b7280', lineHeight: 1.6 }}>
           Verified brokers get a public profile page, a verified badge on their listings,
-          and are featured in broker search. Submit your license details below. Our team
+          and are featured in broker search. Submit your details below. Our team
           reviews every application before approval.
         </p>
       </div>
@@ -95,18 +96,48 @@ export default function ApplyBrokerForm() {
         </Section>
 
         <Section title="License Information">
-          <TwoCol>
-            <Field label="License state *">
-              <input name="license_state" value={form.license_state} onChange={handleChange} required placeholder="FL" maxLength={2} style={inputStyle} />
-            </Field>
-            <Field label="License number *">
-              <input name="license_number" value={form.license_number} onChange={handleChange} required placeholder="BK12345678" style={inputStyle} />
-            </Field>
-          </TwoCol>
-          <p style={{ margin: '0.25rem 0 0', fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5 }}>
-            We verify your license with your state's real estate commission. Your license
-            number will not be publicly displayed.
-          </p>
+          {/* Unlicensed toggle */}
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', cursor: 'pointer', padding: '0.75rem', backgroundColor: isUnlicensed ? '#fffbeb' : '#f9fafb', border: `1px solid ${isUnlicensed ? '#fde68a' : '#e5e7eb'}`, borderRadius: '8px' }}>
+            <input
+              type="checkbox"
+              checked={isUnlicensed}
+              onChange={e => {
+                setIsUnlicensed(e.target.checked)
+                if (e.target.checked) {
+                  setForm(prev => ({ ...prev, license_state: '', license_number: '' }))
+                }
+              }}
+              style={{ marginTop: '2px', flexShrink: 0, width: '16px', height: '16px', accentColor: '#d97706' }}
+            />
+            <div>
+              <p style={{ margin: '0 0 0.15rem', fontSize: '0.875rem', fontWeight: '600', color: '#92400e' }}>
+                I don&apos;t hold a real estate license
+              </p>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#78350f', lineHeight: 1.5 }}>
+                Select this if you work for a brokerage and sell hangars or aviation personal property
+                but are not a licensed real estate agent. Hangar ground leases and personal property
+                sales typically do not require a RE license.
+              </p>
+            </div>
+          </label>
+
+          {/* License fields — hidden when unlicensed */}
+          {!isUnlicensed && (
+            <>
+              <TwoCol>
+                <Field label="License state *">
+                  <input name="license_state" value={form.license_state} onChange={handleChange} required={!isUnlicensed} placeholder="FL" maxLength={2} style={inputStyle} />
+                </Field>
+                <Field label="License number *">
+                  <input name="license_number" value={form.license_number} onChange={handleChange} required={!isUnlicensed} placeholder="BK12345678" style={inputStyle} />
+                </Field>
+              </TwoCol>
+              <p style={{ margin: '0.25rem 0 0', fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5 }}>
+                We verify your license with your state&apos;s real estate commission. Your license
+                number will not be publicly displayed.
+              </p>
+            </>
+          )}
         </Section>
 
         <Section title="Public Bio (optional)">
@@ -126,12 +157,12 @@ export default function ApplyBrokerForm() {
           backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px',
           padding: '0.85rem 1rem', fontSize: '0.8rem', color: '#6b7280', lineHeight: 1.5,
         }}>
-          By submitting, you confirm that the information provided is accurate and that you
-          hold an active real estate license in the state listed above. False information
-          will result in permanent removal from the platform.
+          {isUnlicensed
+            ? 'By submitting, you confirm that you are actively selling hangars or aviation personal property on behalf of the brokerage listed above, and that the information provided is accurate.'
+            : 'By submitting, you confirm that the information provided is accurate and that you hold an active real estate license in the state listed above. False information will result in permanent removal from the platform.'
+          }
         </div>
 
-        {/* Error — shown right above the button so it's always in view on mobile */}
         {status === 'error' && (
           <div style={{
             backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px',
