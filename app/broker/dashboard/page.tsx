@@ -16,6 +16,7 @@ import AvatarUpload from './AvatarUpload'
 import BrokerProfileForm from './BrokerProfileForm'
 import BrokerAnalyticsDashboard from '@/app/components/BrokerAnalyticsDashboard'
 import SponsorButton from '@/app/components/SponsorButton'
+import TeamSection from './TeamSection'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 
@@ -38,6 +39,20 @@ export default async function BrokerDashboardPage() {
     .maybeSingle()
 
   if (!profile) redirect('/apply-broker')
+
+  // Fetch team + members if broker is on a team
+  const teamId = (profile as { team_id?: string | null }).team_id
+  let currentTeam: { id: string; name: string; description: string | null; website: string | null; logo_url: string | null; owner_profile_id: string } | null = null
+  let teamMembers: { id: string; full_name: string; brokerage: string; avatar_url: string | null }[] = []
+
+  if (teamId) {
+    const [{ data: teamData }, { data: membersData }] = await Promise.all([
+      supabaseAdmin.from('broker_teams').select('id, name, description, website, logo_url, owner_profile_id').eq('id', teamId).maybeSingle(),
+      supabaseAdmin.from('broker_profiles').select('id, full_name, brokerage, avatar_url').eq('team_id', teamId),
+    ])
+    currentTeam = teamData ?? null
+    teamMembers = (membersData ?? []) as typeof teamMembers
+  }
 
   // Fetch all listings tagged to this broker profile
   const { data: listings } = await supabaseAdmin
@@ -465,6 +480,15 @@ export default async function BrokerDashboardPage() {
             })}
           </div>
         )}
+      </div>
+
+      {/* Team section */}
+      <div style={{ marginTop: '2rem' }}>
+        <TeamSection
+          profileId={profile.id}
+          initialTeam={currentTeam}
+          initialMembers={teamMembers}
+        />
       </div>
 
       {/* Analytics section */}

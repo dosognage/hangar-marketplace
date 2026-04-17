@@ -32,11 +32,26 @@ async function canEditListing(userId: string, listingId: string): Promise<boolea
   // Check if the user is a broker assigned to this listing
   const { data: broker } = await supabaseAdmin
     .from('broker_profiles')
-    .select('id')
+    .select('id, team_id')
     .eq('user_id', userId)
     .single()
 
-  return !!(broker && listing.broker_profile_id === broker.id)
+  if (!broker) return false
+  if (listing.broker_profile_id === broker.id) return true
+
+  // Check if the user's broker profile is on the same team as the listing's broker
+  if ((broker as { team_id?: string | null }).team_id && listing.broker_profile_id) {
+    const { data: listingBroker } = await supabaseAdmin
+      .from('broker_profiles')
+      .select('team_id')
+      .eq('id', listing.broker_profile_id)
+      .single()
+    if (listingBroker && (listingBroker as { team_id?: string | null }).team_id === (broker as { team_id?: string | null }).team_id) {
+      return true
+    }
+  }
+
+  return false
 }
 
 // ── POST: insert photo records after a successful storage upload ─────────────

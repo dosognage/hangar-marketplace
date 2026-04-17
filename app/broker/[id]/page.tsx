@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
@@ -36,11 +37,23 @@ export default async function BrokerProfilePage({ params }: PageProps) {
 
   const { data: broker } = await supabase
     .from('broker_profiles')
-    .select('id, user_id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at, is_verified, is_founding_broker, specialty_airports')
+    .select('id, user_id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at, is_verified, is_founding_broker, team_id, specialty_airports')
     .eq('id', id)
     .single()
 
   if (!broker) notFound()
+
+  // Fetch team if broker is on one
+  const teamId = (broker as { team_id?: string | null }).team_id
+  let brokerTeam: { id: string; name: string } | null = null
+  if (teamId) {
+    const { data: teamData } = await supabaseAdmin
+      .from('broker_teams')
+      .select('id, name')
+      .eq('id', teamId)
+      .maybeSingle()
+    brokerTeam = teamData ?? null
+  }
 
   // Listings posted by this broker's user_id
   const { data: listings } = await supabase
@@ -121,7 +134,21 @@ export default async function BrokerProfilePage({ params }: PageProps) {
             )}
           </div>
 
-          <p style={{ margin: '0 0 0.5rem', fontWeight: '600', color: '#374151' }}>{broker.brokerage}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
+            <p style={{ margin: 0, fontWeight: '600', color: '#374151' }}>{broker.brokerage}</p>
+            {brokerTeam && (
+              <Link href={`/team/${brokerTeam.id}`} style={{ textDecoration: 'none' }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                  padding: '0.15rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem',
+                  fontWeight: '700', backgroundColor: '#eef2ff', color: '#4338ca',
+                  border: '1px solid #c7d2fe',
+                }}>
+                  🏢 {brokerTeam.name}
+                </span>
+              </Link>
+            )}
+          </div>
           <p style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
             Licensed in {broker.license_state} · Member since {new Date(broker.created_at).getFullYear()}
           </p>
