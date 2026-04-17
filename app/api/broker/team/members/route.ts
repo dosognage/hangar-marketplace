@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
       title: 'You\'ve been added to a team',
       message: `You've been added to the "${team.name}" team on Hangar Marketplace.`,
       link: '/broker/dashboard',
-    }).catch(() => {/* non-fatal */})
+    }).then(() => {/* non-fatal */}, () => {/* non-fatal */})
   }
 
   return NextResponse.json({ success: true })
