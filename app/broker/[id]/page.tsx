@@ -36,7 +36,7 @@ export default async function BrokerProfilePage({ params }: PageProps) {
 
   const { data: broker } = await supabase
     .from('broker_profiles')
-    .select('id, user_id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at, is_verified, specialty_airports')
+    .select('id, user_id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at, is_verified, is_founding_broker, specialty_airports')
     .eq('id', id)
     .single()
 
@@ -96,6 +96,16 @@ export default async function BrokerProfilePage({ params }: PageProps) {
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
             <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{broker.full_name}</h1>
+            {(broker as { is_founding_broker?: boolean }).is_founding_broker && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.75rem',
+                fontWeight: '700', backgroundColor: '#fef9c3', color: '#854d0e',
+                border: '1px solid #fde68a',
+              }}>
+                ✦ Founding Broker
+              </span>
+            )}
             {(broker as { is_verified?: boolean }).is_verified && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.3rem',

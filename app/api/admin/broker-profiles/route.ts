@@ -27,13 +27,15 @@ export async function PATCH(req: NextRequest) {
     profileId?: string
     is_hidden?: boolean
     is_verified?: boolean
+    is_founding_broker?: boolean
   }
 
   const profileId = body.id ?? body.profileId
   if (!profileId) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
   const updates: Record<string, unknown> = {}
-  if (typeof body.is_hidden   === 'boolean') updates.is_hidden   = body.is_hidden
+  if (typeof body.is_hidden          === 'boolean') updates.is_hidden          = body.is_hidden
+  if (typeof body.is_founding_broker === 'boolean') updates.is_founding_broker = body.is_founding_broker
   if (typeof body.is_verified === 'boolean') {
     updates.is_verified  = body.is_verified
     updates.verified_at  = body.is_verified ? new Date().toISOString() : null

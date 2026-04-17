@@ -95,7 +95,7 @@ export default async function AdminPage() {
   // Broker profiles — full detail for admin broker panel + keyed by user_id for users table
   const { data: brokerProfiles } = await supabaseAdmin
     .from('broker_profiles')
-    .select('id, user_id, full_name, brokerage, license_state, license_number, is_hidden, is_verified, avatar_url, created_at')
+    .select('id, user_id, full_name, brokerage, license_state, license_number, is_hidden, is_verified, is_founding_broker, avatar_url, created_at')
     .order('created_at', { ascending: false })
 
   const brokerProfileByUser: Record<string, string> = {}
@@ -112,9 +112,11 @@ export default async function AdminPage() {
     license_state:  bp.license_state,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     license_number: (bp as any).license_number ?? null,
-    is_hidden:      bp.is_hidden ?? false,
+    is_hidden:           bp.is_hidden ?? false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    is_verified:    (bp as any).is_verified ?? false,
+    is_verified:         (bp as any).is_verified ?? false,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    is_founding_broker:  (bp as any).is_founding_broker ?? false,
     avatar_url:     bp.avatar_url ?? null,
     created_at:     bp.created_at,
     listing_count:  countByUser[bp.user_id ?? ''] ?? 0,

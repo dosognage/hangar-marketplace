@@ -4,22 +4,38 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 export type AdminBrokerProfile = {
-  id:             string
-  user_id:        string | null
-  full_name:      string
-  brokerage:      string
-  license_state:  string
-  license_number: string | null
-  is_hidden:      boolean
-  is_verified:    boolean
-  avatar_url:     string | null
-  created_at:     string
-  listing_count:  number
+  id:                  string
+  user_id:             string | null
+  full_name:           string
+  brokerage:           string
+  license_state:       string
+  license_number:      string | null
+  is_hidden:           boolean
+  is_verified:         boolean
+  is_founding_broker:  boolean
+  avatar_url:          string | null
+  created_at:          string
+  listing_count:       number
 }
 
 export default function AdminBrokersManager({ brokers: initial }: { brokers: AdminBrokerProfile[] }) {
   const [brokers, setBrokers] = useState<AdminBrokerProfile[]>(initial)
   const [loading, setLoading] = useState<Record<string, boolean>>({})
+
+  async function toggleFounding(profile: AdminBrokerProfile) {
+    setLoading(prev => ({ ...prev, [`f_${profile.id}`]: true }))
+    const res = await fetch('/api/admin/broker-profiles', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: profile.id, is_founding_broker: !profile.is_founding_broker }),
+    })
+    if (res.ok) {
+      setBrokers(prev =>
+        prev.map(b => b.id === profile.id ? { ...b, is_founding_broker: !b.is_founding_broker } : b)
+      )
+    }
+    setLoading(prev => ({ ...prev, [`f_${profile.id}`]: false }))
+  }
 
   async function toggleVerified(profile: AdminBrokerProfile) {
     setLoading(prev => ({ ...prev, [`v_${profile.id}`]: true }))
@@ -107,6 +123,16 @@ export default function AdminBrokersManager({ brokers: initial }: { brokers: Adm
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: '600', fontSize: '0.9rem', color: '#111827' }}>{broker.full_name}</span>
+                    {broker.is_founding_broker && (
+                      <span style={{
+                        fontSize: '0.68rem', fontWeight: '700',
+                        backgroundColor: '#fef9c3', color: '#854d0e',
+                        border: '1px solid #fde68a', borderRadius: '4px',
+                        padding: '0.1rem 0.4rem',
+                      }}>
+                        ✦ FOUNDING
+                      </span>
+                    )}
                     {broker.is_verified && (
                       <span style={{
                         fontSize: '0.68rem', fontWeight: '700',
@@ -138,6 +164,22 @@ export default function AdminBrokersManager({ brokers: initial }: { brokers: Adm
 
               {/* Right: actions */}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+                <button
+                  disabled={!!loading[`f_${broker.id}`]}
+                  onClick={() => toggleFounding(broker)}
+                  title={broker.is_founding_broker ? 'Remove founding badge' : 'Grant founding broker badge'}
+                  style={{
+                    fontSize: '0.78rem', fontWeight: '600',
+                    padding: '0.3rem 0.7rem', borderRadius: '6px',
+                    cursor: loading[`f_${broker.id}`] ? 'not-allowed' : 'pointer',
+                    border: broker.is_founding_broker ? '1px solid #fde68a' : '1px solid #d1d5db',
+                    backgroundColor: broker.is_founding_broker ? '#fef9c3' : '#f9fafb',
+                    color: broker.is_founding_broker ? '#854d0e' : '#374151',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {loading[`f_${broker.id}`] ? '…' : broker.is_founding_broker ? '✦ Founding' : '✦ Founding'}
+                </button>
                 <Link
                   href={`/broker/${broker.id}`}
                   target="_blank"
