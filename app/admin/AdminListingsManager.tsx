@@ -23,6 +23,14 @@ export type AdminListing = {
   contact_phone: string | null
   created_at: string
   view_count: number | null
+  broker_profile_id: string | null
+}
+
+type BrokerOption = {
+  id: string
+  user_id: string
+  full_name: string
+  brokerage: string | null
 }
 
 type ActionState = Record<string, 'idle' | 'loading' | 'done' | 'error'>
@@ -39,7 +47,408 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }
   rejected: { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' },
 }
 
-export default function AdminListingsManager({ initialListings }: { initialListings: AdminListing[] }) {
+const inputStyle: React.CSSProperties = {
+  padding: '0.4rem 0.65rem',
+  borderRadius: '6px',
+  border: '1px solid #d1d5db',
+  fontSize: '0.825rem',
+  backgroundColor: 'white',
+  color: '#111827',
+  outline: 'none',
+  width: '100%',
+  boxSizing: 'border-box',
+}
+
+const btnStyle = (color: string, bg: string, border: string): React.CSSProperties => ({
+  padding: '0.3rem 0.75rem',
+  fontSize: '0.775rem',
+  fontWeight: 400,
+  borderRadius: '6px',
+  border: `1px solid ${border}`,
+  backgroundColor: bg,
+  color,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+  letterSpacing: '0.01em',
+})
+
+// ── Create Listing Modal ─────────────────────────────────────────────────────
+
+type CreateForm = {
+  title: string
+  listing_type: string
+  airport_code: string
+  airport_name: string
+  city: string
+  state: string
+  asking_price: string
+  monthly_lease: string
+  square_feet: string
+  door_width: string
+  door_height: string
+  contact_name: string
+  contact_email: string
+  contact_phone: string
+  description: string
+  broker_profile_id: string
+}
+
+const EMPTY_FORM: CreateForm = {
+  title: '', listing_type: 'lease', airport_code: '', airport_name: '',
+  city: '', state: '', asking_price: '', monthly_lease: '', square_feet: '',
+  door_width: '', door_height: '', contact_name: '', contact_email: '',
+  contact_phone: '', description: '', broker_profile_id: '',
+}
+
+function CreateListingModal({
+  brokers,
+  onClose,
+  onCreated,
+}: {
+  brokers: BrokerOption[]
+  onClose: () => void
+  onCreated: (listing: AdminListing) => void
+}) {
+  const [form, setForm] = useState<CreateForm>(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  function set(field: keyof CreateForm, value: string) {
+    setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setSaving(true)
+    try {
+      const selectedBroker = brokers.find(b => b.id === form.broker_profile_id)
+      const res = await fetch('/api/admin/listings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          broker_user_id: selectedBroker?.user_id ?? null,
+          asking_price:  form.asking_price  || null,
+          monthly_lease: form.monthly_lease || null,
+          square_feet:   form.square_feet   || null,
+          door_width:    form.door_width    || null,
+          door_height:   form.door_height   || null,
+          contact_phone: form.contact_phone || null,
+          description:   form.description   || null,
+          broker_profile_id: form.broker_profile_id || null,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error ?? 'Failed to create listing'); return }
+
+      // Build a partial listing object so the UI updates immediately
+      const now = new Date().toISOString()
+      const broker = brokers.find(b => b.id === form.broker_profile_id)
+      onCreated({
+        id: json.id,
+        title: form.title,
+        airport_code: form.airport_code.toUpperCase(),
+        airport_name: form.airport_name || form.airport_code.toUpperCase(),
+        city: form.city,
+        state: form.state,
+        listing_type: form.listing_type,
+        ownership_type: '',
+        asking_price: form.asking_price ? Number(form.asking_price) : null,
+        monthly_lease: form.monthly_lease ? Number(form.monthly_lease) : null,
+        square_feet: form.square_feet ? Number(form.square_feet) : null,
+        status: 'approved',
+        is_sample: false,
+        is_featured: false,
+        is_sponsored: false,
+        contact_name: form.contact_name,
+        contact_email: form.contact_email,
+        contact_phone: form.contact_phone || null,
+        created_at: now,
+        view_count: 0,
+        broker_profile_id: broker?.id ?? null,
+      })
+      onClose()
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const label = (text: string): React.CSSProperties => ({
+    fontSize: '0.75rem', fontWeight: 600, color: '#374151',
+    display: 'block', marginBottom: '0.25rem',
+  })
+  const field = (span?: number): React.CSSProperties => ({
+    gridColumn: span ? `span ${span}` : undefined,
+  })
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      zIndex: 1000, padding: '2rem 1rem', overflowY: 'auto',
+    }}>
+      <div style={{
+        backgroundColor: 'white', borderRadius: '12px', width: '100%', maxWidth: '640px',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{ backgroundColor: '#1a3a5c', padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>✈ Create Listing as Admin</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '1.1rem', padding: '0.1rem 0.3rem' }}>✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+
+            {/* Title */}
+            <div style={field(2)}>
+              <label style={label('Title *')}>
+                <input required value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. T-Hangar at KBFI" style={inputStyle} />
+              </label>
+            </div>
+
+            {/* Listing type */}
+            <div>
+              <label style={label('Listing Type *')}>
+                <select required value={form.listing_type} onChange={e => set('listing_type', e.target.value)} style={inputStyle}>
+                  <option value="lease">For Lease</option>
+                  <option value="sale">For Sale</option>
+                  <option value="space">Space Available</option>
+                </select>
+              </label>
+            </div>
+
+            {/* Airport code */}
+            <div>
+              <label style={label('Airport Code (ICAO/FAA) *')}>
+                <input required value={form.airport_code} onChange={e => set('airport_code', e.target.value.toUpperCase())} placeholder="KBFI" style={inputStyle} maxLength={6} />
+              </label>
+            </div>
+
+            {/* Airport name */}
+            <div style={field(2)}>
+              <label style={label('Airport Name')}>
+                <input value={form.airport_name} onChange={e => set('airport_name', e.target.value)} placeholder="Boeing Field / King County International" style={inputStyle} />
+              </label>
+            </div>
+
+            {/* City */}
+            <div>
+              <label style={label('City *')}>
+                <input required value={form.city} onChange={e => set('city', e.target.value)} placeholder="Seattle" style={inputStyle} />
+              </label>
+            </div>
+
+            {/* State */}
+            <div>
+              <label style={label('State *')}>
+                <input required value={form.state} onChange={e => set('state', e.target.value)} placeholder="WA" style={inputStyle} maxLength={2} />
+              </label>
+            </div>
+
+            {/* Price */}
+            <div>
+              <label style={label(form.listing_type === 'sale' ? 'Asking Price ($)' : 'Monthly Lease ($)')}>
+                {form.listing_type === 'sale'
+                  ? <input type="number" value={form.asking_price} onChange={e => set('asking_price', e.target.value)} placeholder="250000" style={inputStyle} />
+                  : <input type="number" value={form.monthly_lease} onChange={e => set('monthly_lease', e.target.value)} placeholder="500" style={inputStyle} />
+                }
+              </label>
+            </div>
+
+            {/* Sq ft */}
+            <div>
+              <label style={label('Square Feet')}>
+                <input type="number" value={form.square_feet} onChange={e => set('square_feet', e.target.value)} placeholder="1200" style={inputStyle} />
+              </label>
+            </div>
+
+            {/* Door width / height */}
+            <div>
+              <label style={label('Door Width (ft)')}>
+                <input type="number" value={form.door_width} onChange={e => set('door_width', e.target.value)} placeholder="40" style={inputStyle} />
+              </label>
+            </div>
+            <div>
+              <label style={label('Door Height (ft)')}>
+                <input type="number" value={form.door_height} onChange={e => set('door_height', e.target.value)} placeholder="12" style={inputStyle} />
+              </label>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <label style={label('Contact Name *')}>
+                <input required value={form.contact_name} onChange={e => set('contact_name', e.target.value)} placeholder="John Smith" style={inputStyle} />
+              </label>
+            </div>
+            <div>
+              <label style={label('Contact Email *')}>
+                <input required type="email" value={form.contact_email} onChange={e => set('contact_email', e.target.value)} placeholder="john@example.com" style={inputStyle} />
+              </label>
+            </div>
+            <div style={field(2)}>
+              <label style={label('Contact Phone')}>
+                <input value={form.contact_phone} onChange={e => set('contact_phone', e.target.value)} placeholder="(206) 555-1234" style={inputStyle} />
+              </label>
+            </div>
+
+            {/* Description */}
+            <div style={field(2)}>
+              <label style={label('Description')}>
+                <textarea
+                  value={form.description}
+                  onChange={e => set('description', e.target.value)}
+                  placeholder="Details about the hangar, lease terms, access, etc."
+                  rows={3}
+                  style={{ ...inputStyle, resize: 'vertical' }}
+                />
+              </label>
+            </div>
+
+            {/* Assign to broker */}
+            {brokers.length > 0 && (
+              <div style={field(2)}>
+                <label style={label('Assign to Broker (optional)')}>
+                  <select value={form.broker_profile_id} onChange={e => set('broker_profile_id', e.target.value)} style={inputStyle}>
+                    <option value="">— No broker (admin-owned) —</option>
+                    {brokers.map(b => (
+                      <option key={b.id} value={b.id}>
+                        {b.full_name}{b.brokerage ? ` · ${b.brokerage}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '0.825rem', color: '#b91c1c' }}>
+              {error}
+            </div>
+          )}
+
+          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <button type="button" onClick={onClose} style={btnStyle('#374151', '#f3f4f6', '#d1d5db')}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              style={{ ...btnStyle('white', '#1a3a5c', '#1a3a5c'), padding: '0.45rem 1.25rem', fontSize: '0.85rem', fontWeight: 600, opacity: saving ? 0.7 : 1 }}
+            >
+              {saving ? 'Creating…' : 'Create Listing'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Assign Broker Popover ────────────────────────────────────────────────────
+
+function AssignBrokerPopover({
+  listingId,
+  currentBrokerProfileId,
+  brokers,
+  onClose,
+  onAssigned,
+}: {
+  listingId: string
+  currentBrokerProfileId: string | null
+  brokers: BrokerOption[]
+  onClose: () => void
+  onAssigned: (listingId: string, brokerId: string | null, brokerName: string | null) => void
+}) {
+  const [selected, setSelected] = useState(currentBrokerProfileId ?? '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSave() {
+    setSaving(true)
+    setError('')
+    const broker = brokers.find(b => b.id === selected)
+    try {
+      const res = await fetch('/api/admin/listings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: listingId,
+          broker_profile_id: selected || null,
+          broker_user_id: broker?.user_id ?? null,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error ?? 'Failed'); return }
+      onAssigned(listingId, selected || null, broker?.full_name ?? null)
+      onClose()
+    } catch {
+      setError('Network error.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, padding: '1rem',
+    }}>
+      <div style={{
+        backgroundColor: 'white', borderRadius: '10px', width: '100%', maxWidth: '420px',
+        boxShadow: '0 10px 40px rgba(0,0,0,0.15)', overflow: 'hidden',
+      }}>
+        <div style={{ backgroundColor: '#1a3a5c', padding: '0.85rem 1.1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: 'white', fontWeight: 700, fontSize: '0.875rem' }}>Assign Listing to Broker</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+        </div>
+        <div style={{ padding: '1rem' }}>
+          <p style={{ margin: '0 0 0.75rem', fontSize: '0.825rem', color: '#6b7280' }}>
+            The broker will be notified and will be able to edit and manage this listing from their dashboard.
+          </p>
+          <select
+            value={selected}
+            onChange={e => setSelected(e.target.value)}
+            style={{ ...inputStyle, marginBottom: '0.75rem' }}
+          >
+            <option value="">— Remove broker assignment —</option>
+            {brokers.map(b => (
+              <option key={b.id} value={b.id}>
+                {b.full_name}{b.brokerage ? ` · ${b.brokerage}` : ''}
+              </option>
+            ))}
+          </select>
+          {error && <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#dc2626' }}>{error}</p>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+            <button onClick={onClose} style={btnStyle('#374151', '#f3f4f6', '#d1d5db')}>Cancel</button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{ ...btnStyle('white', '#1a3a5c', '#1a3a5c'), fontWeight: 600, opacity: saving ? 0.7 : 1 }}
+            >
+              {saving ? 'Saving…' : 'Save Assignment'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Component ───────────────────────────────────────────────────────────
+
+export default function AdminListingsManager({
+  initialListings,
+  brokers = [],
+}: {
+  initialListings: AdminListing[]
+  brokers?: BrokerOption[]
+}) {
   const [listings, setListings] = useState<AdminListing[]>(initialListings)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('all')
@@ -47,6 +456,8 @@ export default function AdminListingsManager({ initialListings }: { initialListi
   const [filterState, setFilterState] = useState('all')
   const [actions, setActions] = useState<ActionState>({})
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
+  const [assigningId, setAssigningId] = useState<string | null>(null)
 
   // Unique states for the filter dropdown
   const states = useMemo(() => {
@@ -134,31 +545,34 @@ export default function AdminListingsManager({ initialListings }: { initialListi
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    padding: '0.4rem 0.65rem',
-    borderRadius: '6px',
-    border: '1px solid #d1d5db',
-    fontSize: '0.825rem',
-    backgroundColor: 'white',
-    color: '#111827',
-    outline: 'none',
+  function handleBrokerAssigned(listingId: string, brokerId: string | null, _brokerName: string | null) {
+    setListings(prev => prev.map(l =>
+      l.id === listingId ? { ...l, broker_profile_id: brokerId } : l
+    ))
   }
 
-  const btnStyle = (color: string, bg: string, border: string): React.CSSProperties => ({
-    padding: '0.3rem 0.75rem',
-    fontSize: '0.775rem',
-    fontWeight: 400,
-    borderRadius: '6px',
-    border: `1px solid ${border}`,
-    backgroundColor: bg,
-    color,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    letterSpacing: '0.01em',
-  })
+  const assigningListing = assigningId ? listings.find(l => l.id === assigningId) ?? null : null
 
   return (
     <div>
+      {/* ── Modals ──────────────────────────────────────────────────────────── */}
+      {showCreate && (
+        <CreateListingModal
+          brokers={brokers}
+          onClose={() => setShowCreate(false)}
+          onCreated={listing => setListings(prev => [listing, ...prev])}
+        />
+      )}
+      {assigningListing && (
+        <AssignBrokerPopover
+          listingId={assigningListing.id}
+          currentBrokerProfileId={assigningListing.broker_profile_id}
+          brokers={brokers}
+          onClose={() => setAssigningId(null)}
+          onAssigned={handleBrokerAssigned}
+        />
+      )}
+
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center',
@@ -170,29 +584,35 @@ export default function AdminListingsManager({ initialListings }: { initialListi
           placeholder="Search title, airport, city, email…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ ...inputStyle, minWidth: '220px', flex: '1' }}
+          style={{ ...inputStyle, minWidth: '220px', flex: '1', width: 'auto' }}
         />
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} style={inputStyle}>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
           <option value="all">All types</option>
           <option value="sale">For Sale</option>
           <option value="lease">For Lease</option>
           <option value="space">Space Available</option>
         </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={inputStyle}>
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
           <option value="all">All statuses</option>
           <option value="approved">Approved</option>
           <option value="pending">Pending</option>
           <option value="rejected">Rejected</option>
         </select>
         {states.length > 1 && (
-          <select value={filterState} onChange={e => setFilterState(e.target.value)} style={inputStyle}>
+          <select value={filterState} onChange={e => setFilterState(e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
             <option value="all">All states</option>
             {states.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         )}
-        <span style={{ fontSize: '0.8rem', color: '#6b7280', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: '0.8rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
           {filtered.length} of {listings.length} listing{listings.length !== 1 ? 's' : ''}
         </span>
+        <button
+          onClick={() => setShowCreate(true)}
+          style={{ ...btnStyle('white', '#1a3a5c', '#1a3a5c'), fontWeight: 600, padding: '0.4rem 0.9rem', marginLeft: 'auto' }}
+        >
+          + Create Listing
+        </button>
       </div>
 
       {/* ── Listing rows ───────────────────────────────────────────────────── */}
@@ -212,6 +632,9 @@ export default function AdminListingsManager({ initialListings }: { initialListi
             const isStatusLoading = actions[listing.id] === 'loading'
             const statusDone = actions[listing.id] === 'done'
             const statusError = actions[listing.id] === 'error'
+            const assignedBroker = listing.broker_profile_id
+              ? brokers.find(b => b.id === listing.broker_profile_id)
+              : null
 
             return (
               <div key={listing.id} style={{
@@ -230,6 +653,11 @@ export default function AdminListingsManager({ initialListings }: { initialListi
                     {listing.is_sample && <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>🔍 SAMPLE</span>}
                     {listing.is_featured && <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>⭐ FEATURED</span>}
                     {listing.is_sponsored && <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#ede9fe', color: '#5b21b6', border: '1px solid #ddd6fe', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>💎 SPONSORED</span>}
+                    {assignedBroker && (
+                      <span style={{ fontSize: '0.7rem', fontWeight: 600, backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>
+                        🏢 {assignedBroker.full_name}
+                      </span>
+                    )}
                   </div>
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '20px', backgroundColor: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, whiteSpace: 'nowrap' }}>
                     {listing.status}
@@ -304,13 +732,23 @@ export default function AdminListingsManager({ initialListings }: { initialListi
                     <button
                       disabled={isSampleLoading}
                       onClick={() => handleToggleSample(listing.id, listing.is_sample)}
-                      style={btnStyle(
-                        listing.is_sample ? '#374151' : '#374151',
-                        listing.is_sample ? '#f3f4f6' : 'white',
-                        listing.is_sample ? '#d1d5db' : '#d1d5db',
-                      )}
+                      style={btnStyle('#374151', listing.is_sample ? '#f3f4f6' : 'white', '#d1d5db')}
                     >
                       {isSampleLoading ? '…' : listing.is_sample ? '🔍 Unmark Sample' : 'Mark as Sample'}
+                    </button>
+                  )}
+
+                  {/* Assign broker */}
+                  {brokers.length > 0 && (
+                    <button
+                      onClick={() => setAssigningId(listing.id)}
+                      style={btnStyle(
+                        listing.broker_profile_id ? '#1d4ed8' : '#374151',
+                        listing.broker_profile_id ? '#eff6ff' : 'white',
+                        listing.broker_profile_id ? '#bfdbfe' : '#d1d5db',
+                      )}
+                    >
+                      🏢 {listing.broker_profile_id ? 'Reassign Broker' : 'Assign Broker'}
                     </button>
                   )}
 

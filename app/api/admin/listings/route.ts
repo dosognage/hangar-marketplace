@@ -14,15 +14,107 @@ async function requireAdmin(req: NextRequest) {
   return user
 }
 
+export async function POST(request: NextRequest) {
+  const admin = await requireAdmin(request)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const body = await request.json()
+    const {
+      title, listing_type, airport_code, airport_name, city, state,
+      asking_price, monthly_lease, square_feet, door_width, door_height,
+      contact_name, contact_email, contact_phone, description,
+      broker_profile_id, broker_user_id,
+    } = body
+
+    if (!title || !listing_type || !airport_code || !city || !state || !contact_name || !contact_email) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('listings')
+      .insert({
+        title,
+        listing_type,
+        property_type: 'hangar',
+        airport_code: airport_code.toUpperCase(),
+        airport_name: airport_name || airport_code.toUpperCase(),
+        city,
+        state,
+        asking_price:   asking_price   ? Number(asking_price)   : null,
+        monthly_lease:  monthly_lease  ? Number(monthly_lease)  : null,
+        square_feet:    square_feet    ? Number(square_feet)    : null,
+        door_width:     door_width     ? Number(door_width)     : null,
+        door_height:    door_height    ? Number(door_height)    : null,
+        contact_name,
+        contact_email,
+        contact_phone:  contact_phone  || null,
+        description:    description    || null,
+        user_id:        broker_user_id ?? admin.id,
+        broker_profile_id: broker_profile_id ?? null,
+        status: 'approved',
+        is_sample: false,
+      })
+      .select('id')
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // Notify the broker if one was assigned
+    if (broker_user_id) {
+      await createNotification({
+        userId: broker_user_id,
+        type:   'listing_approved',
+        title:  `A listing was created for you: "${title}"`,
+        body:   'An admin created and assigned a listing to your broker profile. You can edit it from your dashboard.',
+        link:   `/listing/${data.id}`,
+      }).catch(e => console.error('[admin/listings POST] notify broker failed:', e))
+    }
+
+    return NextResponse.json({ success: true, id: data.id })
+  } catch (e) {
+    console.error('[admin/listings POST]', e)
+    return NextResponse.json({ error: 'Unexpected server error' }, { status: 500 })
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   const user = await requireAdmin(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const body = await request.json()
-    const { id, status } = body
+    const { id, status, broker_profile_id, broker_user_id } = body
 
-    if (!id || !status) {
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+    // ── Broker assignment ────────────────────────────────────────────────────
+    if (broker_profile_id !== undefined && !status) {
+      const update: Record<string, unknown> = { broker_profile_id: broker_profile_id || null }
+      if (broker_user_id) update.user_id = broker_user_id
+
+      const { error } = await supabaseAdmin.from('listings').update(update).eq('id', id)
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+      // Fetch listing title for the notification
+      const { data: listing } = await supabaseAdmin
+        .from('listings').select('title').eq('id', id).single()
+
+      if (broker_user_id && listing) {
+        await createNotification({
+          userId: broker_user_id,
+          type:   'listing_approved',
+          title:  `A listing was assigned to you: "${listing.title}"`,
+          body:   'An admin assigned a listing to your broker profile. You can now edit and manage it.',
+          link:   `/listing/${id}`,
+        }).catch(e => console.error('[admin/listings PATCH] notify broker failed:', e))
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    // ── Status update ────────────────────────────────────────────────────────
+    if (!status) {
       return NextResponse.json({ error: 'Missing id or status' }, { status: 400 })
     }
 

@@ -53,7 +53,7 @@ export default async function AdminPage() {
   // Fetch hangar listings (admin sees everything, filterable client-side)
   const { data: allListings, error: listingsError } = await supabaseAdmin
     .from('listings')
-    .select('id, title, airport_name, airport_code, city, state, listing_type, ownership_type, asking_price, monthly_lease, square_feet, status, is_sample, is_featured, is_sponsored, contact_name, contact_email, contact_phone, created_at, view_count')
+    .select('id, title, airport_name, airport_code, city, state, listing_type, ownership_type, asking_price, monthly_lease, square_feet, status, is_sample, is_featured, is_sponsored, contact_name, contact_email, contact_phone, created_at, view_count, broker_profile_id')
     .in('property_type', ['hangar'])
     .order('created_at', { ascending: false })
 
@@ -250,7 +250,13 @@ export default async function AdminPage() {
           </span>
         </div>
         <div style={{ padding: '1rem', backgroundColor: 'white' }}>
-          <AdminListingsManager initialListings={allListings ?? []} />
+          <AdminListingsManager
+            initialListings={allListings ?? []}
+            brokers={(brokerProfiles ?? [])
+              .filter(bp => (bp as { is_verified?: boolean }).is_verified)
+              .map(bp => ({ id: bp.id, user_id: bp.user_id ?? '', full_name: bp.full_name, brokerage: (bp as { brokerage?: string }).brokerage ?? null }))
+            }
+          />
         </div>
       </div>
 
