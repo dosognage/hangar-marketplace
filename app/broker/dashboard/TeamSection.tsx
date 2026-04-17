@@ -275,7 +275,7 @@ export default function TeamSection({
             <input
               value={createName}
               onChange={e => setCreateName(e.target.value)}
-              placeholder="e.g. Seitz Aviation"
+              placeholder="e.g. Your Company Name"
               required
               style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem', boxSizing: 'border-box' }}
             />
