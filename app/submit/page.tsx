@@ -385,12 +385,23 @@ export default function SubmitPage() {
         photoRecords.push({ listing_id: listingId, storage_path: path, display_order: i })
       }
 
-      // ── Step 3: Save photo records ──────────────────────────────────────
+      // ── Step 3: Save photo records via server API (bypasses RLS) ───────
       if (photoRecords.length > 0) {
         setUploadProgress('Saving photo records…')
-        const { error: photoError } = await supabase.from('listing_photos').insert(photoRecords)
-        if (photoError) {
-          console.warn('Photo records insert failed:', photoError.message)
+        const res = await fetch('/api/listing-photos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            listing_id: listingId,
+            photos: photoRecords.map(r => ({
+              storage_path:  r.storage_path,
+              display_order: r.display_order,
+            })),
+          }),
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          console.warn('Photo records insert failed:', err.error ?? res.status)
         }
       }
 

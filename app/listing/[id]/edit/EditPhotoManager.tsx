@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase' // used only for storage uploads
 
 type Photo = {
   id: string
@@ -35,15 +35,18 @@ export default function EditPhotoManager({
     setDeletingId(photo.id)
     setError('')
     try {
-      await supabase.storage.from('listing-photos').remove([photo.storage_path])
-      await supabase.from('listing_photos').delete().eq('id', photo.id)
+      const res = await fetch('/api/listing-photos', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo_id: photo.id, listing_id: listingId, storage_path: photo.storage_path }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Delete failed')
       const remaining = photos.filter(p => p.id !== photo.id)
-      // Re-normalise display_order
       const reordered = remaining.map((p, i) => ({ ...p, display_order: i }))
-      await saveOrder(reordered)
       setPhotos(reordered)
-    } catch {
-      setError('Failed to delete photo. Try again.')
+      await saveOrder(reordered)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete photo. Try again.')
     } finally {
       setDeletingId(null)
     }
@@ -61,11 +64,14 @@ export default function EditPhotoManager({
   }
 
   async function saveOrder(ordered: Photo[]) {
-    await Promise.all(
-      ordered.map(p =>
-        supabase.from('listing_photos').update({ display_order: p.display_order }).eq('id', p.id)
-      )
-    )
+    await fetch('/api/listing-photos', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        listing_id: listingId,
+        updates: ordered.map(p => ({ id: p.id, display_order: p.display_order })),
+      }),
+    })
   }
 
   // ── Upload new photos ──────────────────────────────────────────────────────
@@ -75,7 +81,8 @@ export default function EditPhotoManager({
     setUploading(true)
     setError('')
     try {
-      const newPhotos: Photo[] = []
+      // 1. Upload files to storage (anon client is fine for storage uploads)
+      const uploaded: { storage_path: string; display_order: number }[] = []
       let order = photos.length
 
       for (const file of fileArr) {
@@ -86,20 +93,24 @@ export default function EditPhotoManager({
           .from('listing-photos')
           .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type })
 
-        if (uploadErr) { console.warn('Upload failed:', uploadErr.message); continue }
-
-        const { data: row } = await supabase
-          .from('listing_photos')
-          .insert({ listing_id: listingId, storage_path: path, display_order: order++ })
-          .select('id, storage_path, display_order')
-          .single()
-
-        if (row) newPhotos.push(row)
+        if (uploadErr) { console.warn('Storage upload failed:', uploadErr.message); continue }
+        uploaded.push({ storage_path: path, display_order: order++ })
       }
 
-      setPhotos(prev => [...prev, ...newPhotos])
-    } catch {
-      setError('Upload failed. Check your connection and try again.')
+      if (uploaded.length === 0) { setError('No photos could be uploaded. Check file types and try again.'); return }
+
+      // 2. Save records via server API (bypasses RLS)
+      const res = await fetch('/api/listing-photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listing_id: listingId, photos: uploaded }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Failed to save photo records')
+
+      setPhotos(prev => [...prev, ...(json.photos as Photo[])])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed. Try again.')
     } finally {
       setUploading(false)
     }
