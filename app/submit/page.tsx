@@ -19,6 +19,7 @@ import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
 import { createListing } from '@/app/actions/listing'
+import { uploadPhotos } from '@/lib/uploadPhotos'
 import AirportAutocomplete, { type AirportSuggestion } from '@/app/components/AirportAutocomplete'
 
 type AirportCoords = { lat: number; lng: number; icao: string }
@@ -361,52 +362,11 @@ export default function SubmitPage() {
         }
       }
 
-      // ── Step 2: Upload photos to Supabase Storage ───────────────────────
-      const photoRecords: { listing_id: string; storage_path: string; display_order: number }[] = []
-
-      for (let i = 0; i < photos.length; i++) {
-        const file = photos[i]
-        setUploadProgress(`Uploading photo ${i + 1} of ${photos.length}…`)
-
-        // Build a unique, clean file path
-        const ext = file.name.split('.').pop() ?? 'jpg'
-        const path = `${listingId}/${Date.now()}-${i}.${ext}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('listing-photos')
-          .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type })
-
-        if (uploadError) {
-          // Non-fatal: log and continue with other photos
-          console.warn(`Photo ${i + 1} upload failed:`, uploadError.message)
-          continue
-        }
-
-        photoRecords.push({ listing_id: listingId, storage_path: path, display_order: i })
-      }
-
-      // ── Step 3: Save photo records via server API (bypasses RLS) ───────
-      if (photoRecords.length > 0) {
-        setUploadProgress('Saving photo records…')
-        const res = await fetch('/api/listing-photos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            listing_id: listingId,
-            photos: photoRecords.map(r => ({
-              storage_path:  r.storage_path,
-              display_order: r.display_order,
-            })),
-          }),
-        })
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}))
-          console.warn('Photo records insert failed:', err.error ?? res.status)
-        }
-      }
+      // ── Steps 2 & 3: Upload photos + save records (signed URLs bypass RLS) ─
+      const saved = await uploadPhotos(listingId, photos, 0, setUploadProgress)
 
       // ── Done — redirect to success page ─────────────────────────────────
-      router.push(`/submit/success?photos=${photoRecords.length}`)
+      router.push(`/submit/success?photos=${saved.length}`)
     } catch (err: unknown) {
       setStatus({
         type: 'error',

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { supabase } from '@/lib/supabase' // used only for storage uploads
+import { uploadPhotos } from '@/lib/uploadPhotos'
 
 type Photo = {
   id: string
@@ -81,34 +81,12 @@ export default function EditPhotoManager({
     setUploading(true)
     setError('')
     try {
-      // 1. Upload files to storage (anon client is fine for storage uploads)
-      const uploaded: { storage_path: string; display_order: number }[] = []
-      let order = photos.length
-
-      for (const file of fileArr) {
-        const ext = file.name.split('.').pop() ?? 'jpg'
-        const path = `${listingId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-
-        const { error: uploadErr } = await supabase.storage
-          .from('listing-photos')
-          .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type })
-
-        if (uploadErr) { console.warn('Storage upload failed:', uploadErr.message); continue }
-        uploaded.push({ storage_path: path, display_order: order++ })
+      const newPhotos = await uploadPhotos(listingId, fileArr, photos.length)
+      if (newPhotos.length === 0) {
+        setError('No photos could be uploaded. Check file types and try again.')
+        return
       }
-
-      if (uploaded.length === 0) { setError('No photos could be uploaded. Check file types and try again.'); return }
-
-      // 2. Save records via server API (bypasses RLS)
-      const res = await fetch('/api/listing-photos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listing_id: listingId, photos: uploaded }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'Failed to save photo records')
-
-      setPhotos(prev => [...prev, ...(json.photos as Photo[])])
+      setPhotos(prev => [...prev, ...newPhotos])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed. Try again.')
     } finally {
