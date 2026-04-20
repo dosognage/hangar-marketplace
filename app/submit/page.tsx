@@ -18,7 +18,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
-import { createListing } from '@/app/actions/listing'
+import { createListing, getListingFeeInfo } from '@/app/actions/listing'
 import { uploadPhotos } from '@/lib/uploadPhotos'
 import AirportAutocomplete, { type AirportSuggestion } from '@/app/components/AirportAutocomplete'
 
@@ -99,6 +99,13 @@ const PROPERTY_TYPE_OPTIONS = [
 // Listings that require a monthly rate (not a sale price)
 const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
 
+type FeeInfo = {
+  trialActive: boolean
+  trialEnds:   string | null
+  feeHangar:   number
+  feeHome:     number
+}
+
 export default function SubmitPage() {
   const router = useRouter()
   const [formData, setFormData] = useState(EMPTY_FORM)
@@ -107,6 +114,7 @@ export default function SubmitPage() {
   const [status, setStatus] = useState<{ type: 'error'; message: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
+  const [feeInfo, setFeeInfo] = useState<FeeInfo | null>(null)
   const [hangarLat, setHangarLat] = useState<number | null>(null)
   const [hangarLng, setHangarLng] = useState<number | null>(null)
   const [runwayLoading, setRunwayLoading] = useState(false)
@@ -122,6 +130,11 @@ export default function SubmitPage() {
   // Track the ICAO code to pass to AirportMap (debounced — only commits after user stops typing)
   const [mapIcao, setMapIcao] = useState('')
   const icaoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Load trial/fee info from server action once on mount
+  useEffect(() => {
+    getListingFeeInfo().then(setFeeInfo).catch(() => {/* non-fatal */})
+  }, [])
 
   // Debounce airport_code → geocode + map load (fires 600ms after user stops typing)
   useEffect(() => {
@@ -323,7 +336,7 @@ export default function SubmitPage() {
       const resolvedLat = hangarLat ?? airportCoords?.lat ?? null
       const resolvedLng = hangarLng ?? airportCoords?.lng ?? null
 
-      const { id: listingId } = await createListing({
+      const result = await createListing({
         ...formData,
         has_runway_access: hasRunwayAccess,
         hangar_lat: hangarLat,
@@ -334,6 +347,8 @@ export default function SubmitPage() {
         runway_width_ft:  formData.runway_width_ft,
         runway_surface:   formData.runway_surface,
       })
+
+      const listingId = result.id
 
       // If neither pin nor auto-geocode produced coords, do a final fallback
       // geocode using airport name + city + state (non-fatal, best-effort).
@@ -362,10 +377,17 @@ export default function SubmitPage() {
         }
       }
 
-      // ── Steps 2 & 3: Upload photos + save records (signed URLs bypass RLS) ─
+      // ── Steps 2 & 3: Upload photos + save records (always — even if payment needed) ─
       const saved = await uploadPhotos(listingId, photos, 0, setUploadProgress)
 
-      // ── Done — redirect to success page ─────────────────────────────────
+      // ── Payment required — redirect to Stripe checkout ───────────────────
+      if (result.requiresPayment && result.checkoutUrl) {
+        setUploadProgress(`Photos saved (${saved.length}) — redirecting to payment…`)
+        window.location.href = result.checkoutUrl
+        return
+      }
+
+      // ── Free path — redirect to success page ────────────────────────────
       router.push(`/submit/success?photos=${saved.length}`)
     } catch (err: unknown) {
       setStatus({
@@ -387,6 +409,53 @@ export default function SubmitPage() {
           your listing will be reviewed before going live.
         </p>
       </div>
+
+      {/* ── Pricing / trial banner ───────────────────────────────────────── */}
+      {feeInfo && (
+        feeInfo.trialActive ? (
+          <div style={{
+            padding: '0.85rem 1rem',
+            borderRadius: '8px',
+            marginBottom: '1.25rem',
+            backgroundColor: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            color: '#166534',
+            fontSize: '0.875rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}>
+            <span style={{ fontSize: '1.1rem' }}>🎉</span>
+            <span>
+              <strong>Free to list</strong> — we&apos;re in our founding period
+              {feeInfo.trialEnds && (
+                <> through {new Date(feeInfo.trialEnds).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</>
+              )}
+              . No credit card needed.
+            </span>
+          </div>
+        ) : (
+          <div style={{
+            padding: '0.85rem 1rem',
+            borderRadius: '8px',
+            marginBottom: '1.25rem',
+            backgroundColor: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            color: '#1e40af',
+            fontSize: '0.875rem',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.5rem',
+          }}>
+            <span style={{ fontSize: '1.1rem', marginTop: '0.05rem' }}>💳</span>
+            <span>
+              <strong>One-time listing fee:</strong>{' '}
+              ${feeInfo.feeHangar} for hangars · ${feeInfo.feeHome} for airport homes &amp; land.
+              {' '}You&apos;ll be taken to a secure checkout after submitting — your listing goes live once payment is confirmed.
+            </span>
+          </div>
+        )
+      )}
 
       {status && (
         <div style={{

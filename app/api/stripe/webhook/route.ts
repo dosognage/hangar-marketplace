@@ -61,6 +61,24 @@ export async function POST(req: NextRequest) {
       console.log(`[webhook] Listing ${listing_id} sponsored for ${days} days (until ${sponsoredUntil})`)
     }
 
+    // ── Listing fee payment ──────────────────────────────────────────────────
+    if (type === 'listing_fee' && listing_id && session.payment_status === 'paid') {
+      const { error: feeError } = await supabaseAdmin
+        .from('listings')
+        .update({
+          listing_fee_paid: true,
+          status: 'pending',  // move from pending_payment → pending (awaiting admin review)
+        })
+        .eq('id', listing_id)
+        .eq('status', 'pending_payment')
+
+      if (feeError) {
+        console.error('[webhook] Failed to activate listing after fee payment:', feeError.message)
+        return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+      }
+      console.log(`[webhook] Listing ${listing_id} fee paid — moved to pending review`)
+    }
+
     // ── Hangar request activation ────────────────────────────────────────────
     if (type === 'hangar_request' && request_id && session.payment_status === 'paid') {
       // ── Activate the request ─────────────────────────────────────────────

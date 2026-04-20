@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createServerClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import { sendEmail, listingSubmittedEmail } from '@/lib/email'
+import { getStripe } from '@/lib/stripe'
 
 export type ListingFormData = {
   title: string
@@ -46,16 +47,36 @@ export type ListingFormData = {
   longitude: number | null
 }
 
+export type CreateListingResult = {
+  id: string
+  requiresPayment?: boolean
+  checkoutUrl?: string
+  amount?: number
+}
+
 const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
+
+/**
+ * Returns true if today is before the free-trial cutoff date.
+ * LISTING_TRIAL_ENDS should be an ISO date string, e.g. "2026-06-19".
+ * If the env var is missing, the trial is considered active (always free).
+ */
+function isTrialActive(): boolean {
+  const trialEnds = process.env.LISTING_TRIAL_ENDS
+  if (!trialEnds) return true
+  return new Date() < new Date(trialEnds)
+}
 
 /**
  * Insert a new listing.
  *
  * Uses supabaseAdmin to bypass RLS — auth is verified via the cookie
  * session first, so only logged-in users can actually insert.
- * Returns the new listing's ID so the client can proceed with photo uploads.
+ *
+ * Returns the new listing ID. For non-broker, post-trial submissions
+ * also returns requiresPayment=true and a Stripe checkoutUrl.
  */
-export async function createListing(data: ListingFormData): Promise<{ id: string }> {
+export async function createListing(data: ListingFormData): Promise<CreateListingResult> {
   // Verify the user is logged in
   const serverSupabase = await createServerClient()
   const { data: { user } } = await serverSupabase.auth.getUser()
@@ -64,12 +85,25 @@ export async function createListing(data: ListingFormData): Promise<{ id: string
     redirect('/login?next=/submit')
   }
 
-  const isBroker     = user.user_metadata?.is_broker === true
+  const isBroker        = user.user_metadata?.is_broker === true
   const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
 
   const isHangar = !data.property_type || data.property_type === 'hangar'
   const isHome   = data.property_type === 'airport_home' || data.property_type === 'fly_in_community'
 
+  // ── Determine status & fee ───────────────────────────────────────────────
+  const trialFree       = !isBroker && isTrialActive()
+  const paymentRequired = !isBroker && !isTrialActive()
+
+  const feeAmountDollars = isHangar
+    ? Number(process.env.LISTING_FEE_HANGAR ?? 25)
+    : Number(process.env.LISTING_FEE_HOME   ?? 49)
+
+  // Brokers → auto-approved; trial → pending review; paywall → pending_payment
+  const initialStatus = isBroker         ? 'approved'         :
+                        paymentRequired  ? 'pending_payment'  : 'pending'
+
+  // ── Insert listing ───────────────────────────────────────────────────────
   const { data: listing, error } = await supabaseAdmin
     .from('listings')
     .insert([{
@@ -109,8 +143,9 @@ export async function createListing(data: ListingFormData): Promise<{ id: string
       contact_name:     data.contact_name,
       contact_email:    data.contact_email,
       contact_phone:    data.contact_phone || null,
-      // Verified brokers get auto-approved and linked to their profile
-      status:           isBroker ? 'approved' : 'pending',
+      status:           initialStatus,
+      trial_listing:    trialFree,
+      listing_fee_amount: paymentRequired ? feeAmountDollars : null,
       broker_profile_id: isBroker && brokerProfileId ? brokerProfileId : null,
       hangar_lat:       data.hangar_lat,
       hangar_lng:       data.hangar_lng,
@@ -124,8 +159,43 @@ export async function createListing(data: ListingFormData): Promise<{ id: string
     throw new Error(error?.message ?? 'Failed to save listing.')
   }
 
-  // Send submission confirmation email (non-fatal if it fails)
-  // Brokers get auto-approved so skip the "under review" email for them
+  // ── Payment required — create Stripe Checkout ────────────────────────────
+  if (paymentRequired) {
+    const stripe   = getStripe()
+    const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    const typeLabel = isHangar ? 'hangar' : 'property'
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          unit_amount: feeAmountDollars * 100,
+          product_data: {
+            name: `Listing Fee — ${data.title}`,
+            description: `One-time fee to publish your ${typeLabel} listing on Hangar Marketplace`,
+          },
+        },
+        quantity: 1,
+      }],
+      metadata: {
+        type:       'listing_fee',
+        listing_id: listing.id,
+      },
+      success_url: `${siteUrl}/submit/success`,
+      cancel_url:  `${siteUrl}/`,
+    })
+
+    return {
+      id:              listing.id,
+      requiresPayment: true,
+      checkoutUrl:     session.url!,
+      amount:          feeAmountDollars,
+    }
+  }
+
+  // ── Free path (broker or trial) — send confirmation email ───────────────
+  // Brokers get auto-approved; skip the "under review" email for them
   if (!isBroker) {
     const emailData = listingSubmittedEmail({
       name:        data.contact_name,
@@ -138,4 +208,23 @@ export async function createListing(data: ListingFormData): Promise<{ id: string
   }
 
   return { id: listing.id }
+}
+
+/**
+ * Server action called by the submit page to find out trial / fee info.
+ * This keeps the env vars server-side; the client just gets booleans + numbers.
+ */
+export async function getListingFeeInfo(): Promise<{
+  trialActive: boolean
+  trialEnds:   string | null
+  feeHangar:   number
+  feeHome:     number
+}> {
+  const trialEnds = process.env.LISTING_TRIAL_ENDS ?? null
+  return {
+    trialActive: isTrialActive(),
+    trialEnds,
+    feeHangar:   Number(process.env.LISTING_FEE_HANGAR ?? 25),
+    feeHome:     Number(process.env.LISTING_FEE_HOME   ?? 49),
+  }
 }
