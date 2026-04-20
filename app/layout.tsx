@@ -335,6 +335,50 @@ export default async function RootLayout({
             </main>
           </ToastProvider>
 
+          {/* ── HangarNight promo banner ────────────────────────────────── */}
+          <div style={{
+            backgroundColor: '#0f172a',
+            borderTop: '1px solid #1e3a5f',
+            borderBottom: '1px solid #1e3a5f',
+            padding: '0.75rem 2rem',
+          }}>
+            <div style={{
+              maxWidth: '1100px',
+              margin: '0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: '1rem' }}>✈️</span>
+              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem' }}>
+                <strong style={{ color: '#e2e8f0' }}>Planning a cross-country trip?</strong>{' '}
+                Keep your plane safe and plan ahead —
+              </p>
+              <a
+                href="https://hangarnight.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  backgroundColor: '#1d4ed8',
+                  color: 'white',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Book overnight hangar space →
+              </a>
+            </div>
+          </div>
+
           {/* ── Site footer ─────────────────────────────────────────────── */}
           <footer style={{
             backgroundColor: '#111827',
@@ -381,6 +425,9 @@ export default async function RootLayout({
                     <FooterLink href="/privacy">Privacy Policy</FooterLink>
                     <FooterLink href="/unsubscribe">Unsubscribe</FooterLink>
                     <FooterLink href="/apply-broker">Broker verification</FooterLink>
+                    <a href="https://hangarnight.com" target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', fontSize: '0.775rem', textDecoration: 'none', lineHeight: 1.8, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      ✈️ HangarNight — overnight hangar booking
+                    </a>
                   </FooterCol>
                   <FooterCol title="Contact us">
                     <a href="mailto:hello@hangarmarketplace.com" style={footerContactStyle}>hello@hangarmarketplace.com</a>
