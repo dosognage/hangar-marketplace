@@ -1,11 +1,45 @@
 import type { Metadata } from 'next'
+import { createServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import AboutPhotoEditor from './AboutPhotoEditor'
 
 export const metadata: Metadata = {
   title: 'About Us | Hangar Marketplace',
   description: 'Hangar Marketplace was built by an active airline pilot who got tired of searching for hangar space with no central place to look. Meet the founder.',
 }
 
-export default function AboutPage() {
+function isAdmin(email: string | undefined): boolean {
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
+  return adminEmails.includes((email ?? '').toLowerCase())
+}
+
+/** Check Supabase storage for an existing founder photo (jpg, png, webp). */
+async function getFounderPhotoUrl(): Promise<string | null> {
+  const extensions = ['jpg', 'jpeg', 'png', 'webp']
+  for (const ext of extensions) {
+    const { data } = supabaseAdmin.storage
+      .from('broker-avatars')
+      .getPublicUrl(`about/founder.${ext}`)
+    // Verify the file actually exists with a lightweight HEAD-like list
+    const { data: list } = await supabaseAdmin.storage
+      .from('broker-avatars')
+      .list('about', { search: `founder.${ext}` })
+    if (list && list.length > 0) return data.publicUrl
+  }
+  return null
+}
+
+export default async function AboutPage() {
+  // Check if current user is admin (non-blocking — undefined if not logged in)
+  let admin = false
+  try {
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    admin = isAdmin(user?.email)
+  } catch { /* not logged in */ }
+
+  const photoUrl = await getFounderPhotoUrl()
+
   return (
     <div style={pageStyle}>
 
@@ -43,17 +77,24 @@ export default function AboutPage() {
       <section style={{ ...sectionStyle, backgroundColor: '#f0f4f8', borderRadius: '12px', padding: '2.5rem' }}>
         <h2 style={h2Style}>Meet the founder</h2>
 
-        {/* Photo placeholder — swap out the div below for an <img> when you have a headshot */}
-        {/* To add a photo: replace this entire photoPlaceholder div with:
-            <img src="/about-photo.jpg" alt="Andre Dosogne" style={photoStyle} />
-            and add your photo to the /public folder as about-photo.jpg          */}
-        <div style={photoPlaceholderStyle}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-          <p style={{ margin: '0.5rem 0 0', color: '#93c5fd', fontSize: '0.75rem', fontWeight: '600', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Photo coming soon</p>
-        </div>
+        {/* Admin sees the interactive uploader; everyone else sees a plain img or placeholder */}
+        {admin ? (
+          <AboutPhotoEditor currentUrl={photoUrl} />
+        ) : photoUrl ? (
+          <img
+            src={photoUrl}
+            alt="Andre Dosogne"
+            style={{
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: '3px solid #254e7a',
+              marginBottom: '1.5rem',
+              display: 'block',
+            }}
+          />
+        ) : null}
 
         <p style={bodyStyle}>
           <strong style={{ color: '#111827' }}>Andre Dosogne</strong> is an active Alaska Airlines pilot based in the Seattle area. He started flying at 15, soloed at 16, and left for flight school at 19. By 21 he was an airline pilot flying for an American Airlines regional carrier. At 23 he was hired at Alaska Airlines, where he continues to fly today.
@@ -152,20 +193,6 @@ const bodyStyle: React.CSSProperties = {
   lineHeight: 1.8,
   margin: '0 0 1rem',
 }
-
-const photoPlaceholderStyle: React.CSSProperties = {
-  width: '120px',
-  height: '120px',
-  borderRadius: '50%',
-  backgroundColor: '#1a3a5c',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginBottom: '1.5rem',
-  border: '3px solid #254e7a',
-}
-
 
 const ctaBtnStyle: React.CSSProperties = {
   display: 'inline-block',
