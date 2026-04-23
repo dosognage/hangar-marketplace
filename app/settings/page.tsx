@@ -10,10 +10,12 @@
 
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Metadata } from 'next'
 import SettingsForm from './SettingsForm'
 import ProfileForm from './ProfileForm'
 import ReadReceiptsToggle from './ReadReceiptsToggle'
+import NotifyListingsToggle from './NotifyListingsToggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +39,16 @@ export default async function SettingsPage() {
   const isBroker         = user.user_metadata?.is_broker === true
   // Default true — opt-out model (read receipts on unless explicitly disabled)
   const readReceiptsEnabled = user.user_metadata?.read_receipts_enabled !== false
+
+  // Nearby-listing alerts: default true if the user has no preferences row yet,
+  // matching the column default. A missing row means they haven't touched any
+  // notification setting, so we honour the opt-in default.
+  const { data: prefs } = await supabaseAdmin
+    .from('user_preferences')
+    .select('notify_new_listings')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  const notifyNewListings = prefs?.notify_new_listings !== false
 
   return (
     <div style={{ maxWidth: '580px' }}>
@@ -122,6 +134,19 @@ export default async function SettingsPage() {
         {/* Form */}
         <div style={{ padding: '1.4rem' }}>
           <SettingsForm currentAirport={homeAirport} />
+        </div>
+
+        {/* Alerts toggle — lives in the same card since it's opt-in/out for
+            the home-airport based notifications. */}
+        <div style={{
+          padding: '1.2rem 1.4rem',
+          borderTop: '1px solid #f3f4f6',
+          backgroundColor: '#fafafa',
+        }}>
+          <NotifyListingsToggle
+            enabled={notifyNewListings}
+            hasHomeAirport={!!homeAirport}
+          />
         </div>
       </div>
 

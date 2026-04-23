@@ -11,6 +11,22 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase-server'
 
+// Accept literal 0 for optional numeric fields (HOA, tax). Empty string → null.
+function parseOptionalNumber(raw: FormDataEntryValue | null): number | null {
+  if (raw == null) return null
+  const s = typeof raw === 'string' ? raw : String(raw)
+  if (s === '') return null
+  const n = Number(s)
+  return Number.isFinite(n) ? n : null
+}
+
+// Mirror createListing's trial logic so edit→publish lands on the same status.
+function isTrialActive(): boolean {
+  const end = process.env.LISTING_TRIAL_ENDS
+  if (!end) return true
+  return new Date() < new Date(end)
+}
+
 // ── Delete listing ─────────────────────────────────────────────────────────
 
 export async function deleteListing(listingId: string): Promise<{ error?: string }> {
@@ -65,10 +81,10 @@ export async function updateListing(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.' }
 
-  // Verify ownership
+  // Verify ownership (pull current status so we know whether this is a draft).
   const { data: existing } = await supabase
     .from('listings')
-    .select('id, user_id')
+    .select('id, user_id, status')
     .eq('id', listingId)
     .single()
 
@@ -79,6 +95,46 @@ export async function updateListing(
   const property_type  = (formData.get('property_type') as string) || 'hangar'
   const isHangar       = !property_type || property_type === 'hangar'
   const isHome         = property_type === 'airport_home' || property_type === 'fly_in_community'
+
+  // ── Determine target status ─────────────────────────────────────────────
+  // Published listings always reset to 'pending' so admin re-reviews edits.
+  // Drafts are trickier: user picks via the save_mode field ("draft" keeps it
+  // unpublished, "publish" runs the same gate as a new submission).
+  const saveMode = formData.get('save_mode') as string | null
+  const isBroker = user.user_metadata?.is_broker === true
+
+  let nextStatus: string
+  if (existing.status === 'draft') {
+    if (saveMode === 'publish') {
+      // Publish gate mirrors createListing: broker → approved, trial → pending,
+      // paywall → pending_payment. Payment flow from the edit path isn't wired
+      // yet so after-trial non-brokers land on pending_payment and can finish
+      // via an admin action.
+      nextStatus = isBroker ? 'approved'
+                : isTrialActive() ? 'pending'
+                : 'pending_payment'
+    } else {
+      nextStatus = 'draft'
+    }
+  } else {
+    nextStatus = 'pending'
+  }
+
+  // Amenities come in as a JSON-encoded string from a hidden field.
+  let amenitiesClean: string[] = []
+  try {
+    const raw = formData.get('amenities')
+    if (typeof raw === 'string' && raw.length > 0) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        amenitiesClean = Array.from(new Set(
+          parsed
+            .map(a => typeof a === 'string' ? a.trim() : '')
+            .filter(Boolean),
+        )).slice(0, 40)
+      }
+    }
+  } catch { /* fall through to empty */ }
 
   const updates = {
     title:          (formData.get('title') as string)?.trim(),
@@ -118,16 +174,25 @@ export async function updateListing(
     contact_name:   (formData.get('contact_name') as string)?.trim(),
     contact_email:  (formData.get('contact_email') as string)?.trim(),
     contact_phone:  (formData.get('contact_phone') as string)?.trim() || null,
-    // Reset to pending so admin re-reviews after edits
-    status: 'pending',
+    // Recurring costs + amenities (from the new fields on the form).
+    hoa_monthly:          parseOptionalNumber(formData.get('hoa_monthly')),
+    annual_property_tax:  parseOptionalNumber(formData.get('annual_property_tax')),
+    amenities:            amenitiesClean,
+    status: nextStatus,
   }
 
   const { error } = await supabase.from('listings').update(updates).eq('id', listingId)
   if (error) return { error: error.message }
 
   revalidatePath('/broker/dashboard')
+  revalidatePath('/dashboard')
   revalidatePath(`/listing/${listingId}`)
-  redirect('/broker/dashboard')
+
+  // Non-brokers land on the main dashboard (which has the drafts section).
+  // Drafts kept as drafts go straight back to the drafts view so it's obvious
+  // the save worked.
+  if (nextStatus === 'draft') redirect('/dashboard?drafts=1')
+  redirect(isBroker ? '/broker/dashboard' : '/dashboard')
 }
 
 // ── Toggle saved listing ───────────────────────────────────────────────────

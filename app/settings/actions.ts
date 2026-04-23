@@ -151,3 +151,32 @@ export async function saveHomeAirport(
       : 'Home airport cleared.',
   }
 }
+
+/**
+ * Opt the current user in or out of nearby-new-listing alerts.
+ *
+ * Writes the flag to user_preferences.notify_new_listings. If the row doesn't
+ * exist yet (user hasn't set a home airport), it creates the row with nulls
+ * for the airport fields so the flag is persisted independently.
+ */
+export async function saveNotifyNewListings(enabled: boolean): Promise<{ error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You must be logged in.' }
+
+  const { error } = await supabaseAdmin
+    .from('user_preferences')
+    .upsert({
+      user_id:             user.id,
+      notify_new_listings: enabled,
+      updated_at:          new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+
+  if (error) {
+    console.error('[settings] saveNotifyNewListings:', error.message)
+    return { error: 'Failed to save. Please try again.' }
+  }
+
+  revalidatePath('/settings')
+  return {}
+}

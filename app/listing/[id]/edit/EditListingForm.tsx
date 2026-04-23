@@ -26,6 +26,22 @@ const PROPERTY_TYPE_OPTIONS = [
   { value: 'fly_in_community', label: '✈ Fly-in Community' },
 ]
 
+// Must match the list in app/submit/page.tsx.
+const AMENITY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'heat',             label: 'Heat' },
+  { value: 'power',            label: 'Power' },
+  { value: 'water',            label: 'Water' },
+  { value: 'air_conditioning', label: 'Air conditioning' },
+  { value: 'bathroom',         label: 'Bathroom' },
+  { value: 'wifi',             label: 'WiFi' },
+  { value: 'fuel_nearby',      label: 'Fuel nearby' },
+  { value: 'floor_drain',      label: 'Floor drain' },
+  { value: 'compressed_air',   label: 'Compressed air' },
+  { value: 'office_space',     label: 'Office space' },
+  { value: 'loft_storage',     label: 'Loft storage' },
+  { value: 'security_system',  label: 'Security system' },
+]
+
 type Listing = {
   id: string
   title: string
@@ -57,6 +73,12 @@ type Listing = {
   contact_name: string
   contact_email: string
   contact_phone: string | null
+  // New fields from the drafts/amenities/HOA migration. Optional in the type
+  // because old listings stored before the migration ran may not carry them.
+  hoa_monthly?: number | null
+  annual_property_tax?: number | null
+  amenities?: string[] | null
+  status?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
@@ -78,6 +100,14 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
   const [runwayWidth,  setRunwayWidth]  = useState(listing.runway_width_ft  != null ? String(listing.runway_width_ft)  : '')
   const [runwaySurface, setRunwaySurface] = useState(listing.runway_surface ?? '')
   const [runwayLoading, setRunwayLoading] = useState(false)
+
+  // Amenities checkbox state — hydrated from the listing's current amenity list.
+  const [amenities, setAmenities] = useState<string[]>(
+    Array.isArray(listing.amenities) ? listing.amenities.filter(a => typeof a === 'string') : []
+  )
+
+  // Drafts get Save as Draft + Publish buttons. Non-drafts just get Save changes.
+  const isDraft = listing.status === 'draft'
 
   const icaoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -258,21 +288,97 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
         </Section>
 
         {/* ── Pricing ────────────────────────────────────────────────────── */}
+        {/* Same rule as submit: For Sale → asking only, For Lease → monthly only. */}
         <Section title="Pricing">
           {isRental ? (
             <Field label={listingType === 'space' ? 'Monthly rent for the space ($)' : 'Monthly lease ($)'}>
               <input name="monthly_lease" type="number" min="0" defaultValue={listing.monthly_lease ?? ''} style={inputStyle} />
             </Field>
           ) : (
-            <TwoCol>
-              <Field label="Asking price ($)">
-                <input name="asking_price" type="number" min="0" defaultValue={listing.asking_price ?? ''} style={inputStyle} />
-              </Field>
-              <Field label="Monthly lease ($)">
-                <input name="monthly_lease" type="number" min="0" defaultValue={listing.monthly_lease ?? ''} style={inputStyle} />
-              </Field>
-            </TwoCol>
+            <Field label="Asking price ($)">
+              <input name="asking_price" type="number" min="0" defaultValue={listing.asking_price ?? ''} style={inputStyle} />
+            </Field>
           )}
+        </Section>
+
+        {/* ── Recurring costs ──────────────────────────────────────────── */}
+        <Section title="Monthly HOA and annual property tax">
+          <TwoCol>
+            <Field label="HOA (monthly, $)">
+              <input
+                name="hoa_monthly"
+                type="number"
+                min="0"
+                step="1"
+                defaultValue={listing.hoa_monthly ?? ''}
+                placeholder="0"
+                style={inputStyle}
+              />
+            </Field>
+            <Field label="Annual property tax ($)">
+              <input
+                name="annual_property_tax"
+                type="number"
+                min="0"
+                step="1"
+                defaultValue={listing.annual_property_tax ?? ''}
+                placeholder="0"
+                style={inputStyle}
+              />
+            </Field>
+          </TwoCol>
+          <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af' }}>
+            Enter 0 if neither applies. Leave blank if unknown.
+          </p>
+        </Section>
+
+        {/* ── Amenities ────────────────────────────────────────────────── */}
+        <Section title="Amenities">
+          {/* Hidden field carries the JSON-encoded array to the server action. */}
+          <input type="hidden" name="amenities" value={JSON.stringify(amenities)} />
+          <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#6b7280' }}>
+            Check every feature that&apos;s included or easily available.
+          </p>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+            gap: '0.55rem',
+          }}>
+            {AMENITY_OPTIONS.map(opt => {
+              const checked = amenities.includes(opt.value)
+              return (
+                <label
+                  key={opt.value}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.55rem 0.75rem',
+                    border: `1px solid ${checked ? '#6366f1' : '#e5e7eb'}`,
+                    borderRadius: '7px',
+                    backgroundColor: checked ? '#eef2ff' : 'white',
+                    color: checked ? '#4338ca' : '#374151',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={e => {
+                      setAmenities(prev =>
+                        e.target.checked
+                          ? [...prev, opt.value]
+                          : prev.filter(a => a !== opt.value),
+                      )
+                    }}
+                    style={{ width: '15px', height: '15px', accentColor: '#6366f1' }}
+                  />
+                  {opt.label}
+                </label>
+              )
+            })}
+          </div>
         </Section>
 
         {/* ── Hangar Dimensions ──────────────────────────────────────────── */}
@@ -393,12 +499,43 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
           </TwoCol>
         </Section>
 
-        <div style={{ display: 'flex', gap: '0.75rem', paddingBottom: '2rem' }}>
-          <button type="submit" disabled={isPending} style={saveBtn}>
-            {isPending ? 'Saving…' : 'Save changes'}
-          </button>
-          <Link href="/broker/dashboard" style={cancelLink}>Cancel</Link>
-        </div>
+        {/* ── Actions ────────────────────────────────────────────────── */}
+        {/* Draft listings offer Save as Draft + Publish. Everything else just */}
+        {/* has a single Save changes button (which resets to pending review). */}
+        {isDraft ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', paddingBottom: '0.5rem' }}>
+            <button
+              type="submit"
+              name="save_mode"
+              value="draft"
+              disabled={isPending}
+              style={draftBtn}
+            >
+              {isPending ? 'Saving…' : 'Save as Draft'}
+            </button>
+            <button
+              type="submit"
+              name="save_mode"
+              value="publish"
+              disabled={isPending}
+              style={saveBtn}
+            >
+              {isPending ? 'Publishing…' : 'Publish Listing'}
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '0.75rem', paddingBottom: '2rem' }}>
+            <button type="submit" disabled={isPending} style={saveBtn}>
+              {isPending ? 'Saving…' : 'Save changes'}
+            </button>
+            <Link href="/broker/dashboard" style={cancelLink}>Cancel</Link>
+          </div>
+        )}
+        {isDraft && (
+          <p style={{ margin: 0, fontSize: '0.78rem', color: '#9ca3af', textAlign: 'center', paddingBottom: '2rem' }}>
+            Drafts stay private. Publishing sends your listing to review (or live instantly if you&apos;re a verified broker).
+          </p>
+        )}
       </form>
     </>
   )
@@ -457,6 +594,17 @@ const saveBtn: React.CSSProperties = {
   borderRadius: '8px',
   fontSize: '0.95rem',
   fontWeight: '700',
+  cursor: 'pointer',
+}
+
+const draftBtn: React.CSSProperties = {
+  padding: '0.75rem 1.75rem',
+  backgroundColor: 'white',
+  color: '#111827',
+  border: '1px solid #d1d5db',
+  borderRadius: '8px',
+  fontSize: '0.95rem',
+  fontWeight: '600',
   cursor: 'pointer',
 }
 
