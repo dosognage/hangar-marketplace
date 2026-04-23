@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, listingApprovedEmail, listingRejectedEmail, newListingAtAirportEmail } from '@/lib/email'
 import { createNotification } from '@/lib/notifications'
+import { notifyBuyersOfNewListing } from '@/lib/listingAlerts'
 
 async function requireAdmin(req: NextRequest) {
   const supabase = await createServerClient()
@@ -124,10 +125,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    // Fetch the listing (need airport_code + listing_type for seeker alerts)
+    // Fetch the listing (need airport_code + listing_type for seeker alerts,
+    // plus lat/lng + prices for the 50mi nearby-buyer alert).
     const { data: listing } = await supabaseAdmin
       .from('listings')
-      .select('id, title, user_id, contact_name, contact_email, airport_code, airport_name, listing_type, price')
+      .select('id, title, user_id, contact_name, contact_email, airport_code, airport_name, listing_type, price, asking_price, monthly_lease, latitude, longitude')
       .eq('id', id)
       .single()
 
@@ -205,6 +207,21 @@ export async function PATCH(request: NextRequest) {
           }
           console.log(`[admin/listings] notified ${activeRequests.length} seekers at ${listing.airport_code}`)
         }
+      }
+
+      // ── 3. If approved: notify buyers whose home airport is within 50mi ──
+      if (isApproved && listing.latitude != null && listing.longitude != null) {
+        void notifyBuyersOfNewListing({
+          id:            listing.id,
+          title:         listing.title,
+          airport_code:  listing.airport_code,
+          airport_name:  listing.airport_name ?? listing.airport_code,
+          listing_type:  listing.listing_type ?? 'lease',
+          latitude:      listing.latitude,
+          longitude:     listing.longitude,
+          asking_price:  listing.asking_price ?? null,
+          monthly_lease: listing.monthly_lease ?? null,
+        }).catch(e => console.error('[admin/listings] nearby-buyer alert failed:', e))
       }
     }
 

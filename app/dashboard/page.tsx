@@ -43,7 +43,9 @@ type Inquiry = {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  draft:    { label: 'Draft',          color: '#374151', bg: '#f3f4f6' },
   pending:  { label: 'Pending review', color: '#92400e', bg: '#fef3c7' },
+  pending_payment: { label: 'Payment required', color: '#92400e', bg: '#fef3c7' },
   approved: { label: 'Live',           color: '#166534', bg: '#dcfce7' },
   rejected: { label: 'Rejected',       color: '#991b1b', bg: '#fee2e2' },
 }
@@ -57,12 +59,15 @@ export default async function DashboardPage() {
     redirect('/login?next=/dashboard')
   }
 
-  // Fetch this user's listings
-  const { data: listings, error } = await supabase
+  // Fetch this user's listings (drafts + published together — we split below).
+  const { data: allListings, error } = await supabase
     .from('listings')
     .select('id, title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, status, created_at, is_sponsored, sponsored_until, stripe_customer_id, view_count')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+
+  const drafts   = (allListings ?? []).filter((l: Listing) => l.status === 'draft')
+  const listings = (allListings ?? []).filter((l: Listing) => l.status !== 'draft')
 
   // Fetch inquiries for all of the user's listings (non-fatal)
   let inquiries: Inquiry[] = []
@@ -265,7 +270,71 @@ export default async function DashboardPage() {
         </p>
       )}
 
-      {!error && (!listings || listings.length === 0) && (
+      {/* ── My Drafts ─────────────────────────────────────────────────── */}
+      {/* Rendered above published listings so users see work-in-progress first. */}
+      {drafts.length > 0 && (
+        <div style={{ marginBottom: '2.5rem' }}>
+          <div style={{ marginBottom: '0.9rem' }}>
+            <h2 style={{ margin: '0 0 0.2rem', fontSize: '1.05rem' }}>My Drafts</h2>
+            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.85rem' }}>
+              Unpublished listings only you can see. Pick one up where you left off and hit Publish when ready.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            {drafts.map((draft: Listing) => (
+              <div
+                key={draft.id}
+                style={{
+                  backgroundColor: 'white',
+                  border: '1px dashed #d1d5db',
+                  borderRadius: '10px',
+                  padding: '1rem 1.25rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem' }}>
+                      {draft.title || 'Untitled draft'}
+                    </h3>
+                    <span style={{
+                      padding: '0.1rem 0.55rem', borderRadius: '999px',
+                      fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase',
+                      backgroundColor: '#f3f4f6', color: '#374151', letterSpacing: '0.04em',
+                    }}>
+                      Draft
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
+                    {draft.airport_code
+                      ? `${draft.airport_name || 'Airport TBD'} (${draft.airport_code})`
+                      : 'Airport not set yet'}
+                    {draft.city && ` · ${draft.city}${draft.state ? `, ${draft.state}` : ''}`}
+                    {' · Started '}
+                    {new Date(draft.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <Link href={`/listing/${draft.id}/edit`} style={{
+                    fontSize: '0.82rem', color: 'white', backgroundColor: '#111827',
+                    textDecoration: 'none', fontWeight: '600', whiteSpace: 'nowrap',
+                    padding: '0.4rem 0.95rem', borderRadius: '6px',
+                  }}>
+                    Resume editing
+                  </Link>
+                  <DeleteListingButton listingId={draft.id} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!error && listings.length === 0 && drafts.length === 0 && (
         <div style={{
           backgroundColor: 'white', border: '1px dashed #d1d5db',
           borderRadius: '12px', padding: '4rem 2rem', textAlign: 'center',
@@ -285,7 +354,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {listings && listings.length > 0 && (
+      {listings.length > 0 && (
         <div style={{ display: 'grid', gap: '1.25rem' }}>
           {listings.map((listing: Listing) => {
             const s = STATUS_LABELS[listing.status] ?? STATUS_LABELS.pending

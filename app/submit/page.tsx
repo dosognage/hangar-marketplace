@@ -51,6 +51,9 @@ const EMPTY_FORM = {
   ownership_type: '',
   asking_price: '',
   monthly_lease: '',
+  // Recurring costs — both fields must accept literal 0
+  hoa_monthly: '',
+  annual_property_tax: '',
   // Hangar-specific
   square_feet: '',
   door_width: '',
@@ -74,6 +77,23 @@ const EMPTY_FORM = {
   contact_email: '',
   contact_phone: '',
 }
+
+// Canonical amenity keys. Add new items here — they flow into the form checkbox
+// grid, the listing detail page, and any admin reports.
+const AMENITY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'heat',             label: 'Heat' },
+  { value: 'power',            label: 'Power' },
+  { value: 'water',            label: 'Water' },
+  { value: 'air_conditioning', label: 'Air conditioning' },
+  { value: 'bathroom',         label: 'Bathroom' },
+  { value: 'wifi',             label: 'WiFi' },
+  { value: 'fuel_nearby',      label: 'Fuel nearby' },
+  { value: 'floor_drain',      label: 'Floor drain' },
+  { value: 'compressed_air',   label: 'Compressed air' },
+  { value: 'office_space',     label: 'Office space' },
+  { value: 'loft_storage',     label: 'Loft storage' },
+  { value: 'security_system',  label: 'Security system' },
+]
 
 const SURFACE_OPTIONS = [
   'Asphalt',
@@ -100,19 +120,22 @@ const PROPERTY_TYPE_OPTIONS = [
 const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
 
 type FeeInfo = {
-  trialActive: boolean
-  trialEnds:   string | null
-  feeHangar:   number
-  feeHome:     number
+  trialActive:      boolean
+  trialEnds:        string | null
+  feeHangar:        number
+  feeHome:          number
+  isVerifiedBroker: boolean
 }
 
 export default function SubmitPage() {
   const router = useRouter()
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [hasRunwayAccess, setHasRunwayAccess] = useState(false)
+  const [amenities, setAmenities] = useState<string[]>([])
   const [photos, setPhotos] = useState<File[]>([])
   const [status, setStatus] = useState<{ type: 'error'; message: string } | null>(null)
   const [loading, setLoading] = useState(false)
+  const [submitMode, setSubmitMode] = useState<'publish' | 'draft' | null>(null)
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
   const [feeInfo, setFeeInfo] = useState<FeeInfo | null>(null)
   const [hangarLat, setHangarLat] = useState<number | null>(null)
@@ -318,8 +341,11 @@ export default function SubmitPage() {
     e.preventDefault()
     setStatus(null)
 
-    if (photos.length < MIN_PHOTOS) {
-      setStatus({ type: 'error', message: `Please upload at least ${MIN_PHOTOS} photos before submitting.` })
+    // Publish path requires the usual photo minimum; drafts can be saved with
+    // no photos at all so the user can capture a work-in-progress snapshot.
+    const isDraft = submitMode === 'draft'
+    if (!isDraft && photos.length < MIN_PHOTOS) {
+      setStatus({ type: 'error', message: `Please upload at least ${MIN_PHOTOS} photos before publishing, or click Save as Draft to finish later.` })
       return
     }
 
@@ -327,7 +353,7 @@ export default function SubmitPage() {
 
     try {
       // ── Step 1: Insert the listing (server action — bypasses RLS) ──────
-      setUploadProgress('Saving listing…')
+      setUploadProgress(isDraft ? 'Saving draft…' : 'Saving listing…')
 
       // Coordinate priority:
       //  1. Pin drop (hangarLat/Lng) — most precise, user placed it on the airport diagram
@@ -339,6 +365,7 @@ export default function SubmitPage() {
       const result = await createListing({
         ...formData,
         has_runway_access: hasRunwayAccess,
+        amenities,
         hangar_lat: hangarLat,
         hangar_lng: hangarLng,
         latitude:   resolvedLat,
@@ -346,6 +373,7 @@ export default function SubmitPage() {
         runway_length_ft: formData.runway_length_ft,
         runway_width_ft:  formData.runway_width_ft,
         runway_surface:   formData.runway_surface,
+        isDraft,
       })
 
       const listingId = result.id
@@ -377,8 +405,18 @@ export default function SubmitPage() {
         }
       }
 
-      // ── Steps 2 & 3: Upload photos + save records (always — even if payment needed) ─
-      const saved = await uploadPhotos(listingId, photos, 0, setUploadProgress)
+      // ── Steps 2 & 3: Upload photos + save records ─────────────────────
+      // Photos are optional for drafts but still uploaded if present.
+      const saved = photos.length > 0
+        ? await uploadPhotos(listingId, photos, 0, setUploadProgress)
+        : []
+
+      // ── Draft path — go straight to the dashboard ─────────────────────
+      if (isDraft) {
+        setUploadProgress('Draft saved.')
+        router.push('/dashboard?drafts=1')
+        return
+      }
 
       // ── Payment required — redirect to Stripe checkout ───────────────────
       if (result.requiresPayment && result.checkoutUrl) {
@@ -397,6 +435,7 @@ export default function SubmitPage() {
     } finally {
       setLoading(false)
       setUploadProgress(null)
+      setSubmitMode(null)
     }
   }
 
@@ -405,13 +444,14 @@ export default function SubmitPage() {
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ marginBottom: '0.25rem' }}>Submit a Listing</h1>
         <p style={{ color: '#6b7280', margin: 0 }}>
-          List a hangar, airport home, land, or fly-in community property. Fill out the details below —
-          your listing will be reviewed before going live.
+          List a hangar, airport home, land, or fly-in community property. Fill out the details below
+          and your listing will be reviewed before going live.
         </p>
       </div>
 
       {/* ── Pricing / trial banner ───────────────────────────────────────── */}
-      {feeInfo && (
+      {/* Verified brokers always list for free — the banner is noise for them. */}
+      {feeInfo && !feeInfo.isVerifiedBroker && (
         feeInfo.trialActive ? (
           <div style={{
             padding: '0.85rem 1rem',
@@ -427,7 +467,7 @@ export default function SubmitPage() {
           }}>
             <span style={{ fontSize: '1.1rem' }}>🎉</span>
             <span>
-              <strong>Free to list</strong> — we&apos;re in our founding period
+              <strong>Free to list:</strong> we&apos;re in our founding period
               {feeInfo.trialEnds && (
                 <> through {new Date(feeInfo.trialEnds).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</>
               )}
@@ -451,7 +491,7 @@ export default function SubmitPage() {
             <span>
               <strong>One-time listing fee:</strong>{' '}
               ${feeInfo.feeHangar} for hangars · ${feeInfo.feeHome} for airport homes &amp; land.
-              {' '}You&apos;ll be taken to a secure checkout after submitting — your listing goes live once payment is confirmed.
+              {' '}You&apos;ll be taken to a secure checkout after submitting, and your listing goes live once payment is confirmed.
             </span>
           </div>
         )
@@ -560,7 +600,7 @@ export default function SubmitPage() {
               </div>
               {airportCoords && !geocoding && (
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.72rem', color: '#16a34a', fontWeight: '500' }}>
-                  ✓ Airport location captured — listing will be searchable by radius
+                  ✓ Airport location captured. Listing will be searchable by radius.
                 </p>
               )}
             </Field>
@@ -607,21 +647,102 @@ export default function SubmitPage() {
         </Section>
 
         {/* ── Pricing ─────────────────────────────────────────────────── */}
+        {/* For Sale  → asking price only. */}
+        {/* For Lease / Space → monthly lease only. */}
         <Section title="Pricing">
           {IS_RENTAL(formData.listing_type) ? (
             <Field label={formData.listing_type === 'space' ? 'Monthly rent for the space ($)' : 'Monthly lease ($)'}>
-              <input name="monthly_lease" type="number" placeholder="0" value={formData.monthly_lease} onChange={handleChange} style={inputStyle} />
+              <input name="monthly_lease" type="number" min="0" placeholder="0" value={formData.monthly_lease} onChange={handleChange} style={inputStyle} />
             </Field>
           ) : (
-            <TwoCol>
-              <Field label="Asking price ($)">
-                <input name="asking_price" type="number" placeholder="0" value={formData.asking_price} onChange={handleChange} style={inputStyle} />
-              </Field>
-              <Field label="Monthly lease ($)">
-                <input name="monthly_lease" type="number" placeholder="0" value={formData.monthly_lease} onChange={handleChange} style={inputStyle} />
-              </Field>
-            </TwoCol>
+            <Field label="Asking price ($)">
+              <input name="asking_price" type="number" min="0" placeholder="0" value={formData.asking_price} onChange={handleChange} style={inputStyle} />
+            </Field>
           )}
+        </Section>
+
+        {/* ── Recurring costs ─────────────────────────────────────────── */}
+        {/* HOA + property tax apply to any property type. Both accept 0 (e.g. */}
+        {/* "no HOA at this airpark"), so we send the raw string — the server */}
+        {/* action distinguishes empty string (→ null) from "0" (→ 0).        */}
+        <Section title="Monthly HOA and annual property tax">
+          <TwoCol>
+            <Field label="HOA (monthly, $)">
+              <input
+                name="hoa_monthly"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={formData.hoa_monthly}
+                onChange={handleChange}
+                style={inputStyle}
+              />
+            </Field>
+            <Field label="Annual property tax ($)">
+              <input
+                name="annual_property_tax"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={formData.annual_property_tax}
+                onChange={handleChange}
+                style={inputStyle}
+              />
+            </Field>
+          </TwoCol>
+          <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af' }}>
+            Enter 0 if neither applies. Leave blank if unknown.
+          </p>
+        </Section>
+
+        {/* ── Amenities ───────────────────────────────────────────────── */}
+        <Section title="Amenities">
+          <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#6b7280' }}>
+            Check every feature that's included or easily available.
+          </p>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+            gap: '0.55rem',
+          }}>
+            {AMENITY_OPTIONS.map(opt => {
+              const checked = amenities.includes(opt.value)
+              return (
+                <label
+                  key={opt.value}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.55rem 0.75rem',
+                    border: `1px solid ${checked ? '#6366f1' : '#e5e7eb'}`,
+                    borderRadius: '7px',
+                    backgroundColor: checked ? '#eef2ff' : 'white',
+                    color: checked ? '#4338ca' : '#374151',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={e => {
+                      setAmenities(prev =>
+                        e.target.checked
+                          ? [...prev, opt.value]
+                          : prev.filter(a => a !== opt.value),
+                      )
+                    }}
+                    style={{ width: '15px', height: '15px', accentColor: '#6366f1' }}
+                  />
+                  {opt.label}
+                </label>
+              )
+            })}
+          </div>
         </Section>
 
         {/* ── Hangar Dimensions (hangar only) ─────────────────────────── */}
@@ -815,7 +936,7 @@ export default function SubmitPage() {
         <Section title={formData.property_type === 'hangar' ? 'Hangar Location (optional)' : 'Property Location on Airport (optional)'}>
           <p style={{ margin: '0 0 0.75rem', color: '#6b7280', fontSize: '0.82rem', lineHeight: 1.5 }}>
             Enter your airport code above and pin exactly where your property is on the field. Buyers can see it on
-            the airport diagram — a feature no other marketplace offers.
+            the airport diagram, a feature no other marketplace offers.
           </p>
           {mapIcao ? (
             <>
@@ -866,9 +987,32 @@ export default function SubmitPage() {
           </TwoCol>
         </Section>
 
-        <button type="submit" disabled={loading} style={submitButtonStyle}>
-          {loading ? (uploadProgress ?? 'Submitting…') : 'Submit Listing'}
-        </button>
+        {/* ── Actions ─────────────────────────────────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <button
+            type="submit"
+            disabled={loading}
+            onClick={() => setSubmitMode('draft')}
+            style={draftButtonStyle}
+          >
+            {loading && submitMode === 'draft'
+              ? (uploadProgress ?? 'Saving draft…')
+              : 'Save as Draft'}
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            onClick={() => setSubmitMode('publish')}
+            style={submitButtonStyle}
+          >
+            {loading && submitMode === 'publish'
+              ? (uploadProgress ?? 'Publishing…')
+              : 'Publish Listing'}
+          </button>
+        </div>
+        <p style={{ margin: 0, fontSize: '0.78rem', color: '#9ca3af', textAlign: 'center' }}>
+          Drafts stay private until you publish. You can finish them anytime from your dashboard.
+        </p>
       </form>
     </div>
   )
@@ -918,5 +1062,16 @@ const submitButtonStyle: React.CSSProperties = {
   borderRadius: '8px',
   fontSize: '1rem',
   fontWeight: '700',
+  cursor: 'pointer',
+}
+
+const draftButtonStyle: React.CSSProperties = {
+  padding: '0.85rem',
+  backgroundColor: 'white',
+  color: '#111827',
+  border: '1px solid #d1d5db',
+  borderRadius: '8px',
+  fontSize: '1rem',
+  fontWeight: '600',
   cursor: 'pointer',
 }

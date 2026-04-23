@@ -2,6 +2,7 @@
 
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { geocodeLocation } from '@/lib/geocode'
 import { revalidatePath } from 'next/cache'
 
 export type SettingsState = {
@@ -104,6 +105,41 @@ export async function saveHomeAirport(
   if (error) {
     console.error('[settings] updateUser error:', error.message)
     return { error: 'Failed to save. Please try again.' }
+  }
+
+  // ── Mirror home airport + coordinates into user_preferences ─────────────
+  //
+  // user_metadata is fine for rendering but not for querying — we can't run
+  // "find every user within 50mi of this listing" against auth.users. So we
+  // keep a parallel row in user_preferences with the geocoded lat/lng, which
+  // the notification dispatcher reads. A failure here is non-fatal; the ICAO
+  // is still saved and the user can retry.
+  try {
+    if (code) {
+      const geo = await geocodeLocation(code)
+      await supabaseAdmin
+        .from('user_preferences')
+        .upsert({
+          user_id:           user.id,
+          home_airport_code: code,
+          home_airport_lat:  geo?.lat ?? null,
+          home_airport_lng:  geo?.lng ?? null,
+          updated_at:        new Date().toISOString(),
+        }, { onConflict: 'user_id' })
+    } else {
+      // Clearing home airport — wipe the cached coords too.
+      await supabaseAdmin
+        .from('user_preferences')
+        .upsert({
+          user_id:           user.id,
+          home_airport_code: null,
+          home_airport_lat:  null,
+          home_airport_lng:  null,
+          updated_at:        new Date().toISOString(),
+        }, { onConflict: 'user_id' })
+    }
+  } catch (e) {
+    console.warn('[settings] user_preferences upsert failed:', e)
   }
 
   revalidatePath('/settings')

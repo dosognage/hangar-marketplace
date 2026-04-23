@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/email'
 import { geocodeLocation, distanceMiles } from '@/lib/geocode'
 import { createNotification } from '@/lib/notifications'
+import { notifyListingOwnersOfNewRequest } from '@/lib/listingAlerts'
 
 // ─── GET /api/requests ────────────────────────────────────────────────────────
 // Public: returns all open hangar requests, newest first.
@@ -103,9 +104,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Alert nearby brokers — fire-and-forget so it never delays the user's response
+  // Alert nearby brokers AND listing owners — both fire-and-forget so they
+  // never delay the user's 201 response.
   const airportCode = body.airport_code?.trim().toUpperCase()
   if (airportCode) {
+    // (a) Brokers whose specialty airports are within their chosen radius
+    //     of this request. This is the pre-existing flow.
     void alertNearbyBrokers({
       requestId:   data.id,
       airportCode,
@@ -119,6 +123,30 @@ export async function POST(req: Request) {
       moveInDate:  body.move_in_date ?? null,
       notes:       body.notes ?? null,
     }).catch(e => console.error('[POST /api/requests] broker alert error:', e))
+
+    // (b) Listing owners with a live listing within 50mi of this request.
+    //     We geocode once here and hand coords to the helper so it can do
+    //     in-memory haversine filtering.
+    void (async () => {
+      const geo = await geocodeLocation(airportCode)
+      if (!geo) return
+      await notifyListingOwnersOfNewRequest({
+        requestId:    data.id,
+        requesterId:  user.id,
+        airportCode,
+        airportName:  body.airport_name ?? airportCode,
+        city:         body.city,
+        state:        body.state,
+        contactName:  body.contact_name,
+        aircraftType: body.aircraft_type,
+        duration:     body.duration,
+        budget:       body.monthly_budget ?? null,
+        moveInDate:   body.move_in_date ?? null,
+        notes:        body.notes ?? null,
+        requestLat:   geo.lat,
+        requestLng:   geo.lng,
+      })
+    })().catch(e => console.error('[POST /api/requests] owner alert error:', e))
   }
 
   return NextResponse.json({ id: data.id }, { status: 201 })
@@ -192,7 +220,7 @@ async function alertNearbyBrokers(payload: AlertPayload) {
     // Email
     await sendEmail({
       to: broker.contact_email,
-      subject: `New hangar request near your area — ${payload.airportCode}`,
+      subject: `New hangar request near your area: ${payload.airportCode}`,
       html: `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
@@ -210,7 +238,7 @@ async function alertNearbyBrokers(payload: AlertPayload) {
             Hi ${broker.full_name}, a pilot just posted a hangar request within your alert radius.
           </p>
           <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin-bottom:24px;font-size:14px;color:#374151;line-height:1.8;">
-            <strong>${payload.contactName}</strong> is looking for hangar space at <strong>${payload.airportCode} — ${payload.airportName}</strong>, ${payload.city}, ${payload.state}<br/>
+            <strong>${payload.contactName}</strong> is looking for hangar space at <strong>${payload.airportCode} (${payload.airportName})</strong>, ${payload.city}, ${payload.state}<br/>
             ${details}
           </div>
           <a href="${requestUrl}" style="display:inline-block;padding:11px 26px;background:#1a3a5c;color:white;text-decoration:none;border-radius:7px;font-size:14px;font-weight:600;">

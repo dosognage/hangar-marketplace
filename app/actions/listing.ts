@@ -5,6 +5,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import { sendEmail, listingSubmittedEmail } from '@/lib/email'
 import { getStripe } from '@/lib/stripe'
+import { notifyBuyersOfNewListing } from '@/lib/listingAlerts'
 
 export type ListingFormData = {
   title: string
@@ -17,6 +18,9 @@ export type ListingFormData = {
   ownership_type: string
   asking_price: string
   monthly_lease: string
+  // Recurring costs (apply to homes + land; user can enter 0)
+  hoa_monthly: string
+  annual_property_tax: string
   // Hangar-specific
   square_feet: string
   door_width: string
@@ -29,6 +33,8 @@ export type ListingFormData = {
   lot_acres: string
   has_runway_access: boolean
   airpark_name: string
+  // Amenities (array of short keys — "heat", "power", "wifi", etc.)
+  amenities: string[]
   // Address (non-hangar)
   address: string
   zip_code: string
@@ -45,6 +51,8 @@ export type ListingFormData = {
   // Searchable map coordinates — airport center or pin-drop location
   latitude: number | null
   longitude: number | null
+  // When true, save as a draft (no payment, no email, no notifications).
+  isDraft?: boolean
 }
 
 export type CreateListingResult = {
@@ -90,18 +98,40 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
 
   const isHangar = !data.property_type || data.property_type === 'hangar'
   const isHome   = data.property_type === 'airport_home' || data.property_type === 'fly_in_community'
+  const isDraft  = data.isDraft === true
 
   // ── Determine status & fee ───────────────────────────────────────────────
-  const trialFree       = !isBroker && isTrialActive()
-  const paymentRequired = !isBroker && !isTrialActive()
+  //
+  // Drafts skip every monetization + review decision: they're always stored as
+  // 'draft' regardless of broker/trial status. The user explicitly comes back
+  // and clicks Publish to kick off the real flow.
+  const trialFree       = !isDraft && !isBroker && isTrialActive()
+  const paymentRequired = !isDraft && !isBroker && !isTrialActive()
 
   const feeAmountDollars = isHangar
     ? Number(process.env.LISTING_FEE_HANGAR ?? 25)
     : Number(process.env.LISTING_FEE_HOME   ?? 49)
 
-  // Brokers → auto-approved; trial → pending review; paywall → pending_payment
-  const initialStatus = isBroker         ? 'approved'         :
-                        paymentRequired  ? 'pending_payment'  : 'pending'
+  const initialStatus =
+    isDraft          ? 'draft'            :
+    isBroker         ? 'approved'         :
+    paymentRequired  ? 'pending_payment'  : 'pending'
+
+  // Accept literal 0 for HOA/tax (empty string → null, "0" → 0).
+  const parseOptionalNumber = (s: string): number | null => {
+    if (s == null || s === '') return null
+    const n = Number(s)
+    return Number.isFinite(n) ? n : null
+  }
+
+  // Sanitize amenities: unique, non-empty strings, capped at 40 entries.
+  const cleanAmenities = Array.isArray(data.amenities)
+    ? Array.from(new Set(
+        data.amenities
+          .map(a => typeof a === 'string' ? a.trim() : '')
+          .filter(Boolean),
+      )).slice(0, 40)
+    : []
 
   // ── Insert listing ───────────────────────────────────────────────────────
   const { data: listing, error } = await supabaseAdmin
@@ -120,6 +150,9 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
                           ? Number(data.asking_price) : null,
       monthly_lease:    IS_RENTAL(data.listing_type) && data.monthly_lease
                           ? Number(data.monthly_lease) : null,
+      hoa_monthly:         parseOptionalNumber(data.hoa_monthly),
+      annual_property_tax: parseOptionalNumber(data.annual_property_tax),
+      amenities:           cleanAmenities,
       // Hangar-specific
       square_feet:      isHangar && data.square_feet  ? Number(data.square_feet)  : null,
       door_width:       isHangar && data.door_width   ? Number(data.door_width)   : null,
@@ -159,6 +192,13 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
     throw new Error(error?.message ?? 'Failed to save listing.')
   }
 
+  // ── Draft path — skip payment, email, and buyer alerts ──────────────────
+  // The user can resume editing from the "My Drafts" section of the dashboard
+  // and only trigger the full flow when they click Publish.
+  if (isDraft) {
+    return { id: listing.id }
+  }
+
   // ── Payment required — create Stripe Checkout ────────────────────────────
   if (paymentRequired) {
     const stripe   = getStripe()
@@ -172,7 +212,7 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
           currency: 'usd',
           unit_amount: feeAmountDollars * 100,
           product_data: {
-            name: `Listing Fee — ${data.title}`,
+            name: `Listing Fee: ${data.title}`,
             description: `One-time fee to publish your ${typeLabel} listing on Hangar Marketplace`,
           },
         },
@@ -207,6 +247,25 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
     )
   }
 
+  // Broker listings go live immediately, so trigger nearby-buyer alerts now.
+  // Non-broker trial listings wait for admin approval before alerts fire;
+  // that path lives in the admin approval handler (see admin approve action).
+  if (isBroker && data.latitude != null && data.longitude != null) {
+    void notifyBuyersOfNewListing({
+      id:            listing.id,
+      title:         data.title,
+      airport_code:  data.airport_code,
+      airport_name:  data.airport_name,
+      listing_type:  data.listing_type,
+      latitude:      data.latitude,
+      longitude:     data.longitude,
+      asking_price:  data.listing_type === 'sale'  && data.asking_price
+                       ? Number(data.asking_price) : null,
+      monthly_lease: IS_RENTAL(data.listing_type) && data.monthly_lease
+                       ? Number(data.monthly_lease) : null,
+    }).catch(e => console.error('[createListing] buyer alert failed:', e))
+  }
+
   return { id: listing.id }
 }
 
@@ -215,16 +274,31 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
  * This keeps the env vars server-side; the client just gets booleans + numbers.
  */
 export async function getListingFeeInfo(): Promise<{
-  trialActive: boolean
-  trialEnds:   string | null
-  feeHangar:   number
-  feeHome:     number
+  trialActive:       boolean
+  trialEnds:         string | null
+  feeHangar:         number
+  feeHome:           number
+  isVerifiedBroker:  boolean
 }> {
   const trialEnds = process.env.LISTING_TRIAL_ENDS ?? null
+
+  // Best-effort broker check. If the cookie session isn't available (e.g. the
+  // page is being prerendered), we fall through to false — the banner is
+  // purely cosmetic and not a security boundary.
+  let isVerifiedBroker = false
+  try {
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    isVerifiedBroker = user?.user_metadata?.is_broker === true
+  } catch {
+    /* non-fatal */
+  }
+
   return {
     trialActive: isTrialActive(),
     trialEnds,
     feeHangar:   Number(process.env.LISTING_FEE_HANGAR ?? 25),
     feeHome:     Number(process.env.LISTING_FEE_HOME   ?? 49),
+    isVerifiedBroker,
   }
 }
