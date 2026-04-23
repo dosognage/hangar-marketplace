@@ -3,6 +3,12 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import AboutPhotoEditor from './AboutPhotoEditor'
 
+// /about touches supabaseAdmin (to look up the founder photo) and auth cookies
+// (to decide whether to show the admin photo editor). Both of those are server-
+// only, so skip static prerendering — otherwise the build evaluates them with
+// no NEXT_PUBLIC_SUPABASE_URL exposed and crashes.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'About Us | Hangar Marketplace',
   description: 'Hangar Marketplace was built by an active airline pilot who got tired of searching for hangar space with no central place to look. Meet the founder.',
