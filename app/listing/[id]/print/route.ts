@@ -5,6 +5,9 @@
  */
 import { supabase } from '@/lib/supabase'
 
+// Route handler under a dynamic [id] segment — never prerender.
+export const dynamic = 'force-dynamic'
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SITE_URL     = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 

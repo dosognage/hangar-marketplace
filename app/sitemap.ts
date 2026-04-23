@@ -2,6 +2,10 @@ import { MetadataRoute } from 'next'
 import { supabase } from '@/lib/supabase'
 import { STATE_NAMES, stateToSlug } from '@/lib/states'
 
+// Queries Supabase for listing slugs at request time. Skip static prerender
+// so the build doesn't try to reach Supabase with no env vars exposed.
+export const dynamic = 'force-dynamic'
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

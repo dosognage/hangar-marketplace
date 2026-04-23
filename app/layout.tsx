@@ -17,6 +17,11 @@ import HomeAirportWidget from '@/app/components/HomeAirportWidget'
 import GoogleAnalytics from '@/app/components/GoogleAnalytics'
 import { Plane } from 'lucide-react'
 
+// The root layout reads auth cookies and queries Supabase on every request
+// (profile menu, notifications, saved count). Skip static prerender so build
+// doesn't evaluate these with no env vars exposed.
+export const dynamic = 'force-dynamic'
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 
 export const metadata = {
