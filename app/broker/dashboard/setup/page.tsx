@@ -3,6 +3,9 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
+// Uses auth cookies and admin queries — never prerender statically.
+export const dynamic = 'force-dynamic'
+
 // ─── Step definitions ─────────────────────────────────────────────────────────
 
 interface Step {

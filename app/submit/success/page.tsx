@@ -3,6 +3,9 @@ import { CheckCircle, ClipboardList, Search, ArrowRight, Zap } from 'lucide-reac
 import type { Metadata } from 'next'
 import { createServerClient } from '@/lib/supabase-server'
 
+// Uses auth cookies — never prerender statically.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Listing Submitted | Hangar Marketplace',
 }
