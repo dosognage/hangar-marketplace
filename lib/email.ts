@@ -621,6 +621,65 @@ export function brokerApprovedEmail(opts: {
   }
 }
 
+/** Admin-facing: a user just submitted a broker application. */
+export function newBrokerApplicationEmail(opts: {
+  applicantName:  string
+  applicantEmail: string
+  brokerage:      string | null
+  licenseState:   string | null
+  licenseNumber:  string | null
+  phone:          string | null
+  website:        string | null
+  bio:            string | null
+  isUnlicensed:   boolean
+}): { subject: string; html: string } {
+  const { applicantName, applicantEmail, brokerage, licenseState, licenseNumber, phone, website, bio, isUnlicensed } = opts
+
+  const rows: Array<[string, string | null]> = [
+    ['Name',      applicantName],
+    ['Email',     applicantEmail],
+    ['Brokerage', brokerage],
+    ['Phone',     phone],
+    ['Website',   website],
+    ['License',   isUnlicensed ? 'Unlicensed hangar specialist' : [licenseNumber, licenseState].filter(Boolean).join(' · ') || null],
+  ]
+
+  const rowsHtml = rows
+    .filter(([, v]) => !!v)
+    .map(([label, value], i, arr) => `
+      <tr>
+        <td style="padding:8px 0;font-size:14px;color:#64748b;white-space:nowrap;padding-right:16px;${i === arr.length - 1 ? '' : 'border-bottom:1px solid #f1f5f9;'}">${htmlEscape(label)}</td>
+        <td style="padding:8px 0;font-size:14px;color:#0f172a;font-weight:500;${i === arr.length - 1 ? '' : 'border-bottom:1px solid #f1f5f9;'}">${htmlEscape(String(value))}</td>
+      </tr>`).join('')
+
+  return {
+    subject: `New broker application: ${applicantName}`,
+    html: modernLayout({
+      preheader: `${applicantName}${brokerage ? ` (${brokerage})` : ''} just applied. Review at /admin.`,
+      eyebrow:   'Admin inbox',
+      title:     'New broker application',
+      subtitle:  `${applicantName} just submitted an application to become a Verified Broker. Review and approve or reject from the admin panel.`,
+      heroCaption: 'REVIEW',
+      heroGradient: 'linear-gradient(135deg,#0c4a6e 0%,#2563eb 55%,#93c5fd 100%)',
+      sections: [
+        {
+          title: 'Applicant',
+          html:  `<table width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table>`,
+        },
+        ...(bio ? [{
+          title: 'Bio',
+          html: `<p style="margin:0;font-size:14px;color:#374151;line-height:1.65;">${htmlEscape(bio)}</p>`,
+        }] : []),
+      ],
+      cta: {
+        label: 'Open admin panel',
+        href:  `${SITE_URL}/admin`,
+      },
+      footerIntro: `You're getting this because your email is in ADMIN_EMAILS.`,
+    }),
+  }
+}
+
 /** Sent to a broker when their application is rejected. */
 export function brokerRejectedEmail(opts: {
   name: string

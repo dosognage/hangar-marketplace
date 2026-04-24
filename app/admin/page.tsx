@@ -54,7 +54,7 @@ export default async function AdminPage() {
   // Fetch hangar listings (admin sees everything, filterable client-side)
   const { data: allListings, error: listingsError } = await supabaseAdmin
     .from('listings')
-    .select('id, title, airport_name, airport_code, city, state, listing_type, ownership_type, asking_price, monthly_lease, square_feet, status, is_sample, is_featured, is_sponsored, contact_name, contact_email, contact_phone, created_at, view_count, broker_profile_id')
+    .select('id, title, airport_name, airport_code, city, state, listing_type, ownership_type, asking_price, monthly_lease, square_feet, status, is_sample, is_featured, is_sponsored, sponsored_until, contact_name, contact_email, contact_phone, created_at, view_count, broker_profile_id')
     .in('property_type', ['hangar'])
     .order('created_at', { ascending: false })
 

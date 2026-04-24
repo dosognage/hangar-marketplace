@@ -3,7 +3,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createServerClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
-import { sendEmail, brokerApprovedEmail, brokerRejectedEmail } from '@/lib/email'
+import { sendEmail, brokerApprovedEmail, brokerRejectedEmail, newBrokerApplicationEmail } from '@/lib/email'
 import { createNotification } from '@/lib/notifications'
 import { geocodeLocation } from '@/lib/geocode'
 
@@ -167,7 +167,84 @@ export async function submitBrokerApplication(formData: {
     return { error: error.message }
   }
 
+  // ── Notify admins (fire-and-forget) ─────────────────────────────────────
+  // Email everyone in ADMIN_EMAILS and drop an in-app notification on each of
+  // their bells. Any failure here is logged but does not affect the applicant's
+  // success response.
+  void notifyAdminsOfNewApplication({
+    applicantName:  formData.full_name,
+    applicantEmail: user.email ?? '',
+    brokerage:      formData.brokerage || null,
+    licenseState:   isUnlicensed ? null : formData.license_state,
+    licenseNumber:  isUnlicensed ? null : formData.license_number,
+    phone:          formData.phone    || null,
+    website:        formData.website  || null,
+    bio:            formData.bio      || null,
+    isUnlicensed,
+  }).catch(e => console.error('[applyForBroker] admin notify failed:', e))
+
   return {}
+}
+
+/**
+ * Fan-out notification to every admin on file when a new broker application
+ * arrives. Sends email to each ADMIN_EMAILS address and, where we can resolve
+ * the admin's auth user id, also creates an in-app notification.
+ */
+async function notifyAdminsOfNewApplication(payload: {
+  applicantName:  string
+  applicantEmail: string
+  brokerage:      string | null
+  licenseState:   string | null
+  licenseNumber:  string | null
+  phone:          string | null
+  website:        string | null
+  bio:            string | null
+  isUnlicensed:   boolean
+}): Promise<void> {
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+  if (adminEmails.length === 0) return
+
+  // Resolve admin user ids so we can hit their notification bell too.
+  // Admin.listUsers is paginated but one page at scale is fine — admins are a
+  // handful of people, not thousands.
+  const userIdByEmail = new Map<string, string>()
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabaseAdmin as any).auth.admin.listUsers({ perPage: 1000 })
+    const users: Array<{ id: string; email?: string | null }> = data?.users ?? []
+    for (const u of users) {
+      const email = u.email?.toLowerCase()
+      if (email && adminEmails.includes(email)) userIdByEmail.set(email, u.id)
+    }
+  } catch (e) {
+    console.warn('[applyForBroker] listUsers failed, skipping in-app notifs:', e)
+  }
+
+  const { subject, html } = newBrokerApplicationEmail(payload)
+  const bodyLine = payload.brokerage
+    ? `${payload.applicantName} (${payload.brokerage}) just applied.`
+    : `${payload.applicantName} just applied.`
+
+  await Promise.all(adminEmails.map(async email => {
+    // Email
+    await sendEmail({ to: email, subject, html }).catch(e =>
+      console.error('[applyForBroker] email to', email, 'failed:', e)
+    )
+
+    // In-app notification
+    const uid = userIdByEmail.get(email)
+    if (uid) {
+      await createNotification({
+        userId: uid,
+        type:   'broker_application',
+        title:  'New broker application',
+        body:   bodyLine,
+        link:   '/admin',
+      }).catch(e => console.error('[applyForBroker] notify to', email, 'failed:', e))
+    }
+  }))
 }
 
 /**
