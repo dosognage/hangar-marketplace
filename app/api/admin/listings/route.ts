@@ -211,17 +211,8 @@ export async function PATCH(request: NextRequest) {
 
       // ── 3. If approved: notify buyers whose home airport is within 50mi ──
       if (isApproved && listing.latitude != null && listing.longitude != null) {
-        void notifyBuyersOfNewListing({
-          id:            listing.id,
-          title:         listing.title,
-          airport_code:  listing.airport_code,
-          airport_name:  listing.airport_name ?? listing.airport_code,
-          listing_type:  listing.listing_type ?? 'lease',
-          latitude:      listing.latitude,
-          longitude:     listing.longitude,
-          asking_price:  listing.asking_price ?? null,
-          monthly_lease: listing.monthly_lease ?? null,
-        }).catch(e => console.error('[admin/listings] nearby-buyer alert failed:', e))
+        void notifyBuyersOfNewListing(listing.id)
+          .catch(e => console.error('[admin/listings] nearby-buyer alert failed:', e))
       }
     }
 

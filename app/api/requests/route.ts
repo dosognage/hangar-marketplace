@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { sendEmail } from '@/lib/email'
+import { sendEmail, modernLayout } from '@/lib/email'
 import { geocodeLocation, distanceMiles } from '@/lib/geocode'
 import { createNotification } from '@/lib/notifications'
 import { notifyListingOwnersOfNewRequest } from '@/lib/listingAlerts'
@@ -217,44 +217,36 @@ async function alertNearbyBrokers(payload: AlertPayload) {
 
   // 4. Send email + in-app notification to each matched broker
   await Promise.all(matched.map(async broker => {
-    // Email
+    // Email — modernLayout keeps chrome consistent with the rest of the suite.
     await sendEmail({
       to: broker.contact_email,
       subject: `New hangar request near your area: ${payload.airportCode}`,
-      html: `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:white;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
-        <tr><td style="background:#1a3a5c;padding:24px 40px;">
-          <p style="margin:0;color:white;font-size:20px;font-weight:700;">✈ Hangar Marketplace</p>
-          <p style="margin:3px 0 0;color:#93c5fd;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">Aviation Properties</p>
-        </td></tr>
-        <tr><td style="padding:36px 40px;">
-          <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;">New Hangar Request</p>
-          <h1 style="margin:0 0 8px;font-size:20px;color:#111827;">Pilot looking for space near ${payload.airportCode}</h1>
-          <p style="margin:0 0 24px;font-size:14px;color:#6b7280;">
-            Hi ${broker.full_name}, a pilot just posted a hangar request within your alert radius.
-          </p>
-          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin-bottom:24px;font-size:14px;color:#374151;line-height:1.8;">
-            <strong>${payload.contactName}</strong> is looking for hangar space at <strong>${payload.airportCode} (${payload.airportName})</strong>, ${payload.city}, ${payload.state}<br/>
-            ${details}
-          </div>
-          <a href="${requestUrl}" style="display:inline-block;padding:11px 26px;background:#1a3a5c;color:white;text-decoration:none;border-radius:7px;font-size:14px;font-weight:600;">
-            View all requests →
-          </a>
-        </td></tr>
-        <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
-          <p style="margin:0;font-size:11px;color:#9ca3af;">
-            You received this because a request was posted within your alert radius.
-            <a href="https://hangarmarketplace.com/broker/dashboard" style="color:#9ca3af;">Update your notification settings</a>
-          </p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`,
+      html: modernLayout({
+        preheader: `${payload.contactName} is looking for hangar space at ${payload.airportName}. You have a specialty airport within your alert radius.`,
+        eyebrow:   `Near ${payload.airportCode}`,
+        title:     `Pilot looking for space near ${payload.airportCode}`,
+        subtitle:  `Hi ${broker.full_name}, a pilot just posted a hangar request within your alert radius.`,
+        heroCaption: payload.airportCode,
+        sections: [{
+          title: 'The request',
+          html: `
+            <p style="margin:0 0 10px;font-size:14px;color:#0f172a;line-height:1.7;">
+              <strong>${payload.contactName}</strong> is looking for hangar space at
+              <strong>${payload.airportCode} (${payload.airportName})</strong>,
+              ${payload.city}, ${payload.state}.
+            </p>
+            ${details ? `<p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">${details}</p>` : ''}`,
+        }],
+        cta: {
+          label: 'View all active requests',
+          href:  requestUrl,
+        },
+        footerIntro: `You're getting this because a request was posted within your broker alert radius.`,
+        footerLinks: [
+          { label: 'Update alert settings', href: 'https://hangarmarketplace.com/broker/dashboard' },
+          { label: 'Contact us',            href: 'mailto:hello@hangarmarketplace.com' },
+        ],
+      }),
     })
 
     // In-app notification bell

@@ -251,19 +251,8 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
   // Non-broker trial listings wait for admin approval before alerts fire;
   // that path lives in the admin approval handler (see admin approve action).
   if (isBroker && data.latitude != null && data.longitude != null) {
-    void notifyBuyersOfNewListing({
-      id:            listing.id,
-      title:         data.title,
-      airport_code:  data.airport_code,
-      airport_name:  data.airport_name,
-      listing_type:  data.listing_type,
-      latitude:      data.latitude,
-      longitude:     data.longitude,
-      asking_price:  data.listing_type === 'sale'  && data.asking_price
-                       ? Number(data.asking_price) : null,
-      monthly_lease: IS_RENTAL(data.listing_type) && data.monthly_lease
-                       ? Number(data.monthly_lease) : null,
-    }).catch(e => console.error('[createListing] buyer alert failed:', e))
+    void notifyBuyersOfNewListing(listing.id)
+      .catch(e => console.error('[createListing] buyer alert failed:', e))
   }
 
   return { id: listing.id }
