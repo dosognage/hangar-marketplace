@@ -15,6 +15,23 @@ function photoUrl(path: string) {
   return `${SUPABASE_URL}/storage/v1/object/public/listing-photos/${path}`
 }
 
+// Shared style for the move-left / move-right arrow pills on hover.
+function arrowBtn(disabled: boolean): React.CSSProperties {
+  return {
+    width: '26px', height: '26px',
+    padding: 0,
+    borderRadius: '50%',
+    backgroundColor: 'rgba(15,23,42,0.72)',
+    backdropFilter: 'blur(6px)',
+    WebkitBackdropFilter: 'blur(6px)',
+    color: 'white',
+    border: 'none',
+    cursor: disabled ? 'default' : 'pointer',
+    opacity: disabled ? 0.3 : 1,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  }
+}
+
 export default function EditPhotoManager({
   listingId,
   initialPhotos,
@@ -133,38 +150,82 @@ export default function EditPhotoManager({
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
 
-              {/* Overlay controls */}
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '4px', backgroundColor: 'rgba(0,0,0,0)', transition: 'background 0.15s' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.35)')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0)')}
+              {/* Overlay controls — hidden by default, revealed on hover. */}
+              <div
+                className="photo-tile-overlay"
+                style={{
+                  position: 'absolute', inset: 0,
+                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                  padding: '6px',
+                  background: 'linear-gradient(to bottom, rgba(15,23,42,0.35) 0%, rgba(15,23,42,0) 45%, rgba(15,23,42,0.35) 100%)',
+                  opacity: 0,
+                  transition: 'opacity 0.15s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0' }}
               >
-                {/* Delete */}
+                {/* Delete — monochrome, matches the submit uploader. */}
                 <button
                   onClick={() => handleDelete(photo)}
                   disabled={deletingId === photo.id}
-                  title="Delete photo"
-                  style={{ alignSelf: 'flex-end', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'rgba(220,38,38,0.9)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                  title="Remove photo"
+                  aria-label="Remove photo"
+                  style={{
+                    alignSelf: 'flex-end',
+                    width: '26px', height: '26px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(15,23,42,0.72)',
+                    backdropFilter: 'blur(6px)',
+                    WebkitBackdropFilter: 'blur(6px)',
+                    color: 'white',
+                    border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 0,
+                    transition: 'background-color 0.15s ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(15,23,42,0.92)' }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(15,23,42,0.72)' }}
                 >
-                  {deletingId === photo.id ? '…' : '✕'}
+                  {deletingId === photo.id ? (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                         style={{ animation: 'spin 1s linear infinite' }}>
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                  ) : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="18" y1="6" x2="6"  y2="18" />
+                      <line x1="6"  y1="6" x2="18" y2="18" />
+                    </svg>
+                  )}
                 </button>
 
-                {/* Move arrows */}
-                <div style={{ display: 'flex', gap: '3px', justifyContent: 'center' }}>
+                {/* Move arrows — consistent dark pills, disabled states dimmed. */}
+                <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                   <button
                     onClick={() => handleMove(idx, 'left')}
                     disabled={idx === 0}
                     title="Move left"
-                    style={{ padding: '2px 6px', fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.85)', border: 'none', borderRadius: '4px', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.3 : 1 }}
+                    aria-label="Move left"
+                    style={arrowBtn(idx === 0)}
                   >
-                    ◀
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
                   </button>
                   <button
                     onClick={() => handleMove(idx, 'right')}
                     disabled={idx === photos.length - 1}
                     title="Move right"
-                    style={{ padding: '2px 6px', fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.85)', border: 'none', borderRadius: '4px', cursor: idx === photos.length - 1 ? 'default' : 'pointer', opacity: idx === photos.length - 1 ? 0.3 : 1 }}
+                    aria-label="Move right"
+                    style={arrowBtn(idx === photos.length - 1)}
                   >
-                    ▶
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -174,6 +235,9 @@ export default function EditPhotoManager({
       ) : (
         <p style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: '1rem' }}>No photos yet. Add some below.</p>
       )}
+
+      {/* Spin keyframes for the delete spinner */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
 
       {/* Upload zone */}
       <div

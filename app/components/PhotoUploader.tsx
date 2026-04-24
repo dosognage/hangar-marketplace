@@ -26,6 +26,7 @@ export default function PhotoUploader({ onChange }: Props) {
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [dragging, setDragging] = useState(false)
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const addFiles = useCallback(
@@ -143,45 +144,73 @@ export default function PhotoUploader({ onChange }: Props) {
           gap: '0.6rem',
           marginTop: '0.75rem',
         }}>
-          {previews.map((src, i) => (
-            <div
-              key={src}
-              style={{ position: 'relative', aspectRatio: '1', borderRadius: '6px', overflow: 'hidden' }}
-            >
-              {/* Cover badge */}
-              {i === 0 && (
-                <span style={{
-                  position: 'absolute', top: '4px', left: '4px',
-                  backgroundColor: '#6366f1', color: 'white',
-                  fontSize: '0.65rem', fontWeight: '700',
-                  padding: '2px 6px', borderRadius: '4px', zIndex: 1,
-                }}>
-                  COVER
-                </span>
-              )}
-              <img
-                src={src}
-                alt={`Photo ${i + 1}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              {/* Remove button */}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); removePhoto(i) }}
-                style={{
-                  position: 'absolute', top: '4px', right: '4px',
-                  width: '22px', height: '22px',
-                  backgroundColor: 'rgba(0,0,0,0.6)', color: 'white',
-                  border: 'none', borderRadius: '50%', cursor: 'pointer',
-                  fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  lineHeight: 1, zIndex: 1,
-                }}
-                aria-label="Remove photo"
+          {previews.map((src, i) => {
+            const isHovered = hoveredIndex === i
+            return (
+              <div
+                key={src}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                style={{ position: 'relative', aspectRatio: '1', borderRadius: '6px', overflow: 'hidden' }}
               >
-                ✕
-              </button>
-            </div>
-          ))}
+                {/* Cover badge */}
+                {i === 0 && (
+                  <span style={{
+                    position: 'absolute', top: '4px', left: '4px',
+                    backgroundColor: '#6366f1', color: 'white',
+                    fontSize: '0.65rem', fontWeight: '700',
+                    padding: '2px 6px', borderRadius: '4px', zIndex: 1,
+                  }}>
+                    COVER
+                  </span>
+                )}
+                <img
+                  src={src}
+                  alt={`Photo ${i + 1}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                {/* Subtle hover scrim for contrast */}
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'linear-gradient(to bottom, rgba(15,23,42,0.35) 0%, rgba(15,23,42,0) 60%)',
+                  opacity: isHovered ? 1 : 0,
+                  transition: 'opacity 0.15s ease',
+                  pointerEvents: 'none',
+                  zIndex: 1,
+                }} />
+                {/* Remove button — monochrome, hover-revealed */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); removePhoto(i) }}
+                  style={{
+                    position: 'absolute', top: '6px', right: '6px',
+                    width: '24px', height: '24px',
+                    backgroundColor: 'rgba(15,23,42,0.72)',
+                    backdropFilter: 'blur(6px)',
+                    WebkitBackdropFilter: 'blur(6px)',
+                    color: 'white',
+                    border: 'none', borderRadius: '50%', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 0,
+                    opacity: isHovered ? 1 : 0,
+                    transform: isHovered ? 'scale(1)' : 'scale(0.85)',
+                    transition: 'opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease',
+                    zIndex: 2,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(15,23,42,0.92)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(15,23,42,0.72)' }}
+                  aria-label="Remove photo"
+                  title="Remove photo"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6"  x2="6"  y2="18" />
+                    <line x1="6"  y1="6"  x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
