@@ -119,13 +119,32 @@ export default function SplitView({
     setMapBounds(b)
   }, [])
 
-  // Sort: sponsored-in-viewport → admin-featured → rest
+  // Sort order:
+  //   1. Sponsored listings (always above non-sponsored, regardless of viewport)
+  //   2. Among sponsored: in-viewport first (so geographically relevant ones lead)
+  //   3. Admin-featured (non-paid editorial picks)
+  //   4. Everything else
+  //
+  // The previous implementation required `isActiveSponsored && inBounds(...)`
+  // to promote a listing, which meant sponsored listings disappeared from the
+  // top when (a) the map hadn't loaded yet (mapBounds = null) or (b) they sat
+  // just outside the current viewport. That's why you could see a non-sponsored
+  // listing above a sponsored one.
   const sortedListings = useMemo(() => {
     return [...listings].sort((a, b) => {
-      const aSponsored = isActiveSponsored(a) && inBounds(a, mapBounds)
-      const bSponsored = isActiveSponsored(b) && inBounds(b, mapBounds)
+      const aSponsored = isActiveSponsored(a)
+      const bSponsored = isActiveSponsored(b)
       if (aSponsored && !bSponsored) return -1
       if (!aSponsored && bSponsored) return 1
+
+      // Tiebreaker when both are sponsored: prefer the one in the current map view.
+      if (aSponsored && bSponsored) {
+        const aIn = inBounds(a, mapBounds)
+        const bIn = inBounds(b, mapBounds)
+        if (aIn && !bIn) return -1
+        if (!aIn && bIn) return 1
+      }
+
       const aFeatured = isActiveFeatured(a)
       const bFeatured = isActiveFeatured(b)
       if (aFeatured && !bFeatured) return -1

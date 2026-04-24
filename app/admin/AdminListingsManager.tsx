@@ -822,8 +822,8 @@ export default function AdminListingsManager({
                           {loading ? '…'
                             : sponsorState === 'done'  ? '✓ Sponsored'
                             : sponsorState === 'error' ? 'Retry'
-                            : activeUntil              ? `💎 Extend ${chosen}d`
-                            :                            `💎 Comp ${chosen}d`}
+                            : activeUntil              ? `Extend ${chosen}d`
+                            :                            `Comp ${chosen}d`}
                         </button>
                       </span>
                     )
