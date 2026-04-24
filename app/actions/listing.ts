@@ -18,6 +18,8 @@ export type ListingFormData = {
   ownership_type: string
   asking_price: string
   monthly_lease: string
+  // Leasehold only — years left on the ground lease
+  leasehold_years_remaining: string
   // Recurring costs (apply to homes + land; user can enter 0)
   hoa_monthly: string
   annual_property_tax: string
@@ -153,6 +155,11 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
       hoa_monthly:         parseOptionalNumber(data.hoa_monthly),
       annual_property_tax: parseOptionalNumber(data.annual_property_tax),
       amenities:           cleanAmenities,
+      // Only persist leasehold_years_remaining when ownership is leasehold —
+      // otherwise clear any stale value from a previous edit.
+      leasehold_years_remaining: data.ownership_type === 'leasehold'
+                                   ? parseOptionalNumber(data.leasehold_years_remaining)
+                                   : null,
       // Hangar-specific
       square_feet:      isHangar && data.square_feet  ? Number(data.square_feet)  : null,
       door_width:       isHangar && data.door_width   ? Number(data.door_width)   : null,

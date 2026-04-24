@@ -78,6 +78,7 @@ type Listing = {
   hoa_monthly?: number | null
   annual_property_tax?: number | null
   amenities?: string[] | null
+  leasehold_years_remaining?: number | null
   status?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
@@ -94,6 +95,9 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
   const [airportCode, setAirportCode] = useState(listing.airport_code ?? '')
   const [city, setCity]               = useState(listing.city ?? '')
   const [state, setState]             = useState(listing.state ?? '')
+
+  // Controlled ownership type so the leasehold years input can conditionally render.
+  const [ownershipType, setOwnershipType] = useState(listing.ownership_type ?? '')
 
   // Runway auto-fill state
   const [runwayLength, setRunwayLength] = useState(listing.runway_length_ft != null ? String(listing.runway_length_ft) : '')
@@ -274,16 +278,37 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
             </select>
           </Field>
           {isHangar && (
-            <Field label="Ownership type">
-              <select name="ownership_type" defaultValue={listing.ownership_type ?? ''} style={inputStyle}>
-                <option value="">Select…</option>
-                <option value="fee simple">Fee Simple (own the land)</option>
-                <option value="leasehold">Leasehold (lease the land)</option>
-                <option value="condo">Hangar Condo</option>
-                <option value="T-hangar">T-Hangar</option>
-                <option value="Business">Business</option>
-              </select>
-            </Field>
+            <>
+              <Field label="Ownership type">
+                <select
+                  name="ownership_type"
+                  value={ownershipType}
+                  onChange={e => setOwnershipType(e.target.value)}
+                  style={inputStyle}
+                >
+                  <option value="">Select…</option>
+                  <option value="fee simple">Fee Simple (own the land)</option>
+                  <option value="leasehold">Leasehold (lease the land)</option>
+                  <option value="condo">Hangar Condo</option>
+                  <option value="T-hangar">T-Hangar</option>
+                  <option value="Business">Business</option>
+                </select>
+              </Field>
+              {ownershipType === 'leasehold' && (
+                <Field label="Years remaining on the ground lease *">
+                  <input
+                    name="leasehold_years_remaining"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="e.g. 25"
+                    defaultValue={listing.leasehold_years_remaining ?? ''}
+                    required
+                    style={{ ...inputStyle, maxWidth: '200px' }}
+                  />
+                </Field>
+              )}
+            </>
           )}
         </Section>
 

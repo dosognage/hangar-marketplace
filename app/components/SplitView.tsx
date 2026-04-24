@@ -119,43 +119,66 @@ export default function SplitView({
     setMapBounds(b)
   }, [])
 
-  // Sort order:
-  //   1. Sponsored listings (always above non-sponsored, regardless of viewport)
-  //   2. Among sponsored: in-viewport first (so geographically relevant ones lead)
-  //   3. Admin-featured (non-paid editorial picks)
-  //   4. Everything else
+  // ── Viewport filter (Zillow-style) ───────────────────────────────────
   //
-  // The previous implementation required `isActiveSponsored && inBounds(...)`
-  // to promote a listing, which meant sponsored listings disappeared from the
-  // top when (a) the map hadn't loaded yet (mapBounds = null) or (b) they sat
-  // just outside the current viewport. That's why you could see a non-sponsored
-  // listing above a sponsored one.
+  // Only show listings whose coordinates fall inside the current map bounds.
+  // While the map is still mounting (mapBounds = null) we fall back to all
+  // listings so users don't see a blank panel flash.
+  //
+  // Listings without lat/lng can't be plotted, so once bounds are known they
+  // are excluded from the list as well — they'll still come back on the next
+  // geocode pass for the underlying data.
+  const visibleListings = useMemo(() => {
+    if (!mapBounds) return listings
+    return listings.filter(l => inBounds(l, mapBounds))
+  }, [listings, mapBounds])
+
+  // Sort order (applied to the viewport-filtered set):
+  //   1. Sponsored listings first
+  //   2. Admin-featured
+  //   3. Real listings
+  //   4. Samples (demo data — always last; real listings always win over them)
+  //
+  // Within a tier, newest first. The sample check lives after sponsored and
+  // featured, so a sample listing never outranks a real listing at any tier.
   const sortedListings = useMemo(() => {
-    return [...listings].sort((a, b) => {
+    return [...visibleListings].sort((a, b) => {
       const aSponsored = isActiveSponsored(a)
       const bSponsored = isActiveSponsored(b)
       if (aSponsored && !bSponsored) return -1
       if (!aSponsored && bSponsored) return 1
 
-      // Tiebreaker when both are sponsored: prefer the one in the current map view.
-      if (aSponsored && bSponsored) {
-        const aIn = inBounds(a, mapBounds)
-        const bIn = inBounds(b, mapBounds)
-        if (aIn && !bIn) return -1
-        if (!aIn && bIn) return 1
-      }
-
       const aFeatured = isActiveFeatured(a)
       const bFeatured = isActiveFeatured(b)
       if (aFeatured && !bFeatured) return -1
       if (!aFeatured && bFeatured) return 1
+
+      // Demote samples below everything else at the same tier.
+      const aSample = a.is_sample === true
+      const bSample = b.is_sample === true
+      if (aSample && !bSample) return 1
+      if (!aSample && bSample) return -1
+
+      // Within a tier, preserve the DB input order (which is already
+      // created_at DESC from the query in app/page.tsx). Array.sort in modern
+      // engines is stable, so returning 0 holds that order.
       return 0
     })
-  }, [listings, mapBounds])
+  }, [visibleListings])
 
-  const totalPages  = Math.ceil(sortedListings.length / PAGE_SIZE)
-  const pageStart   = (currentPage - 1) * PAGE_SIZE
-  const pageEnd     = pageStart + PAGE_SIZE
+  const totalPages = Math.max(1, Math.ceil(sortedListings.length / PAGE_SIZE))
+
+  // Clamp current page to the new totals. If the user was on page 5 and panning
+  // left only 2 pages worth of listings, render page 2 instead of an empty
+  // page 5. State itself is corrected lazily inside an effect so the React
+  // tree stays consistent between renders.
+  const safePage = Math.min(currentPage, totalPages)
+  useEffect(() => {
+    if (safePage !== currentPage) setCurrentPage(safePage)
+  }, [safePage, currentPage])
+
+  const pageStart    = (safePage - 1) * PAGE_SIZE
+  const pageEnd      = pageStart + PAGE_SIZE
   const pageListings = sortedListings.slice(pageStart, pageEnd)
 
   const mappable = listings.filter(
@@ -358,7 +381,7 @@ export default function SplitView({
         {/* ── Desktop count line (hidden on mobile) ──────────────────── */}
         <p className="desktop-count-line" style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#6b7280' }}>
           {listingCount} listing{listingCount !== 1 ? 's' : ''}
-          {totalPages > 1 && ` · page ${currentPage} of ${totalPages}`}
+          {totalPages > 1 && ` · page ${safePage} of ${totalPages}`}
         </p>
 
         {/* ── Empty state ─────────────────────────────────────────────── */}

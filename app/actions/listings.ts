@@ -178,6 +178,11 @@ export async function updateListing(
     hoa_monthly:          parseOptionalNumber(formData.get('hoa_monthly')),
     annual_property_tax:  parseOptionalNumber(formData.get('annual_property_tax')),
     amenities:            amenitiesClean,
+    // Leasehold term — only meaningful when ownership_type === 'leasehold'.
+    // If the user switched away from leasehold we clear the column.
+    leasehold_years_remaining: formData.get('ownership_type') === 'leasehold'
+                                 ? parseOptionalNumber(formData.get('leasehold_years_remaining'))
+                                 : null,
     status: nextStatus,
   }
 

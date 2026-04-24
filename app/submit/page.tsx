@@ -51,6 +51,8 @@ const EMPTY_FORM = {
   ownership_type: '',
   asking_price: '',
   monthly_lease: '',
+  // Leasehold only: years remaining on the ground lease
+  leasehold_years_remaining: '',
   // Recurring costs — both fields must accept literal 0
   hoa_monthly: '',
   annual_property_tax: '',
@@ -630,9 +632,39 @@ export default function SubmitPage() {
             </select>
           </Field>
           {formData.property_type === 'hangar' && (
-            <Field label="Ownership type *">
-              <input name="ownership_type" placeholder="Private / Municipal / Condo" value={formData.ownership_type} onChange={handleChange} required style={inputStyle} />
-            </Field>
+            <>
+              <Field label="Ownership type *">
+                <select
+                  name="ownership_type"
+                  value={formData.ownership_type}
+                  onChange={handleChange}
+                  required
+                  style={inputStyle}
+                >
+                  <option value="">Select…</option>
+                  <option value="fee simple">Fee Simple (own the land)</option>
+                  <option value="leasehold">Leasehold (lease the land)</option>
+                  <option value="condo">Hangar Condo</option>
+                  <option value="T-hangar">T-Hangar</option>
+                  <option value="Business">Business</option>
+                </select>
+              </Field>
+              {formData.ownership_type === 'leasehold' && (
+                <Field label="Years remaining on the ground lease *">
+                  <input
+                    name="leasehold_years_remaining"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="e.g. 25"
+                    value={formData.leasehold_years_remaining}
+                    onChange={handleChange}
+                    required
+                    style={{ ...inputStyle, maxWidth: '200px' }}
+                  />
+                </Field>
+              )}
+            </>
           )}
           {formData.listing_type === 'space' && (
             <div style={{
