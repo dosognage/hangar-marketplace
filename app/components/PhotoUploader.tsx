@@ -15,7 +15,7 @@
 import { useRef, useState, useCallback } from 'react'
 
 const MAX_PHOTOS = 20
-const MIN_PHOTOS = 5
+const MIN_PHOTOS = 3
 const MAX_FILE_MB = 10
 
 type Props = {

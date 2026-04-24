@@ -38,7 +38,7 @@ type AddrSuggestion = {
 // Leaflet must be loaded client-side only
 const AirportMap = dynamic(() => import('@/app/components/AirportMap'), { ssr: false })
 
-const MIN_PHOTOS = 5
+const MIN_PHOTOS = 3
 
 const EMPTY_FORM = {
   title: '',
