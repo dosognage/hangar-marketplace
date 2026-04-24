@@ -5,7 +5,7 @@
  * Each template function returns a { subject, html } pair.
  *
  * FROM addresses:
- *   transactional  → notify@hangarmarketplace.com
+ *   transactional  → hello@hangarmarketplace.com
  *   newsletter     → newsletter@hangarmarketplace.com
  *
  * DEV: Set RESEND_TEST_TO in .env.local to redirect all email to yourself.
@@ -21,7 +21,7 @@ export async function sendEmail({
   to,
   subject,
   html,
-  from = `Hangar Marketplace <notify@hangarmarketplace.com>`,
+  from = `Hangar Marketplace <hello@hangarmarketplace.com>`,
 }: {
   to: string
   subject: string
