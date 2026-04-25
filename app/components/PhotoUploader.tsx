@@ -5,7 +5,7 @@
  *
  * Drag-and-drop (or click-to-select) photo picker.
  * - Accepts image files only
- * - Max 20 / Min 5 photos
+ * - Max 40 / Min 3 photos
  * - Shows live previews with a remove button on each
  * - First photo = cover photo (shown on listing cards)
  * - Calls onChange whenever the file list changes so the parent
@@ -14,7 +14,7 @@
 
 import { useRef, useState, useCallback } from 'react'
 
-const MAX_PHOTOS = 20
+const MAX_PHOTOS = 40
 const MIN_PHOTOS = 3
 const MAX_FILE_MB = 10
 

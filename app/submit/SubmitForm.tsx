@@ -4,7 +4,7 @@
  * Submit Listing page
  *
  * Flow:
- *  1. User fills out listing details and selects 5–20 photos
+ *  1. User fills out listing details and selects 3–40 photos
  *  2. On submit:
  *     a. Insert listing → get back the new listing ID
  *     b. Upload each photo to Supabase Storage under listing-photos/{listingId}/
@@ -1141,7 +1141,7 @@ export default function SubmitForm() {
         </Section>
 
         {/* ── Photos ──────────────────────────────────────────────────── */}
-        <Section title={`Photos (${MIN_PHOTOS}–20 required)`}>
+        <Section title={`Photos (${MIN_PHOTOS}–40 allowed)`}>
           <PhotoUploader onChange={handlePhotosChange} />
         </Section>
 
