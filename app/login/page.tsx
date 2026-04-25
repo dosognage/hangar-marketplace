@@ -76,7 +76,10 @@ function LoginForm() {
 
       <p style={{ marginTop: '1.5rem', textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>
         Don&apos;t have an account?{' '}
-        <Link href="/signup" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: '500' }}>
+        <Link
+          href={next && next !== '/' ? `/signup?next=${encodeURIComponent(next)}` : '/signup'}
+          style={{ color: '#6366f1', textDecoration: 'none', fontWeight: '500' }}
+        >
           Create one
         </Link>
       </p>

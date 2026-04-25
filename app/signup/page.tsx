@@ -97,7 +97,10 @@ export default function SignupPage() {
 
         <p style={{ marginTop: '1.5rem', textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>
           Already have an account?{' '}
-          <Link href="/login" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: '500' }}>
+          <Link
+            href={next && next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login'}
+            style={{ color: '#6366f1', textDecoration: 'none', fontWeight: '500' }}
+          >
             Sign in
           </Link>
         </p>
