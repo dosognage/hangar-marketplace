@@ -28,6 +28,8 @@ export type AdminHomeListing = {
   created_at: string
   view_count: number | null
   broker_profile_id: string | null
+  is_sponsored: boolean
+  sponsored_until: string | null
 }
 
 type ActionState = Record<string, 'idle' | 'loading' | 'done' | 'error'>
@@ -73,6 +75,8 @@ export default function AdminHomesManager({
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   // Track which listing is currently being assigned to a broker (modal open).
   const [assigningId, setAssigningId] = useState<string | null>(null)
+  // Per-listing duration for the comp-sponsor control. Defaults to 30d.
+  const [sponsorDays, setSponsorDays] = useState<Record<string, number>>({})
 
   const states = useMemo(() => {
     const s = new Set(listings.map(l => l.state).filter(Boolean))
@@ -137,6 +141,29 @@ export default function AdminHomesManager({
       }
     } finally {
       setAction(id + '_sample', 'idle')
+    }
+  }
+
+  async function handleGrantSponsor(id: string, days: number) {
+    setAction(id + '_sponsor', 'loading')
+    try {
+      const res = await fetch('/api/admin/listings/sponsor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listing_id: id, duration_days: days }),
+      })
+      if (res.ok) {
+        const { sponsored_until } = await res.json() as { sponsored_until: string }
+        setListings(prev => prev.map(l =>
+          l.id === id ? { ...l, is_sponsored: true, sponsored_until } : l
+        ))
+        setAction(id + '_sponsor', 'done')
+        setTimeout(() => setAction(id + '_sponsor', 'idle'), 2500)
+      } else {
+        setAction(id + '_sponsor', 'error')
+      }
+    } catch {
+      setAction(id + '_sponsor', 'error')
     }
   }
 
@@ -275,6 +302,11 @@ export default function AdminHomesManager({
                         🔍 SAMPLE
                       </span>
                     )}
+                    {listing.is_sponsored && listing.sponsored_until && new Date(listing.sponsored_until) > new Date() && (
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#ede9fe', color: '#5b21b6', border: '1px solid #ddd6fe', borderRadius: '4px', padding: '0.1rem 0.4rem' }}>
+                        SPONSORED
+                      </span>
+                    )}
                   </div>
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '20px', backgroundColor: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, whiteSpace: 'nowrap' }}>
                     {listing.status}
@@ -372,6 +404,50 @@ export default function AdminHomesManager({
                       🏢 {listing.broker_profile_id ? 'Reassign Broker' : 'Assign Broker'}
                     </button>
                   )}
+
+                  {/* Comp sponsor (approved only) — bypasses Stripe. */}
+                  {listing.status === 'approved' && (() => {
+                    const chosen = sponsorDays[listing.id] ?? 30
+                    const sponsorState = actions[listing.id + '_sponsor'] ?? 'idle'
+                    const loading = sponsorState === 'loading'
+                    const activeUntil = listing.is_sponsored && listing.sponsored_until && new Date(listing.sponsored_until) > new Date()
+                      ? new Date(listing.sponsored_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : null
+                    return (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <select
+                          value={chosen}
+                          disabled={loading}
+                          onChange={e => setSponsorDays(prev => ({ ...prev, [listing.id]: Number(e.target.value) }))}
+                          style={{
+                            ...btnStyle('#5b21b6', '#faf5ff', '#ddd6fe'),
+                            paddingRight: '1.5rem',
+                            appearance: 'auto' as const,
+                            cursor: 'pointer',
+                          }}
+                          title={activeUntil ? `Currently sponsored through ${activeUntil}. Granting extends from that date.` : 'Pick duration then click Grant'}
+                        >
+                          <option value={7}>7 days</option>
+                          <option value={30}>30 days</option>
+                          <option value={90}>90 days</option>
+                        </select>
+                        <button
+                          disabled={loading}
+                          onClick={() => handleGrantSponsor(listing.id, chosen)}
+                          style={btnStyle('#5b21b6', 'white', '#ddd6fe')}
+                          title={activeUntil
+                            ? `Extends current sponsorship (ends ${activeUntil}) by ${chosen} days`
+                            : `Grants ${chosen}-day sponsorship starting now`}
+                        >
+                          {loading ? '…'
+                            : sponsorState === 'done'  ? '✓ Sponsored'
+                            : sponsorState === 'error' ? 'Retry'
+                            : activeUntil              ? `Extend ${chosen}d`
+                            :                            `Comp ${chosen}d`}
+                        </button>
+                      </span>
+                    )
+                  })()}
 
                   {/* Status feedback */}
                   {statusDone && <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600 }}>✓ Saved</span>}
