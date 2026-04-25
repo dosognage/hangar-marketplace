@@ -19,6 +19,7 @@ type Props = {
 export default function PhotoGallery({ urls, title, listingId }: Props) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [hovering, setHovering] = useState(false)
 
   const prev = useCallback(() => setActiveIndex(i => Math.max(0, i - 1)), [])
   const next = useCallback(() => setActiveIndex(i => Math.min(urls.length - 1, i + 1)), [urls.length])
@@ -54,6 +55,8 @@ export default function PhotoGallery({ urls, title, listingId }: Props) {
         {/* Main photo */}
         <div
           onClick={() => setLightboxOpen(true)}
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
           style={{
             width: '100%', height: '420px', borderRadius: '12px',
             overflow: 'hidden', cursor: 'zoom-in',
@@ -65,6 +68,52 @@ export default function PhotoGallery({ urls, title, listingId }: Props) {
             alt={`${title} — photo ${activeIndex + 1}`}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
+
+          {/* Inline hover arrows — flip photos without opening the lightbox.    */}
+          {/* stopPropagation prevents the parent's zoom-in click handler.       */}
+          {/* The .gallery-arrow class lets us force visibility on touch devices */}
+          {/* (where there's no hover) via media query in the style block below. */}
+          {urls.length > 1 && activeIndex > 0 && (
+            <button
+              type="button"
+              className="gallery-arrow"
+              data-visible={hovering ? '1' : '0'}
+              onClick={e => { e.stopPropagation(); prev() }}
+              aria-label="Previous photo"
+              style={inlineArrow('left', hovering)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
+          {urls.length > 1 && activeIndex < urls.length - 1 && (
+            <button
+              type="button"
+              className="gallery-arrow"
+              data-visible={hovering ? '1' : '0'}
+              onClick={e => { e.stopPropagation(); next() }}
+              aria-label="Next photo"
+              style={inlineArrow('right', hovering)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          )}
+
+          {/* On touch devices (no hover), force the arrows always visible. */}
+          <style>{`
+            @media (hover: none) {
+              .gallery-arrow {
+                opacity: 1 !important;
+                transform: translateY(-50%) !important;
+              }
+            }
+          `}</style>
+
           <span style={counterStyle}>
             {activeIndex + 1} / {urls.length}
           </span>
@@ -221,5 +270,32 @@ function navBtn(side: 'left' | 'right'): React.CSSProperties {
     borderRadius: '8px', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     backdropFilter: 'blur(4px)',
+  }
+}
+
+// Inline arrow style for the main photo. Hidden until hover on desktop;
+// visible at low opacity on touch devices that don't trigger hover.
+function inlineArrow(side: 'left' | 'right', visible: boolean): React.CSSProperties {
+  return {
+    position: 'absolute',
+    [side]: '14px',
+    top: '50%',
+    transform: visible ? 'translateY(-50%)' : 'translateY(-50%) scale(0.85)',
+    width: '40px',
+    height: '40px',
+    padding: 0,
+    borderRadius: '50%',
+    backgroundColor: 'rgba(15,23,42,0.72)',
+    backdropFilter: 'blur(6px)',
+    WebkitBackdropFilter: 'blur(6px)',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: visible ? 1 : 0,
+    transition: 'opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease',
+    zIndex: 5,
   }
 }
