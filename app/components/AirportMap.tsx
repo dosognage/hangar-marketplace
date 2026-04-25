@@ -112,6 +112,32 @@ function FitBounds({ bounds }: { bounds: LatLngBounds | null }) {
   return null
 }
 
+// ── Helper: nudge Leaflet to recalculate its container size ───────────────────
+//
+// Leaflet caches the container's width/height on first render. If the map
+// mounts inside a flex/grid layout that hasn't settled yet (common with
+// dynamic imports), it caches 0x0 and tiles never paint until something
+// triggers a resize. invalidateSize() forces a recalc.
+//
+// We hit it on mount, again after a tick (lets layout settle), and on every
+// window resize for safety.
+function InvalidateSizeOnMount() {
+  const map = useMap()
+  useEffect(() => {
+    const fire = () => map.invalidateSize()
+    fire()
+    const t1 = setTimeout(fire, 50)
+    const t2 = setTimeout(fire, 250)
+    window.addEventListener('resize', fire)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      window.removeEventListener('resize', fire)
+    }
+  }, [map])
+  return null
+}
+
 // ── Helper: center map at a point (used for tile fallback) ────────────────────
 function CenterMap({ lat, lng, zoom = 14 }: { lat: number; lng: number; zoom?: number }) {
   const map = useMap()
@@ -346,6 +372,9 @@ export default function AirportMap({
         scrollWheelZoom
         zoomControl
       >
+        {/* Force Leaflet to recompute container size after layout settles */}
+        <InvalidateSizeOnMount />
+
         {/* Fit to airport bounds when OSM geometry loaded */}
         <FitBounds bounds={bounds} />
 

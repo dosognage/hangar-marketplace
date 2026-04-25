@@ -508,12 +508,12 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
                   </Field>
                 </TwoCol>
                 <Field label="Home square footage">
-                  <input name="home_sqft" type="number" min="0" step="100" defaultValue={listing.home_sqft ?? ''} style={inputStyle} />
+                  <input name="home_sqft" type="number" min="0" step="any" defaultValue={listing.home_sqft ?? ''} style={inputStyle} />
                 </Field>
               </>
             )}
             <Field label="Lot size (acres)">
-              <input name="lot_acres" type="number" min="0" step="0.01" defaultValue={listing.lot_acres ?? ''} style={inputStyle} />
+              <input name="lot_acres" type="number" min="0" step="any" defaultValue={listing.lot_acres ?? ''} style={inputStyle} />
             </Field>
             <Field label="Airpark / community name">
               <input name="airpark_name" defaultValue={listing.airpark_name ?? ''} placeholder="e.g. Spruce Creek Fly-In" style={inputStyle} />

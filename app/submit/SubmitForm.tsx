@@ -980,12 +980,12 @@ export default function SubmitForm() {
                   </Field>
                 </TwoCol>
                 <Field label="Home square footage">
-                  <input name="home_sqft" type="number" step="100" placeholder="2400" value={formData.home_sqft} onChange={handleChange} style={inputStyle} />
+                  <input name="home_sqft" type="number" step="any" placeholder="2400" value={formData.home_sqft} onChange={handleChange} style={inputStyle} />
                 </Field>
               </>
             )}
             <Field label="Lot size (acres)">
-              <input name="lot_acres" type="number" step="0.01" placeholder="1.5" value={formData.lot_acres} onChange={handleChange} style={inputStyle} />
+              <input name="lot_acres" type="number" step="any" placeholder="1.5" value={formData.lot_acres} onChange={handleChange} style={inputStyle} />
             </Field>
             <Field label="Airpark / community name">
               <input name="airpark_name" placeholder="e.g. Spruce Creek Fly-In" value={formData.airpark_name} onChange={handleChange} style={inputStyle} />
