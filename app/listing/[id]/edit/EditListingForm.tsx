@@ -8,11 +8,18 @@
  * Saving resets the listing to "pending" for admin review.
  */
 
-import { useState, useActionState, useRef } from 'react'
+import { useState, useActionState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { updateListing, type UpdateState } from '@/app/actions/listings'
 import FeetInchesInput from '@/app/components/FeetInchesInput'
 import AirportAutocomplete, { type AirportSuggestion } from '@/app/components/AirportAutocomplete'
+
+// Leaflet must be loaded client-side only — same dynamic-import pattern as
+// the submit form.
+const AirportMap = dynamic(() => import('@/app/components/AirportMap'), { ssr: false })
+
+type AirportCoords = { lat: number; lng: number; icao: string }
 
 const SURFACE_OPTIONS = [
   'Asphalt', 'Asphalt (grooved)', 'Concrete', 'Asphalt/Concrete',
@@ -80,6 +87,11 @@ type Listing = {
   amenities?: string[] | null
   leasehold_years_remaining?: number | null
   status?: string
+  // Pin location on the airport diagram + searchable map coords.
+  hangar_lat?: number | null
+  hangar_lng?: number | null
+  latitude?: number | null
+  longitude?: number | null
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
@@ -113,6 +125,45 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
   // Drafts get Save as Draft + Publish buttons. Non-drafts just get Save changes.
   const isDraft = listing.status === 'draft'
 
+  // ── Airport map / pin state ─────────────────────────────────────────────
+  // hangarLat/Lng = the pin position on the airport diagram (most precise).
+  // airportCoords = airport center, used as the map's fallback center when
+  //                 no OSM aerodrome diagram is available (small private fields).
+  const [hangarLat, setHangarLat] = useState<number | null>(listing.hangar_lat ?? null)
+  const [hangarLng, setHangarLng] = useState<number | null>(listing.hangar_lng ?? null)
+  const [airportCoords, setAirportCoords] = useState<AirportCoords | null>(
+    listing.latitude != null && listing.longitude != null
+      ? { lat: listing.latitude, lng: listing.longitude, icao: listing.airport_code ?? '' }
+      : null
+  )
+
+  // Resolve the airport's lat/lng if we don't already have it cached. Runs
+  // once on mount so the map can center even when the saved listing predates
+  // the radius-search feature.
+  useEffect(() => {
+    if (airportCoords || !airportCode) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/airports/search?q=${encodeURIComponent(airportCode)}&limit=1`)
+        if (!res.ok) return
+        const data = await res.json()
+        const match = data[0]
+        if (match && !cancelled && match.ident.toUpperCase() === airportCode.toUpperCase()) {
+          setAirportCoords({ lat: match.latitude_deg, lng: match.longitude_deg, icao: airportCode })
+        }
+      } catch { /* non-fatal */ }
+    })()
+    return () => { cancelled = true }
+    // Only re-run when the user changes the airport code intentionally.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [airportCode])
+
+  const handleLocationSelect = useCallback((lat: number, lng: number) => {
+    setHangarLat(lat)
+    setHangarLng(lng)
+  }, [])
+
   const icaoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const boundUpdate = updateListing.bind(null, listing.id)
@@ -130,6 +181,10 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
     const st = stateAbbr(airport.iso_region)
     if (st) setState(st)
     fetchRunwayData(airport.ident)
+    // New airport selected — update map center and clear any stale pin.
+    setAirportCoords({ lat: airport.latitude_deg, lng: airport.longitude_deg, icao: airport.ident })
+    setHangarLat(null)
+    setHangarLng(null)
   }
 
   // Auto-geocode: when code typed manually, try to fill city/state + runway
@@ -495,6 +550,58 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
               {SURFACE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </Field>
+        </Section>
+
+        {/* ── Location on Airport ──────────────────────────────────────────── */}
+        {/* Hidden inputs carry the pin coords into the formData; the visible map */}
+        {/* lets brokers drag the marker to update them.                          */}
+        <input type="hidden" name="hangar_lat" value={hangarLat ?? ''} />
+        <input type="hidden" name="hangar_lng" value={hangarLng ?? ''} />
+        <Section title={isHangar ? 'Hangar Location (optional)' : 'Property Location on Airport (optional)'}>
+          <p style={{ margin: '0 0 0.75rem', color: '#6b7280', fontSize: '0.82rem', lineHeight: 1.5 }}>
+            Drop or drag a pin to mark exactly where the property sits on the field. Buyers see this on
+            the airport diagram, and the location is used for the 50-mile alert radius.
+          </p>
+          {airportCode ? (
+            <>
+              <AirportMap
+                icao={airportCode}
+                savedLat={hangarLat}
+                savedLng={hangarLng}
+                centerLat={airportCoords?.lat}
+                centerLng={airportCoords?.lng}
+                editable
+                onLocationSelect={handleLocationSelect}
+                height="380px"
+              />
+              {hangarLat != null && hangarLng != null && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#16a34a', fontWeight: 500 }}>
+                    ✓ Pin placed at {hangarLat.toFixed(5)}, {hangarLng.toFixed(5)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setHangarLat(null); setHangarLng(null) }}
+                    style={{
+                      background: 'none', border: 'none', color: '#6b7280',
+                      fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline',
+                    }}
+                  >
+                    Clear pin
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{
+              minHeight: '160px', borderRadius: '10px', border: '1px dashed #d1d5db',
+              backgroundColor: '#f9fafb', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', color: '#9ca3af', fontSize: '0.85rem', padding: '1rem',
+              textAlign: 'center',
+            }}>
+              Add an airport code above to load the map.
+            </div>
+          )}
         </Section>
 
         {/* ── Description ────────────────────────────────────────────────── */}

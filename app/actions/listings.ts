@@ -178,6 +178,18 @@ export async function updateListing(
     hoa_monthly:          parseOptionalNumber(formData.get('hoa_monthly')),
     annual_property_tax:  parseOptionalNumber(formData.get('annual_property_tax')),
     amenities:            amenitiesClean,
+    // Pin location on the airport diagram. Brokers can edit it from the map.
+    // hangar_lat/lng = exact pin; latitude/longitude = searchable coords used
+    // by the 50mi nearby-buyer alerts. Pin doubles as the searchable point
+    // when present, so we mirror it into latitude/longitude.
+    hangar_lat:  parseOptionalNumber(formData.get('hangar_lat')),
+    hangar_lng:  parseOptionalNumber(formData.get('hangar_lng')),
+    ...(formData.get('hangar_lat') && formData.get('hangar_lng')
+      ? {
+          latitude:  parseOptionalNumber(formData.get('hangar_lat')),
+          longitude: parseOptionalNumber(formData.get('hangar_lng')),
+        }
+      : {}),
     // Leasehold term — only meaningful when ownership_type === 'leasehold'.
     // If the user switched away from leasehold we clear the column.
     leasehold_years_remaining: formData.get('ownership_type') === 'leasehold'
