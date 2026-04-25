@@ -61,7 +61,7 @@ export default async function AdminPage() {
   // Fetch airport home / land / fly-in community listings
   const { data: homeListings } = await supabaseAdmin
     .from('listings')
-    .select('id, title, airport_name, airport_code, city, state, property_type, listing_type, asking_price, monthly_lease, bedrooms, bathrooms, home_sqft, lot_acres, has_runway_access, airpark_name, status, is_sample, contact_name, contact_email, contact_phone, created_at, view_count')
+    .select('id, title, airport_name, airport_code, city, state, property_type, listing_type, asking_price, monthly_lease, bedrooms, bathrooms, home_sqft, lot_acres, has_runway_access, airpark_name, status, is_sample, contact_name, contact_email, contact_phone, created_at, view_count, broker_profile_id')
     .in('property_type', ['airport_home', 'land', 'fly_in_community'])
     .order('created_at', { ascending: false })
 
@@ -294,7 +294,13 @@ export default async function AdminPage() {
           </span>
         </div>
         <div style={{ padding: '1rem', backgroundColor: 'white' }}>
-          <AdminHomesManager initialListings={(homeListings ?? []) as AdminHomeListing[]} />
+          <AdminHomesManager
+            initialListings={(homeListings ?? []) as AdminHomeListing[]}
+            brokers={(brokerProfiles ?? [])
+              .filter(bp => (bp as { is_verified?: boolean }).is_verified)
+              .map(bp => ({ id: bp.id, user_id: bp.user_id ?? '', full_name: bp.full_name, brokerage: (bp as { brokerage?: string }).brokerage ?? null }))
+            }
+          />
         </div>
       </div>
 

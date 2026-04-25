@@ -186,14 +186,35 @@ export default function AirportMap({
     setFeatures([])
     setBounds(null)
 
-    // Union query: match by ICAO tag first, then FAA "ref" and "faa" tags.
-    // This covers both proper ICAO codes (KPAE) and FAA-only identifiers (S36, 3W0).
+    // ── Code variants ──────────────────────────────────────────────────────
+    // Small US airports often have inconsistent identifiers between datasets.
+    // Example: Costin Airport in Port St. Joe, FL has FAA LID "A51" but our
+    // airports table stores gps_code "KA51", and OSM most commonly tags
+    // these under the K-prefixed form (icao=KA51). Searching only the user's
+    // typed code misses the OSM record.
+    //
+    // We expand to all plausible variants so the Overpass union catches the
+    // record regardless of which convention the OSM contributor used.
+    const variants = new Set<string>([normalized])
+    if (/^[A-Z0-9]{3}$/.test(normalized)) {
+      variants.add('K' + normalized)         // A51 → KA51
+    }
+    if (normalized.length === 4 && normalized.startsWith('K')) {
+      variants.add(normalized.slice(1))      // KA51 → A51
+    }
+
+    // Union query: for each variant, match by icao, ref, faa, or local_ref.
+    const matchClauses = [...variants].flatMap(code => [
+      `area["aeroway"="aerodrome"]["icao"="${code}"];`,
+      `area["aeroway"="aerodrome"]["ref"="${code}"];`,
+      `area["aeroway"="aerodrome"]["faa"="${code}"];`,
+      `area["aeroway"="aerodrome"]["local_ref"="${code}"];`,
+    ]).join('')
+
     const query = [
       `[out:json][timeout:25];`,
       `(`,
-      `  area["aeroway"="aerodrome"]["icao"="${normalized}"];`,
-      `  area["aeroway"="aerodrome"]["ref"="${normalized}"];`,
-      `  area["aeroway"="aerodrome"]["faa"="${normalized}"];`,
+      matchClauses,
       `)->.a;`,
       `(way["aeroway"~"runway|taxiway|taxilane|apron|terminal|hangar|parking_position"](area.a););`,
       `out body;>;out skel qt;`,

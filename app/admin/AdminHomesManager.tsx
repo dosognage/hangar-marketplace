@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import AssignBrokerPopover, { type BrokerOption } from './AssignBrokerPopover'
 
 export type AdminHomeListing = {
   id: string
@@ -26,6 +27,7 @@ export type AdminHomeListing = {
   contact_phone: string | null
   created_at: string
   view_count: number | null
+  broker_profile_id: string | null
 }
 
 type ActionState = Record<string, 'idle' | 'loading' | 'done' | 'error'>
@@ -54,7 +56,13 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }
   rejected: { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' },
 }
 
-export default function AdminHomesManager({ initialListings }: { initialListings: AdminHomeListing[] }) {
+export default function AdminHomesManager({
+  initialListings,
+  brokers = [],
+}: {
+  initialListings: AdminHomeListing[]
+  brokers?: BrokerOption[]
+}) {
   const [listings, setListings] = useState<AdminHomeListing[]>(initialListings)
   const [search, setSearch] = useState('')
   const [filterPropType, setFilterPropType] = useState('all')
@@ -63,6 +71,8 @@ export default function AdminHomesManager({ initialListings }: { initialListings
   const [filterState, setFilterState] = useState('all')
   const [actions, setActions] = useState<ActionState>({})
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  // Track which listing is currently being assigned to a broker (modal open).
+  const [assigningId, setAssigningId] = useState<string | null>(null)
 
   const states = useMemo(() => {
     const s = new Set(listings.map(l => l.state).filter(Boolean))
@@ -349,6 +359,20 @@ export default function AdminHomesManager({ initialListings }: { initialListings
                     </button>
                   )}
 
+                  {/* Assign / reassign broker — works for any property type. */}
+                  {brokers.length > 0 && (
+                    <button
+                      onClick={() => setAssigningId(listing.id)}
+                      style={btnStyle(
+                        listing.broker_profile_id ? '#1d4ed8' : '#374151',
+                        listing.broker_profile_id ? '#eff6ff' : 'white',
+                        listing.broker_profile_id ? '#bfdbfe' : '#d1d5db',
+                      )}
+                    >
+                      🏢 {listing.broker_profile_id ? 'Reassign Broker' : 'Assign Broker'}
+                    </button>
+                  )}
+
                   {/* Status feedback */}
                   {statusDone && <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600 }}>✓ Saved</span>}
                   {statusError && <span style={{ fontSize: '0.78rem', color: '#dc2626', fontWeight: 600 }}>Error. Try again.</span>}
@@ -386,6 +410,23 @@ export default function AdminHomesManager({ initialListings }: { initialListings
             )
           })}
         </div>
+      )}
+
+      {/* Broker assignment modal — rendered at root so it overlays everything. */}
+      {assigningId && (
+        <AssignBrokerPopover
+          listingId={assigningId}
+          currentBrokerProfileId={
+            listings.find(l => l.id === assigningId)?.broker_profile_id ?? null
+          }
+          brokers={brokers}
+          onClose={() => setAssigningId(null)}
+          onAssigned={(listingId, brokerId) => {
+            setListings(prev => prev.map(l =>
+              l.id === listingId ? { ...l, broker_profile_id: brokerId } : l
+            ))
+          }}
+        />
       )}
     </div>
   )
