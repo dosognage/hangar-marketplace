@@ -19,6 +19,8 @@ import AdminHomesManager, { type AdminHomeListing } from './AdminHomesManager'
 import AdminUsersManager, { type AdminUser } from './AdminUsersManager'
 import AdminBrokersManager, { type AdminBrokerProfile } from './AdminBrokersManager'
 import AdminRequestsManager, { type AdminRequest } from './AdminRequestsManager'
+import AdminAircraftRequestsManager from './AdminAircraftRequestsManager'
+import { listAircraftRequests } from '@/app/actions/aircraft'
 import { Star, Building2, Users, Home, MessageSquare } from 'lucide-react'
 
 type BrokerApp = {
@@ -93,6 +95,9 @@ export default async function AdminPage() {
     .from('hangar_requests')
     .select('id, contact_name, contact_email, contact_phone, airport_code, airport_name, city, state, aircraft_type, wingspan_ft, monthly_budget, duration, move_in_date, notes, status, is_priority, created_at')
     .order('created_at', { ascending: false })
+
+  // Inbound aircraft additions queue. Open + the last 20 closed.
+  const aircraftRequests = await listAircraftRequests()
 
   // Broker profiles — full detail for admin broker panel + keyed by user_id for users table
   const { data: brokerProfiles } = await supabaseAdmin
@@ -331,6 +336,25 @@ export default async function AdminPage() {
         <div style={{ padding: '1rem', backgroundColor: 'white' }}>
           <AdminRequestsManager initialRequests={(hangarRequests ?? []) as AdminRequest[]} />
         </div>
+      </div>
+
+      {/* ── Aircraft Requests (additions queue) ──────────────────────────── */}
+      <h2 style={{ fontSize: '1rem', color: '#374151', margin: '2.5rem 0 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <Star size={15} style={{ display: 'inline', verticalAlign: 'middle' }} /> Aircraft Requests
+        <span style={{
+          fontSize: '0.75rem', fontWeight: 700,
+          backgroundColor: '#eef2ff', color: '#4338ca',
+          border: '1px solid #c7d2fe', borderRadius: '20px',
+          padding: '0.1rem 0.55rem',
+        }}>
+          {aircraftRequests.open.length}
+        </span>
+      </h2>
+      <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '1.25rem' }}>
+        <AdminAircraftRequestsManager
+          initialOpen={aircraftRequests.open}
+          initialClosed={aircraftRequests.closed}
+        />
       </div>
 
       {/* ── Broker Profiles ───────────────────────────────────────────────── */}

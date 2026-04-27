@@ -5,6 +5,8 @@ import PhotoGallery from '@/app/components/PhotoGallery'
 import ContactForm from '@/app/components/ContactForm'
 import FavoriteButton from '@/app/components/FavoriteButton'
 import AircraftFitCalculator from '@/app/components/AircraftFitCalculator'
+import ListingFitWidget from '@/app/components/ListingFitWidget'
+import { getDefaultAircraft } from '@/app/actions/aircraft'
 import LandingFees from '@/app/components/LandingFees'
 import FuelPrices from '@/app/components/FuelPrices'
 import ShareButton from '@/app/components/ShareButton'
@@ -167,6 +169,10 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
       .maybeSingle()
     initialSaved = !!saved
   }
+
+  // User's saved aircraft for the personalized fit widget below.
+  // Returns null if the user is logged out or hasn't picked an aircraft.
+  const savedAircraft = await getDefaultAircraft()
 
   const { data: listing, error } = await supabase
     .from('listings')
@@ -551,6 +557,23 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
           />
         </div>
       )}
+
+      {/* Personalized fit widget — uses the user's saved aircraft from
+          Profile Settings to give an instant verdict for this hangar. The
+          AircraftFitCalculator below stays for ad-hoc lookups. */}
+      <ListingFitWidget
+        aircraft={savedAircraft ? {
+          common_name: savedAircraft.common_name,
+          wingspan_ft: savedAircraft.wingspan_ft,
+          length_ft:   savedAircraft.length_ft,
+          height_ft:   savedAircraft.height_ft,
+        } : null}
+        hangar={{
+          door_width:   typedListing.door_width,
+          door_height:  typedListing.door_height,
+          hangar_depth: typedListing.hangar_depth,
+        }}
+      />
 
       {/* Airplane fit calculator */}
       <AircraftFitCalculator

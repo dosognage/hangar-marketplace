@@ -268,3 +268,191 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin queue (aircraft requests)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AircraftRequest = {
+  id:           string
+  user_id:      string | null
+  user_email:   string | null
+  manufacturer: string | null
+  model:        string
+  notes:        string | null
+  status:       string
+  created_at:   string
+}
+
+async function ensureAdmin(): Promise<{ ok: boolean; email?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false }
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+  if (!adminEmails.includes((user.email ?? '').toLowerCase())) return { ok: false }
+  return { ok: true, email: user.email ?? undefined }
+}
+
+/** Lists open + recently-closed aircraft requests for the admin queue. */
+export async function listAircraftRequests(): Promise<{
+  open:   AircraftRequest[]
+  closed: AircraftRequest[]
+  error?: string
+}> {
+  const admin = await ensureAdmin()
+  if (!admin.ok) return { open: [], closed: [], error: 'Unauthorized' }
+
+  const { data: open } = await supabaseAdmin
+    .from('aircraft_requests')
+    .select('id, user_id, user_email, manufacturer, model, notes, status, created_at')
+    .eq('status', 'open')
+    .order('created_at', { ascending: true })
+
+  const { data: closed } = await supabaseAdmin
+    .from('aircraft_requests')
+    .select('id, user_id, user_email, manufacturer, model, notes, status, created_at')
+    .neq('status', 'open')
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  return {
+    open:   (open ?? []) as AircraftRequest[],
+    closed: (closed ?? []) as AircraftRequest[],
+  }
+}
+
+/**
+ * Admin approves an aircraft request: inserts the new row into aircraft_specs,
+ * marks the request as closed, and emails the requester so they know the
+ * aircraft is now in the dataset.
+ */
+export async function approveAircraftRequest(args: {
+  request_id:     string
+  manufacturer:   string
+  model:          string
+  common_name:    string
+  category:       string
+  wingspan_ft:    number
+  length_ft:      number
+  height_ft:      number
+  mtow_lbs?:      number | null
+  is_taildragger: boolean
+}): Promise<{ error?: string }> {
+  const admin = await ensureAdmin()
+  if (!admin.ok) return { error: 'Unauthorized' }
+
+  // Validate dimensions before any writes.
+  for (const [label, n] of [
+    ['Wingspan',    args.wingspan_ft],
+    ['Length',      args.length_ft],
+    ['Tail height', args.height_ft],
+  ] as const) {
+    if (!Number.isFinite(n) || n <= 0) {
+      return { error: `${label} must be a positive number.` }
+    }
+  }
+  if (!args.common_name.trim()) return { error: 'Common name is required.' }
+
+  // Pull the request first so we can email the requester after.
+  const { data: request, error: fetchErr } = await supabaseAdmin
+    .from('aircraft_requests')
+    .select('user_id, user_email, manufacturer, model')
+    .eq('id', args.request_id)
+    .single()
+
+  if (fetchErr || !request) return { error: 'Request not found.' }
+
+  // Insert the aircraft spec.
+  const { data: inserted, error: insertErr } = await supabaseAdmin
+    .from('aircraft_specs')
+    .insert({
+      manufacturer:   args.manufacturer.trim(),
+      model:          args.model.trim(),
+      common_name:    args.common_name.trim(),
+      category:       args.category,
+      wingspan_ft:    args.wingspan_ft,
+      length_ft:      args.length_ft,
+      height_ft:      args.height_ft,
+      mtow_lbs:       args.mtow_lbs ?? null,
+      is_taildragger: args.is_taildragger,
+    })
+    .select('id, common_name')
+    .single()
+
+  if (insertErr || !inserted) {
+    // Most likely a unique-constraint violation on common_name. Surface it.
+    return { error: insertErr?.message ?? 'Failed to add aircraft.' }
+  }
+
+  // Mark the request closed.
+  await supabaseAdmin
+    .from('aircraft_requests')
+    .update({ status: 'closed' })
+    .eq('id', args.request_id)
+
+  // Notify the requester (fire-and-forget).
+  if (request.user_email) {
+    void notifyRequesterAircraftAdded({
+      to:           request.user_email,
+      aircraftName: inserted.common_name,
+    }).catch(e => console.error('[aircraft] requester notify failed:', e))
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/settings')
+  return {}
+}
+
+/**
+ * Admin marks an aircraft request as closed without adding it (duplicate,
+ * invalid, etc.). Optionally sends a short note explaining.
+ */
+export async function closeAircraftRequest(args: {
+  request_id: string
+}): Promise<{ error?: string }> {
+  const admin = await ensureAdmin()
+  if (!admin.ok) return { error: 'Unauthorized' }
+
+  const { error } = await supabaseAdmin
+    .from('aircraft_requests')
+    .update({ status: 'closed' })
+    .eq('id', args.request_id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/admin')
+  return {}
+}
+
+async function notifyRequesterAircraftAdded(opts: {
+  to:           string
+  aircraftName: string
+}): Promise<void> {
+  const html = modernLayout({
+    preheader: `${opts.aircraftName} is now in the Hangar Marketplace aircraft list.`,
+    eyebrow:   'Added',
+    title:     'Your aircraft is now in the list',
+    subtitle:  `Thanks for letting us know. ${opts.aircraftName} is now available in the aircraft picker on Hangar Marketplace.`,
+    heroCaption: '✓',
+    heroGradient: 'linear-gradient(135deg,#065f46 0%,#10b981 60%,#6ee7b7 100%)',
+    sections: [{
+      title: 'What to do next',
+      html: `
+        <p style="margin:0;font-size:14px;color:#374151;line-height:1.65;">
+          Open Profile Settings, search for <strong>${escapeHtml(opts.aircraftName)}</strong>, and select it.
+          The fit filter on the home page will then show you only hangars that work for your aircraft.
+        </p>`,
+    }],
+    cta: {
+      label: 'Open Profile Settings',
+      href:  `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'}/settings`,
+    },
+    footerIntro: `You're getting this because you asked us to add this aircraft to Hangar Marketplace.`,
+  })
+
+  await sendEmail({
+    to:      opts.to,
+    subject: `${opts.aircraftName} is now on Hangar Marketplace`,
+    html,
+  })
+}
