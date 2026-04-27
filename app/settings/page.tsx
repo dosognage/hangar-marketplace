@@ -16,6 +16,8 @@ import SettingsForm from './SettingsForm'
 import ProfileForm from './ProfileForm'
 import ReadReceiptsToggle from './ReadReceiptsToggle'
 import NotifyListingsToggle from './NotifyListingsToggle'
+import AircraftSelector from './AircraftSelector'
+import { listAircraft } from '@/app/actions/aircraft'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,10 +47,15 @@ export default async function SettingsPage() {
   // notification setting, so we honour the opt-in default.
   const { data: prefs } = await supabaseAdmin
     .from('user_preferences')
-    .select('notify_new_listings')
+    .select('notify_new_listings, default_aircraft_id')
     .eq('user_id', user.id)
     .maybeSingle()
   const notifyNewListings = prefs?.notify_new_listings !== false
+  const defaultAircraftId = (prefs?.default_aircraft_id as string | null) ?? null
+
+  // The aircraft list is small (~190 rows) and rarely changes — fine to ship
+  // the whole thing to the picker so search filters in JS without round-trips.
+  const aircraftList = await listAircraft()
 
   return (
     <div style={{ maxWidth: '580px' }}>
@@ -146,6 +153,44 @@ export default async function SettingsPage() {
           <NotifyListingsToggle
             enabled={notifyNewListings}
             hasHomeAirport={!!homeAirport}
+          />
+        </div>
+      </div>
+
+      {/* ── Your Aircraft section ────────────────────────────────────────── */}
+      {/* Drives the homepage "Fits my [aircraft]" pill and any future        */}
+      {/* listing-detail fit widgets. Seeded with ~190 GA aircraft.           */}
+      <div style={{
+        backgroundColor: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        marginTop: '1.25rem',
+      }}>
+        <div style={{
+          padding: '1rem 1.4rem',
+          borderBottom: '1px solid #f3f4f6',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2c-.5.1-.9.5-.9 1 0 .3.1.6.3.8l2.5 2.5L2 13.5c-.1.3 0 .7.3.9l1.3 1.3c.2.2.6.3.9.2l3.5-1.7 2.5 2.5c.2.2.5.3.8.3.5 0 .9-.4 1-.9z"/>
+          </svg>
+          <div>
+            <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem', color: '#111827' }}>
+              Your Aircraft
+            </p>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.4 }}>
+              We&apos;ll filter listings on the home page to show only hangars that fit your plane.
+            </p>
+          </div>
+        </div>
+        <div style={{ padding: '1.4rem' }}>
+          <AircraftSelector
+            aircraft={aircraftList}
+            currentId={defaultAircraftId}
           />
         </div>
       </div>

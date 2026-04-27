@@ -20,6 +20,7 @@ import SearchFilters from '@/app/components/SearchFilters'
 import SplitView from '@/app/components/SplitView'
 import SaveSearchWidget from '@/app/components/SaveSearchWidget'
 import { geocodeLocation, distanceMiles } from '@/lib/geocode'
+import { getDefaultAircraft } from '@/app/actions/aircraft'
 
 type Photo = { storage_path: string; display_order: number }
 
@@ -37,6 +38,7 @@ type Listing = {
   square_feet: number | null
   door_width: number | null
   door_height: number | null
+  hangar_depth: number | null
   description: string | null
   contact_name: string
   latitude: number | null
@@ -174,6 +176,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       return 0
     })
 
+  // Default aircraft for the "Fits my X" pill on the listings panel.
+  // Server-rendered so the pill state lands correctly on first paint.
+  const defaultAircraft = await getDefaultAircraft()
+
   // ── Radius post-filter ───────────────────────────────────────────────────
   if (useRadius && radiusCenter) {
     safeListings = safeListings.filter(l => {
@@ -216,6 +222,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           supabaseUrl={SUPABASE_URL}
           savedIds={savedIds}
           userId={user?.id ?? null}
+          aircraft={defaultAircraft ? {
+            id:          defaultAircraft.id,
+            common_name: defaultAircraft.common_name,
+            wingspan_ft: defaultAircraft.wingspan_ft,
+            length_ft:   defaultAircraft.length_ft,
+            height_ft:   defaultAircraft.height_ft,
+          } : null}
           initialQ={qVal}
           initialType={typeVal}
           initialMinPrice={minPriceVal}

@@ -20,6 +20,8 @@ import { useToast } from './ToastProvider'
 import { useSavedCount } from './SavedCountProvider'
 import MobileSearchBar from './MobileSearchBar'
 import { formatFtIn } from '@/lib/dimensions'
+import { listingPassesFitFilter } from '@/lib/aircraftFit'
+import { AircraftFitFilterPillInline } from './AircraftFitFilterPill'
 
 // Load the map lazily — Leaflet requires a browser environment
 const MapView = dynamic(() => import('./MapView'), {
@@ -44,6 +46,7 @@ type Listing = Omit<MapListing, 'latitude' | 'longitude'> & {
   square_feet: number | null
   door_width: number | null
   door_height: number | null
+  hangar_depth: number | null
   description: string | null
   is_featured: boolean
   featured_until: string | null
@@ -72,6 +75,14 @@ type Props = {
   supabaseUrl: string
   savedIds: string[]
   userId: string | null
+  // User's saved default aircraft (drives the "Fits my X" filter pill).
+  aircraft?: {
+    id:           string
+    common_name:  string
+    wingspan_ft:  number
+    length_ft:    number
+    height_ft:    number
+  } | null
   // Filter values passed through for the mobile floating search bar
   initialQ?: string
   initialType?: string
@@ -88,6 +99,7 @@ export default function SplitView({
   supabaseUrl,
   savedIds,
   userId,
+  aircraft = null,
   initialQ = '',
   initialType = '',
   initialMinPrice = '',
@@ -95,6 +107,11 @@ export default function SplitView({
   initialMinSqft = '',
   searchQuery = '',
 }: Props) {
+  // ── Aircraft fit filter ─────────────────────────────────────────────────
+  // When active, hide listings whose door/depth dimensions can't accommodate
+  // the user's saved aircraft. Listings missing dim data pass through
+  // (don't penalize incomplete listings).
+  const [fitFilterActive, setFitFilterActive] = useState(false)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [savedSet, setSavedSet] = useState<Set<string>>(() => new Set(savedIds))
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set())
@@ -129,9 +146,16 @@ export default function SplitView({
   // are excluded from the list as well — they'll still come back on the next
   // geocode pass for the underlying data.
   const visibleListings = useMemo(() => {
-    if (!mapBounds) return listings
-    return listings.filter(l => inBounds(l, mapBounds))
-  }, [listings, mapBounds])
+    let pool = listings
+    if (mapBounds) pool = pool.filter(l => inBounds(l, mapBounds))
+    if (fitFilterActive && aircraft) {
+      pool = pool.filter(l => listingPassesFitFilter(
+        { wingspan_ft: aircraft.wingspan_ft, length_ft: aircraft.length_ft, height_ft: aircraft.height_ft },
+        { door_width: l.door_width, door_height: l.door_height, hangar_depth: l.hangar_depth ?? null },
+      ))
+    }
+    return pool
+  }, [listings, mapBounds, fitFilterActive, aircraft])
 
   // Sort order (applied to the viewport-filtered set):
   //   1. Sponsored listings first
@@ -378,10 +402,25 @@ export default function SplitView({
           </div>
         </div>
 
+        {/* ── Aircraft fit filter pill ───────────────────────────────── */}
+        {/* Lives at the top of the listings panel so users see it before    */}
+        {/* scanning the cards. When toggled on, hides hangars whose door /  */}
+        {/* depth dimensions can't accommodate the user's saved aircraft.    */}
+        {(aircraft || userId) && (
+          <div className="desktop-count-line" style={{ marginBottom: '0.6rem' }}>
+            <AircraftFitFilterPillInline
+              aircraft={aircraft}
+              active={fitFilterActive}
+              onToggle={setFitFilterActive}
+            />
+          </div>
+        )}
+
         {/* ── Desktop count line (hidden on mobile) ──────────────────── */}
         <p className="desktop-count-line" style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#6b7280' }}>
           {listingCount} listing{listingCount !== 1 ? 's' : ''}
           {totalPages > 1 && ` · page ${safePage} of ${totalPages}`}
+          {fitFilterActive && aircraft && ` · filtering for ${aircraft.common_name}`}
         </p>
 
         {/* ── Empty state ─────────────────────────────────────────────── */}
