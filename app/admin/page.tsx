@@ -13,6 +13,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import BrokerApplicationButtons from './BrokerApplicationButtons'
 import ReGeocodeButton from './RegeoCodeButton'
+import BackfillHomeAirportsButton from './BackfillHomeAirportsButton'
 import AdminListingsManager from './AdminListingsManager'
 import AdminHomesManager, { type AdminHomeListing } from './AdminHomesManager'
 import AdminUsersManager, { type AdminUser } from './AdminUsersManager'
@@ -163,6 +164,7 @@ export default async function AdminPage() {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <ReGeocodeButton />
+          <BackfillHomeAirportsButton />
           <Link href="/broker/dashboard" style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             padding: '0.45rem 0.9rem', borderRadius: '7px',
