@@ -17,6 +17,7 @@ import ProfileForm from './ProfileForm'
 import ReadReceiptsToggle from './ReadReceiptsToggle'
 import NotifyListingsToggle from './NotifyListingsToggle'
 import AircraftSelector from './AircraftSelector'
+import CantFindAircraftWidget from './CantFindAircraftWidget'
 import { listAircraft } from '@/app/actions/aircraft'
 
 export const dynamic = 'force-dynamic'
@@ -192,6 +193,7 @@ export default async function SettingsPage() {
             aircraft={aircraftList}
             currentId={defaultAircraftId}
           />
+          <CantFindAircraftWidget />
         </div>
       </div>
 
