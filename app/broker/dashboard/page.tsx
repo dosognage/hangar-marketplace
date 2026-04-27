@@ -510,7 +510,7 @@ export default async function BrokerDashboardPage() {
               public broker page
             </Link>.
             {' '}To update your name or login email, visit{' '}
-            <Link href="/settings" style={{ color: '#6366f1', textDecoration: 'none' }}>Settings</Link>.
+            <Link href="/settings" style={{ color: '#6366f1', textDecoration: 'none' }}>Profile Settings</Link>.
           </p>
         </div>
 

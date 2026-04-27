@@ -23,7 +23,7 @@ export const dynamic = 'force-dynamic'
 
 
 export const metadata: Metadata = {
-  title: 'Settings | Hangar Marketplace',
+  title: 'Profile Settings | Hangar Marketplace',
 }
 
 export default async function SettingsPage() {
@@ -63,7 +63,7 @@ export default async function SettingsPage() {
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ margin: '0 0 0.25rem', fontSize: '1.5rem', color: '#111827' }}>
-          Settings
+          Profile Settings
         </h1>
         <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem' }}>
           Signed in as <strong>{user.email}</strong>

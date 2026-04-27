@@ -170,7 +170,7 @@ export function modernLayout(args: ModernEmailArgs): string {
 
   const footerLinksHtml = footerLinks && footerLinks.length > 0
     ? footerLinks.map(l => `<a href="${l.href}" style="color:#64748b;">${htmlEscape(l.label)}</a>`).join(' &nbsp;·&nbsp; ')
-    : `<a href="${SITE_URL}/settings" style="color:#64748b;">Settings</a>
+    : `<a href="${SITE_URL}/settings" style="color:#64748b;">Profile Settings</a>
        &nbsp;·&nbsp;
        <a href="mailto:hello@hangarmarketplace.com" style="color:#64748b;">Contact us</a>`
 
