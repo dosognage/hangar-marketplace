@@ -151,9 +151,25 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
         )}
       </button>
 
+      {/* Backdrop — only renders on mobile, dims the page behind the panel
+          and provides a tap-to-close target outside the dropdown. */}
+      {open && (
+        <div
+          className="notif-mobile-backdrop"
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15,23,42,0.35)',
+            zIndex: 3999,
+            // Hidden on desktop, visible only on mobile (≤768px).
+          }}
+        />
+      )}
+
       {/* Dropdown */}
       {open && (
-        <div style={{
+        <div className="notif-dropdown" style={{
           position: 'absolute',
           top: 'calc(100% + 10px)',
           right: 0,
@@ -165,6 +181,25 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
           overflow: 'hidden',
           zIndex: 4000,
         }}>
+          <style>{`
+            /* On mobile (≤768px) switch to a fixed sheet that spans the
+               viewport with a small inset margin. Avoids the "anchored
+               320px box gets clipped off-screen" problem entirely. */
+            @media (max-width: 768px) {
+              .notif-dropdown {
+                position: fixed !important;
+                top: calc(env(safe-area-inset-top, 0px) + 64px) !important;
+                left: 12px !important;
+                right: 12px !important;
+                width: auto !important;
+                max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 80px) !important;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.18) !important;
+              }
+            }
+            @media (min-width: 769px) {
+              .notif-mobile-backdrop { display: none; }
+            }
+          `}</style>
           {/* Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
