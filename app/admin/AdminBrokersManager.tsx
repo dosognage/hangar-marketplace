@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import ResendBrokerEmailButton from './ResendBrokerEmailButton'
 
 export type AdminBrokerProfile = {
   id:                  string
@@ -210,6 +211,9 @@ export default function AdminBrokersManager({ brokers: initial }: { brokers: Adm
                 >
                   {broker.is_verified ? '✓ Verified' : 'Verify'}
                 </button>
+                {broker.is_verified && (
+                  <ResendBrokerEmailButton brokerProfileId={broker.id} />
+                )}
                 <button
                   disabled={isLoading}
                   onClick={() => toggleVisibility(broker)}

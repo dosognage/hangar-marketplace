@@ -357,6 +357,46 @@ export async function approveBrokerApplication(applicationId: string, userId: st
 }
 
 /**
+ * Re-fire the broker_approved welcome email for a given broker profile.
+ * Useful when the original email got eaten by spam, the API key was missing
+ * at approval time, or anything else stopped the first send. Returns the
+ * actual result (ok / error / Resend id) so the admin sees diagnostics.
+ */
+export async function resendBrokerWelcomeEmail(
+  brokerProfileId: string,
+): Promise<{ ok: boolean; error?: string; id?: string; sent_to?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { ok: false, error: 'Not authenticated' }
+  if (!isAdmin(user.email)) return { ok: false, error: 'Not authorized' }
+
+  const { data: profile } = await supabaseAdmin
+    .from('broker_profiles')
+    .select('id, full_name, user_id, contact_email')
+    .eq('id', brokerProfileId)
+    .single()
+
+  if (!profile) return { ok: false, error: 'Broker profile not found' }
+
+  // Prefer the broker's contact_email; fall back to their auth email.
+  let to = (profile as { contact_email?: string | null }).contact_email ?? null
+  if (!to && profile.user_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabaseAdmin as any).auth.admin.getUserById(profile.user_id)
+    to = data?.user?.email ?? null
+  }
+  if (!to) return { ok: false, error: 'No email on file for this broker' }
+
+  const { subject, html } = brokerApprovedEmail({
+    name:      profile.full_name,
+    profileId: profile.id,
+  })
+
+  const result = await sendEmail({ to, subject, html })
+  return { ...result, sent_to: to }
+}
+
+/**
  * Reject a broker application.
  * Sends a polite rejection email.
  */

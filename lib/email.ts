@@ -17,6 +17,8 @@ const TEST_TO     = process.env.RESEND_TEST_TO
 
 // ── Sender ─────────────────────────────────────────────────────────────────
 
+export type SendEmailResult = { ok: boolean; error?: string; id?: string }
+
 export async function sendEmail({
   to,
   subject,
@@ -27,11 +29,12 @@ export async function sendEmail({
   subject: string
   html: string
   from?: string
-}): Promise<void> {
+}): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
-    console.warn('[email] RESEND_API_KEY not set — skipping send to', to)
-    return
+    const msg = 'RESEND_API_KEY not set in this environment'
+    console.warn('[email]', msg, '— skipping send to', to)
+    return { ok: false, error: msg }
   }
 
   const recipient = TEST_TO ?? to
@@ -41,24 +44,35 @@ export async function sendEmail({
        </div>`
     : ''
 
-  const res = await fetch(RESEND_API, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to: [recipient],
-      subject: TEST_TO ? `[DEV] ${subject}` : subject,
-      html: devBanner + html,
-    }),
-  })
+  let res: Response
+  try {
+    res = await fetch(RESEND_API, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to: [recipient],
+        subject: TEST_TO ? `[DEV] ${subject}` : subject,
+        html: devBanner + html,
+      }),
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Network error contacting Resend'
+    console.error('[email] fetch failed:', msg)
+    return { ok: false, error: msg }
+  }
 
   if (!res.ok) {
-    const err = await res.text()
-    console.error('[email] Resend error:', err)
+    const errText = await res.text()
+    console.error('[email] Resend error:', res.status, errText)
+    return { ok: false, error: `Resend ${res.status}: ${errText.slice(0, 300)}` }
   }
+
+  const body = await res.json().catch(() => ({} as { id?: string }))
+  return { ok: true, id: (body as { id?: string }).id }
 }
 
 // ── Modern layout wrapper ─────────────────────────────────────────────────
