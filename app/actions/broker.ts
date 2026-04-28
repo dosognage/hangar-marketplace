@@ -288,6 +288,13 @@ export async function approveBrokerApplication(applicationId: string, userId: st
 
   if (existing) {
     profileId = existing.id
+    // Existing broker_profile row — make sure it's flagged as verified.
+    // (Earlier approvals didn't set this, leading to "approved but not
+    // showing as broker" reports. Idempotent for already-verified rows.)
+    await supabaseAdmin
+      .from('broker_profiles')
+      .update({ is_verified: true })
+      .eq('id', profileId)
   } else {
     const { data: newProfile, error: profileError } = await supabaseAdmin
       .from('broker_profiles')
@@ -301,6 +308,10 @@ export async function approveBrokerApplication(applicationId: string, userId: st
         website:        app.website,
         bio:            app.bio,
         is_unlicensed:  app.is_unlicensed ?? false,
+        // Approval = verified. The verified-broker badge on listings, the
+        // public profile page, and any "verified" gating downstream all
+        // depend on this flag being true.
+        is_verified:    true,
       }])
       .select('id')
       .single()
