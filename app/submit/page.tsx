@@ -13,6 +13,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import SubmitForm from './SubmitForm'
 
 // Reads auth cookies on every request — never prerender.
@@ -30,5 +31,38 @@ export default async function SubmitPage() {
     redirect('/login?next=/submit')
   }
 
-  return <SubmitForm />
+  // ── Auto-populate contact fields ────────────────────────────────────────
+  // Pull the user's most accurate name / phone / email so the form pre-fills.
+  // Brokers usually have a broker_profile with their preferred contact info
+  // (sometimes different from their auth email), so prefer that when present.
+  // The user can still edit any of the three fields.
+  const fullName  = (user.user_metadata?.full_name as string | undefined) ?? ''
+  const phoneMeta = (user.user_metadata?.phone     as string | undefined) ?? ''
+  const authEmail = user.email ?? ''
+
+  let contactName  = fullName
+  let contactPhone = phoneMeta
+  let contactEmail = authEmail
+
+  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  if (brokerProfileId) {
+    const { data: bp } = await supabaseAdmin
+      .from('broker_profiles')
+      .select('full_name, phone, contact_email')
+      .eq('id', brokerProfileId)
+      .maybeSingle()
+    if (bp) {
+      if (bp.full_name)     contactName  = bp.full_name
+      if (bp.phone)         contactPhone = bp.phone
+      if (bp.contact_email) contactEmail = bp.contact_email
+    }
+  }
+
+  return (
+    <SubmitForm
+      defaultContactName={contactName}
+      defaultContactEmail={contactEmail}
+      defaultContactPhone={contactPhone}
+    />
+  )
 }

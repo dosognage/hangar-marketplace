@@ -142,9 +142,26 @@ type StoredDraft = {
   hangarLng?:       number | null
 }
 
-export default function SubmitForm() {
+type Props = {
+  defaultContactName?:  string
+  defaultContactEmail?: string
+  defaultContactPhone?: string
+}
+
+export default function SubmitForm({
+  defaultContactName  = '',
+  defaultContactEmail = '',
+  defaultContactPhone = '',
+}: Props = {}) {
   const router = useRouter()
-  const [formData, setFormData] = useState(EMPTY_FORM)
+  // Seed contact fields from the user's profile so brokers / pilots don't
+  // re-type their name + email + phone on every listing. Still editable.
+  const [formData, setFormData] = useState(() => ({
+    ...EMPTY_FORM,
+    contact_name:  defaultContactName,
+    contact_email: defaultContactEmail,
+    contact_phone: defaultContactPhone,
+  }))
   const [hasRunwayAccess, setHasRunwayAccess] = useState(false)
   const [amenities, setAmenities] = useState<string[]>([])
   const [draftRestored, setDraftRestored] = useState(false)
@@ -184,7 +201,20 @@ export default function SubmitForm() {
       const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY)
       if (!raw) return
       const parsed = JSON.parse(raw) as StoredDraft
-      if (parsed.formData)        setFormData(prev => ({ ...prev, ...parsed.formData }))
+      if (parsed.formData) {
+        // Merge: draft wins, BUT if a contact field is empty in the draft
+        // (e.g., older draft saved before auto-populate existed), keep the
+        // seeded default so users don't lose the auto-fill.
+        setFormData(prev => {
+          const merged = { ...prev, ...parsed.formData }
+          if (parsed.formData) {
+            if (!parsed.formData.contact_name)  merged.contact_name  = prev.contact_name
+            if (!parsed.formData.contact_email) merged.contact_email = prev.contact_email
+            if (!parsed.formData.contact_phone) merged.contact_phone = prev.contact_phone
+          }
+          return merged
+        })
+      }
       if (parsed.amenities)       setAmenities(parsed.amenities)
       if (typeof parsed.hasRunwayAccess === 'boolean') setHasRunwayAccess(parsed.hasRunwayAccess)
       if (typeof parsed.hangarLat === 'number') setHangarLat(parsed.hangarLat)
