@@ -37,7 +37,7 @@ export default async function BrokerProfilePage({ params }: PageProps) {
 
   const { data: broker } = await supabase
     .from('broker_profiles')
-    .select('id, user_id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at, is_verified, is_founding_broker, team_id, specialty_airports')
+    .select('id, user_id, full_name, brokerage, phone, contact_email, website, bio, license_state, avatar_url, created_at, is_verified, is_founding_broker, team_id, specialty_airports, hide_email')
     .eq('id', id)
     .single()
 
@@ -191,7 +191,10 @@ export default async function BrokerProfilePage({ params }: PageProps) {
                 📞 {broker.phone}
               </a>
             )}
-            {(broker as { contact_email?: string | null }).contact_email && (
+            {/* Email button — only shown when broker hasn't hidden it. When */}
+            {/* hidden, buyers reach out via the contact form instead.       */}
+            {(broker as { contact_email?: string | null }).contact_email
+             && !(broker as { hide_email?: boolean }).hide_email && (
               <a href={`mailto:${(broker as { contact_email?: string | null }).contact_email}`} style={contactBtnStyle}>
                 ✉️ {(broker as { contact_email?: string | null }).contact_email}
               </a>

@@ -10,6 +10,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 // Accept literal 0 for optional numeric fields (HOA, tax). Empty string → null.
 function parseOptionalNumber(raw: FormDataEntryValue | null): number | null {
@@ -81,15 +82,27 @@ export async function updateListing(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.' }
 
-  // Verify ownership (pull current status so we know whether this is a draft).
-  const { data: existing } = await supabase
+  // Verify ownership (pull current status + broker_profile_id so we know
+  // whether this is a draft AND whether an assigned broker is permitted).
+  // Use the admin client so RLS doesn't hide rows from non-owner brokers.
+  const { data: existing } = await supabaseAdmin
     .from('listings')
-    .select('id, user_id, status')
+    .select('id, user_id, status, broker_profile_id')
     .eq('id', listingId)
     .single()
 
   if (!existing) return { error: 'Listing not found.' }
-  if (existing.user_id !== user.id) return { error: 'Not authorised.' }
+
+  // Two paths permitted (mirror the edit page's auth gate exactly):
+  //   1. The user IS the listing owner.
+  //   2. The user is a verified broker whose broker_profile_id matches the
+  //      listing's broker_profile_id (admin assigned them this listing).
+  const userBrokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  const isOwner       = existing.user_id === user.id
+  const isAssignedBroker = !!userBrokerProfileId && existing.broker_profile_id === userBrokerProfileId
+  if (!isOwner && !isAssignedBroker) {
+    return { error: 'Not authorised.' }
+  }
 
   const listing_type   = formData.get('listing_type') as string
   const property_type  = (formData.get('property_type') as string) || 'hangar'
@@ -198,7 +211,10 @@ export async function updateListing(
     status: nextStatus,
   }
 
-  const { error } = await supabase.from('listings').update(updates).eq('id', listingId)
+  // Use admin client for the write — RLS UPDATE policies typically only
+  // allow the original user_id to write, which would silently no-op for
+  // assigned brokers. We've already done our own auth check above.
+  const { error } = await supabaseAdmin.from('listings').update(updates).eq('id', listingId)
   if (error) return { error: error.message }
 
   revalidatePath('/broker/dashboard')

@@ -14,6 +14,7 @@ interface Props {
   currentLicenseNumber:    string | null
   currentSpecialtyAirports: string[]
   currentAlertRadius:      number
+  currentHideEmail:        boolean
   isVerified:              boolean
 }
 
@@ -61,6 +62,7 @@ export default function BrokerProfileForm({
   currentLicenseNumber,
   currentSpecialtyAirports,
   currentAlertRadius,
+  currentHideEmail,
   isVerified,
 }: Props) {
   const { addToast } = useToast()
@@ -113,8 +115,17 @@ export default function BrokerProfileForm({
             placeholder="you@brokerage.com"
             style={inputStyle}
           />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '0.5rem', fontSize: '0.78rem', color: '#374151', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              name="hide_email"
+              defaultChecked={currentHideEmail}
+              style={{ width: '15px', height: '15px', accentColor: '#6366f1' }}
+            />
+            Hide my email on my public profile (buyers reach me through a contact form instead)
+          </label>
           <p style={{ margin: '0.3rem 0 0', fontSize: '0.72rem', color: '#9ca3af' }}>
-            Shown publicly on your broker profile
+            Email is still used for inquiry notifications. Hiding only removes it from public view.
           </p>
         </div>
 

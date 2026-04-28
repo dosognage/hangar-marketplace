@@ -538,6 +538,7 @@ export default async function BrokerDashboardPage() {
           currentLicenseNumber={(profile as { license_number?: string | null }).license_number ?? null}
           currentSpecialtyAirports={(profile as { specialty_airports?: string[] }).specialty_airports ?? []}
           currentAlertRadius={(profile as { alert_radius_miles?: number }).alert_radius_miles ?? 100}
+          currentHideEmail={(profile as { hide_email?: boolean }).hide_email ?? false}
           isVerified={(profile as { is_verified?: boolean }).is_verified ?? false}
         />
       </div>

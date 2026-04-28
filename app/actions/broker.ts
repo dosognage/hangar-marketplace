@@ -45,6 +45,7 @@ export async function saveBrokerProfile(
     const license_number     = (formData.get('license_number')     as string | null)?.trim() ?? ''
     const specialty_airports_raw = (formData.get('specialty_airports') as string | null)?.trim() ?? ''
     const alert_radius_raw   = (formData.get('alert_radius_miles') as string | null)?.trim() ?? ''
+    const hide_email         = formData.get('hide_email') === 'on'
 
     // Parse specialty airports — comma-separated ICAO codes, uppercase, max 10
     const specialty_airports = specialty_airports_raw
@@ -85,6 +86,13 @@ export async function saveBrokerProfile(
         // Intentionally ignoring error — column may not exist yet if
         // migration hasn't been applied. Core save already succeeded.
     }
+
+    // hide_email lives in a later migration too — same isolation pattern.
+    await supabaseAdmin
+      .from('broker_profiles')
+      .update({ hide_email })
+      .eq('id', brokerProfileId)
+      // Intentionally ignoring error if the column hasn't been added yet.
 
     // Geocode specialty airports in the background and cache their coords.
     if (specialty_airports.length > 0) {
