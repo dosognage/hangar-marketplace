@@ -26,24 +26,9 @@ concurrency:
 
 jobs:
   e2e:
-    name: Playwright (${{ matrix.browser }})
+    name: Playwright (chromium)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
-    strategy:
-      fail-fast: false
-      matrix:
-        # Default to chromium-only for fast PR feedback. The weekly schedule
-        # and manual dispatch can opt into the cross-browser matrix.
-        browser:
-          - chromium
-          - ${{ (github.event_name == 'schedule' || github.event.inputs.cross_browser == 'true') && 'firefox' || 'chromium' }}
-          - ${{ (github.event_name == 'schedule' || github.event.inputs.cross_browser == 'true') && 'webkit'  || 'chromium' }}
-        # Deduplicate when not in cross-browser mode (just runs chromium once)
-        exclude:
-          - browser: chromium
-            # noop — keeps chromium in the matrix
-        include: []
 
     env:
       CI: 'true'
@@ -97,11 +82,11 @@ jobs:
 
       - name: Install Playwright browsers
         if: steps.pw_cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+        run: npx playwright install --with-deps chromium
 
       - name: Install Playwright system deps (cache hit)
         if: steps.pw_cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps ${{ matrix.browser }}
+        run: npx playwright install-deps chromium
 
       - name: Run Playwright tests
         # Until Vercel Preview deployments are wired to the test Supabase
@@ -110,15 +95,13 @@ jobs:
         # (page-render + auth-gate-redirect tests; no mutations) and skip
         # the auth-state setup project. Once Preview env is wired up, drop
         # the --grep and --no-deps flags to run the full suite.
-        run: npx playwright test --project=${{ matrix.browser }} --grep @smoke --no-deps
-        env:
-          CROSS_BROWSER: ${{ (github.event_name == 'schedule' || github.event.inputs.cross_browser == 'true') && '1' || '' }}
+        run: npx playwright test --project=chromium --grep @smoke --no-deps
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.browser }}-${{ github.run_id }}
+          name: playwright-report-${{ github.run_id }}
           path: playwright-report/
           retention-days: 14
 
@@ -126,7 +109,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-traces-${{ matrix.browser }}-${{ github.run_id }}
+          name: playwright-traces-${{ github.run_id }}
           path: tests/e2e/.test-results/
           retention-days: 14
 
