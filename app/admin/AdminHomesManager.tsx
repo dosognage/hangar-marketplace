@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import AssignBrokerPopover, { type BrokerOption } from './AssignBrokerPopover'
+import PasswordPromptModal from '@/app/components/PasswordPromptModal'
 
 export type AdminHomeListing = {
   id: string
@@ -77,6 +78,8 @@ export default function AdminHomesManager({
   const [assigningId, setAssigningId] = useState<string | null>(null)
   // Per-listing duration for the comp-sponsor control. Defaults to 30d.
   const [sponsorDays, setSponsorDays] = useState<Record<string, number>>({})
+  // Pending sponsorship awaiting password re-verification (modal flow).
+  const [pendingSponsor, setPendingSponsor] = useState<{ id: string; days: number } | null>(null)
 
   const states = useMemo(() => {
     const s = new Set(listings.map(l => l.state).filter(Boolean))
@@ -144,13 +147,22 @@ export default function AdminHomesManager({
     }
   }
 
-  async function handleGrantSponsor(id: string, days: number) {
+  // Click handler — just opens the password modal. The actual API call
+  // happens in confirmGrantSponsor below once the admin enters their
+  // password. Same pattern as AdminListingsManager.
+  function handleGrantSponsor(id: string, days: number) {
+    setPendingSponsor({ id, days })
+  }
+
+  async function confirmGrantSponsor(password: string) {
+    if (!pendingSponsor) return
+    const { id, days } = pendingSponsor
     setAction(id + '_sponsor', 'loading')
     try {
       const res = await fetch('/api/admin/listings/sponsor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listing_id: id, duration_days: days }),
+        body: JSON.stringify({ listing_id: id, duration_days: days, password }),
       })
       if (res.ok) {
         const { sponsored_until } = await res.json() as { sponsored_until: string }
@@ -159,11 +171,16 @@ export default function AdminHomesManager({
         ))
         setAction(id + '_sponsor', 'done')
         setTimeout(() => setAction(id + '_sponsor', 'idle'), 2500)
-      } else {
-        setAction(id + '_sponsor', 'error')
+        setPendingSponsor(null)
+        return
       }
-    } catch {
+      // Surface server error inline in the modal (e.g. "Incorrect password")
+      const { error } = await res.json().catch(() => ({})) as { error?: string }
       setAction(id + '_sponsor', 'error')
+      throw new Error(error ?? 'Sponsorship failed.')
+    } catch (err) {
+      setAction(id + '_sponsor', 'error')
+      throw err instanceof Error ? err : new Error('Sponsorship failed.')
     }
   }
 
@@ -504,6 +521,16 @@ export default function AdminHomesManager({
           }}
         />
       )}
+
+      {/* Password re-auth for comp-sponsorship (homes / land / fly-in). */}
+      <PasswordPromptModal
+        open={pendingSponsor !== null}
+        title={pendingSponsor ? `Comp ${pendingSponsor.days}-day sponsorship` : 'Comp sponsorship'}
+        description="Re-enter your password to confirm. This action grants free sponsorship placement, so we ask for it explicitly each time."
+        confirmLabel="Comp it"
+        onSubmit={confirmGrantSponsor}
+        onCancel={() => setPendingSponsor(null)}
+      />
     </div>
   )
 }
