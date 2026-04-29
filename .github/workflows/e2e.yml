@@ -104,7 +104,13 @@ jobs:
         run: npx playwright install-deps ${{ matrix.browser }}
 
       - name: Run Playwright tests
-        run: npx playwright test --project=${{ matrix.browser }}
+        # Until Vercel Preview deployments are wired to the test Supabase
+        # branch, CI runs against PRODUCTION (PLAYWRIGHT_BASE_URL), which
+        # doesn't have the seeded test users. So we limit CI to @smoke
+        # (page-render + auth-gate-redirect tests; no mutations) and skip
+        # the auth-state setup project. Once Preview env is wired up, drop
+        # the --grep and --no-deps flags to run the full suite.
+        run: npx playwright test --project=${{ matrix.browser }} --grep @smoke --no-deps
         env:
           CROSS_BROWSER: ${{ (github.event_name == 'schedule' || github.event.inputs.cross_browser == 'true') && '1' || '' }}
 
