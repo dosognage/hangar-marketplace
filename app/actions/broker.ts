@@ -1,6 +1,7 @@
 'use server'
 
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { listAllAuthUsers } from '@/lib/authUsers'
 import { createServerClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { sendEmail, brokerApprovedEmail, brokerRejectedEmail, newBrokerApplicationEmail } from '@/lib/email'
@@ -215,19 +216,18 @@ async function notifyAdminsOfNewApplication(payload: {
   if (adminEmails.length === 0) return
 
   // Resolve admin user ids so we can hit their notification bell too.
-  // Admin.listUsers is paginated but one page at scale is fine — admins are a
-  // handful of people, not thousands.
+  // Paginating helper handles >1000 user accounts safely.
   const userIdByEmail = new Map<string, string>()
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabaseAdmin as any).auth.admin.listUsers({ perPage: 1000 })
-    const users: Array<{ id: string; email?: string | null }> = data?.users ?? []
+    const users = await listAllAuthUsers({
+      filter: u => adminEmails.includes((u.email ?? '').toLowerCase()),
+    })
     for (const u of users) {
       const email = u.email?.toLowerCase()
-      if (email && adminEmails.includes(email)) userIdByEmail.set(email, u.id)
+      if (email) userIdByEmail.set(email, u.id)
     }
   } catch (e) {
-    console.warn('[applyForBroker] listUsers failed, skipping in-app notifs:', e)
+    console.warn('[applyForBroker] listAllAuthUsers failed, skipping in-app notifs:', e)
   }
 
   const { subject, html } = newBrokerApplicationEmail(payload)

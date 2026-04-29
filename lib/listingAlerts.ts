@@ -26,6 +26,7 @@ import { supabaseAdmin } from './supabase-admin'
 import { distanceMiles } from './geocode'
 import { sendEmail, modernLayout } from './email'
 import { createNotification } from './notifications'
+import { emailsByUserId } from './authUsers'
 
 const RADIUS_MILES   = 50
 const FROM_ADDRESS   = 'Hangar Marketplace <hello@hangarmarketplace.com>'
@@ -306,32 +307,16 @@ export async function notifyListingOwnersOfNewRequest(req: NewRequestPayload): P
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Resolve user_ids to primary email addresses via the admin API.
- * Pulls the first page (up to 1000 users) — fine for early-stage scale.
- * Replace with a direct auth.users query via a secure view if this becomes
- * a bottleneck.
+ * Resolve user_ids to primary email addresses. Delegates to the shared
+ * paginating helper so this works correctly past 1,000 total users.
  */
 async function resolveUserEmails(userIds: string[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>()
-  if (userIds.length === 0) return out
-
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabaseAdmin as any).auth.admin.listUsers({ perPage: 1000 })
-    if (error) {
-      console.warn('[listingAlerts] listUsers failed:', error.message)
-      return out
-    }
-    const users: Array<{ id: string; email?: string | null }> = data?.users ?? []
-    const wanted = new Set(userIds)
-    for (const u of users) {
-      if (wanted.has(u.id) && u.email) out.set(u.id, u.email)
-    }
+    return await emailsByUserId(userIds)
   } catch (e) {
-    console.warn('[listingAlerts] listUsers threw:', e)
+    console.warn('[listingAlerts] emailsByUserId threw:', e)
+    return new Map()
   }
-
-  return out
 }
 
 type EmailListing = {

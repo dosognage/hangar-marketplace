@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { geocodeLocation } from '@/lib/geocode'
+import { listAllAuthUsers } from '@/lib/authUsers'
 
 /**
  * POST /api/admin/backfill-home-airports
@@ -40,14 +41,15 @@ export async function POST(req: NextRequest) {
   const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // ── 1. Pull every auth user (paged; 1000 fits early-stage scale) ──────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error: listErr } = await (supabaseAdmin as any).auth.admin.listUsers({ perPage: 1000 })
-  if (listErr) {
-    console.error('[backfill] listUsers failed:', listErr.message)
+  // ── 1. Pull every auth user via the paginating helper. Works correctly
+  //    past 1000 accounts.
+  let users: Array<{ id: string; user_metadata?: Record<string, unknown> }> = []
+  try {
+    users = await listAllAuthUsers()
+  } catch (e) {
+    console.error('[backfill] listAllAuthUsers failed:', e)
     return NextResponse.json({ error: 'Failed to list users' }, { status: 500 })
   }
-  const users: Array<{ id: string; user_metadata?: Record<string, unknown> }> = data?.users ?? []
 
   // Filter to users with a home_airport set in metadata.
   const candidates = users

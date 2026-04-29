@@ -21,6 +21,7 @@ import AdminBrokersManager, { type AdminBrokerProfile } from './AdminBrokersMana
 import AdminRequestsManager, { type AdminRequest } from './AdminRequestsManager'
 import AdminAircraftRequestsManager from './AdminAircraftRequestsManager'
 import { listAircraftRequests } from '@/app/actions/aircraft'
+import { listAllAuthUsers } from '@/lib/authUsers'
 import { Star, Building2, Users, Home, MessageSquare } from 'lucide-react'
 
 type BrokerApp = {
@@ -75,9 +76,9 @@ export default async function AdminPage() {
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
 
-  // Fetch all auth users (paginated — Supabase returns up to 1000 per page)
-  const { data: authData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
-  const authUsers = authData?.users ?? []
+  // Fetch all auth users via the paginating helper.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const authUsers = await listAllAuthUsers() as any[]
 
   // Listing counts per user_id
   const { data: listingCounts } = await supabaseAdmin
