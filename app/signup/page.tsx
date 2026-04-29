@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signup, type AuthState } from '@/app/actions/auth'
+import TurnstileWidget from '@/app/components/TurnstileWidget'
 
 export default function SignupPage() {
   const [state, formAction, isPending] = useActionState<AuthState, FormData>(
@@ -89,6 +90,8 @@ export default function SignupPage() {
               Send me occasional updates on new hangar listings, aviation news, and Hangar Marketplace announcements. You can unsubscribe any time.
             </label>
           </div>
+
+          <TurnstileWidget />
 
           <button type="submit" disabled={isPending} style={buttonStyle}>
             {isPending ? 'Creating account…' : 'Create account'}

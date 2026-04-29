@@ -11,10 +11,29 @@
  */
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createServerClient } from '@/lib/supabase-server'
 import { sendEmail, welcomeEmail } from '@/lib/email'
+import { verifyTurnstileToken } from '@/lib/turnstile'
 
 export type AuthState = { error: string; email?: string; name?: string } | null
+
+/**
+ * Best-effort client IP for Turnstile siteverify. Cloudflare's API accepts an
+ * optional `remoteip` to cross-check the token. We read x-forwarded-for first
+ * (Vercel sets this), then fall back to other common headers. Failing to find
+ * one is fine — Turnstile still verifies based on the token alone.
+ */
+async function getClientIp(): Promise<string | undefined> {
+  try {
+    const h = await headers()
+    const fwd = h.get('x-forwarded-for')
+    if (fwd) return fwd.split(',')[0]?.trim()
+    return h.get('x-real-ip') ?? h.get('cf-connecting-ip') ?? undefined
+  } catch {
+    return undefined
+  }
+}
 
 // ── Login ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +82,15 @@ export async function signup(
     return { error: 'Passwords do not match.', name, email }
   }
 
+  // Bot-protection gate. Cheap to verify and stops scripted account creation
+  // from getting anywhere near Supabase. Real users either pass invisibly or
+  // see a one-click challenge.
+  const turnstileToken = formData.get('cf-turnstile-response') as string | null
+  const captcha = await verifyTurnstileToken(turnstileToken, await getClientIp())
+  if (!captcha.ok) {
+    return { error: captcha.error, name, email }
+  }
+
   const supabase = await createServerClient()
   const { error } = await supabase.auth.signUp({
     email,
@@ -109,6 +137,44 @@ export async function signup(
   // Pass next through so after confirming they land back where they came from.
   const confirmUrl = next && next !== '/' ? `/signup/confirm?next=${encodeURIComponent(next)}` : '/signup/confirm'
   redirect(confirmUrl)
+}
+
+// ── Forgot Password ────────────────────────────────────────────────────────
+
+export type ForgotPasswordState = { error?: string; sent?: boolean; email?: string } | null
+
+/**
+ * Sends a password-reset email via Supabase, gated by Turnstile so bots can't
+ * use this endpoint to harvest valid emails or spam mailboxes.
+ *
+ * We always return the same generic success message regardless of whether the
+ * email exists, to avoid email enumeration. The actual reset email only goes
+ * out if the address is registered.
+ */
+export async function requestPasswordReset(
+  _prevState: ForgotPasswordState,
+  formData: FormData,
+): Promise<ForgotPasswordState> {
+  const email = (formData.get('email') as string)?.trim()
+  if (!email) return { error: 'Email is required.', email }
+
+  const turnstileToken = formData.get('cf-turnstile-response') as string | null
+  const captcha = await verifyTurnstileToken(turnstileToken, await getClientIp())
+  if (!captcha.ok) return { error: captcha.error, email }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
+  const supabase = await createServerClient()
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/reset-password`,
+  })
+
+  // Don't surface specific errors to the user — same generic outcome whether
+  // the address is registered or not. Real errors are logged for us.
+  if (error) {
+    console.error('[forgot-password] Supabase error:', error)
+  }
+
+  return { sent: true, email }
 }
 
 // ── Logout ─────────────────────────────────────────────────────────────────

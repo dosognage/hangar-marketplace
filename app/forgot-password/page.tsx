@@ -1,38 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useActionState } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
-
-
-type Status = 'idle' | 'loading' | 'sent' | 'error'
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
+import { requestPasswordReset, type ForgotPasswordState } from '@/app/actions/auth'
+import TurnstileWidget from '@/app/components/TurnstileWidget'
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail]   = useState('')
-  const [status, setStatus] = useState<Status>('idle')
-  const [error, setError]   = useState('')
+  const [state, formAction, isPending] = useActionState<ForgotPasswordState, FormData>(
+    requestPasswordReset,
+    null,
+  )
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setStatus('loading')
-    setError('')
-
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${SITE_URL}/reset-password`,
-    })
-
-    if (err) {
-      setError(err.message)
-      setStatus('error')
-      return
-    }
-
-    setStatus('sent')
-  }
-
-  if (status === 'sent') {
+  // After a successful submit we always show the same generic confirmation,
+  // regardless of whether the address is registered. Prevents email enumeration.
+  if (state?.sent) {
     return (
       <div style={{ maxWidth: '420px', margin: '3rem auto' }}>
         <div style={cardStyle}>
@@ -48,20 +29,12 @@ export default function ForgotPasswordPage() {
             </div>
             <h1 style={{ margin: '0 0 0.4rem', fontSize: '1.3rem' }}>Check your email</h1>
             <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', lineHeight: 1.6 }}>
-              We sent a password reset link to <strong style={{ color: '#111827' }}>{email}</strong>.
-              It may take a minute to arrive.
+              If an account exists for <strong style={{ color: '#111827' }}>{state.email}</strong>,
+              we just sent it a password reset link. It may take a minute to arrive.
             </p>
           </div>
           <p style={{ margin: '1.25rem 0 0', textAlign: 'center', fontSize: '0.8rem', color: '#9ca3af' }}>
-            Didn&apos;t get it?{' '}
-            <button
-              onClick={() => setStatus('idle')}
-              style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}
-            >
-              Try again
-            </button>
-            {' '}or{' '}
-            <Link href="/login" style={{ color: '#6366f1', textDecoration: 'none' }}>back to sign in</Link>
+            <Link href="/login" style={{ color: '#6366f1', textDecoration: 'none' }}>Back to sign in</Link>
           </p>
         </div>
       </div>
@@ -76,26 +49,28 @@ export default function ForgotPasswordPage() {
           Enter the email you signed up with and we&apos;ll send you a reset link.
         </p>
 
-        {status === 'error' && (
-          <div style={errorStyle}>{error}</div>
+        {state?.error && (
+          <div style={errorStyle}>{state.error}</div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
             <label htmlFor="email" style={labelStyle}>Email address</label>
             <input
               id="email"
+              name="email"
               type="email"
               required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              defaultValue={state?.email ?? ''}
               placeholder="you@example.com"
               style={inputStyle}
             />
           </div>
 
-          <button type="submit" disabled={status === 'loading'} style={buttonStyle}>
-            {status === 'loading' ? 'Sending…' : 'Send reset link'}
+          <TurnstileWidget />
+
+          <button type="submit" disabled={isPending} style={buttonStyle}>
+            {isPending ? 'Sending…' : 'Send reset link'}
           </button>
         </form>
 
