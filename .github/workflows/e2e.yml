@@ -1,0 +1,144 @@
+name: E2E Tests
+
+# Triggers:
+#   - PR to main: catch regressions before they ship
+#   - Push to main: confirm prod is healthy after every deploy
+#   - Weekly Mondays 09:00 UTC: catch drift even when no commits land
+#   - Manual dispatch: run on demand from the Actions tab
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 9 * * 1'   # Mondays 9am UTC
+  workflow_dispatch:
+    inputs:
+      cross_browser:
+        description: 'Run cross-browser matrix (Firefox + WebKit too)?'
+        type: boolean
+        default: false
+
+# Cancel any in-flight runs for the same branch when a new push lands.
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Default to chromium-only for fast PR feedback. The weekly schedule
+        # and manual dispatch can opt into the cross-browser matrix.
+        browser:
+          - chromium
+          - ${{ (github.event_name == 'schedule' || github.event.inputs.cross_browser == 'true') && 'firefox' || 'chromium' }}
+          - ${{ (github.event_name == 'schedule' || github.event.inputs.cross_browser == 'true') && 'webkit'  || 'chromium' }}
+        # Deduplicate when not in cross-browser mode (just runs chromium once)
+        exclude:
+          - browser: chromium
+            # noop — keeps chromium in the matrix
+        include: []
+
+    env:
+      CI: 'true'
+      # Where to point tests. Defaults to production but PRs can override
+      # via the deployment_url commit status when Vercel preview is wired.
+      PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL }}
+
+      # Supabase test branch
+      NEXT_PUBLIC_SUPABASE_URL:     ${{ secrets.TEST_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY:    ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+
+      # Stripe test mode
+      STRIPE_SECRET_KEY:     ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+
+      # Turnstile test bypass
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA'
+      TURNSTILE_SECRET_KEY:           '1x0000000000000000000000000000000AA'
+
+      # Test users
+      TEST_ADMIN_EMAIL:    ${{ secrets.TEST_ADMIN_EMAIL }}
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+      TEST_BROKER_EMAIL:   ${{ secrets.TEST_BROKER_EMAIL }}
+      TEST_BROKER_PASSWORD: ${{ secrets.TEST_BROKER_PASSWORD }}
+      TEST_USER_EMAIL:     ${{ secrets.TEST_USER_EMAIL }}
+      TEST_USER_PASSWORD:  ${{ secrets.TEST_USER_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get Playwright version
+        id: pw_version
+        run: echo "version=$(node -e 'console.log(require(\"@playwright/test/package.json\").version)')" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: pw_cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw_version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.pw_cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Install Playwright system deps (cache hit)
+        if: steps.pw_cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps ${{ matrix.browser }}
+
+      - name: Run Playwright tests
+        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          CROSS_BROWSER: ${{ (github.event_name == 'schedule' || github.event.inputs.cross_browser == 'true') && '1' || '' }}
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload trace files (failed tests)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ matrix.browser }}-${{ github.run_id }}
+          path: tests/e2e/.test-results/
+          retention-days: 14
+
+  notify:
+    name: Notify on failure
+    needs: e2e
+    if: failure() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send failure email via Resend
+        if: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          curl -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer ${{ secrets.RESEND_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "from": "Hangar Marketplace CI <hello@hangarmarketplace.com>",
+              "to": ["andre.dosogne@outlook.com"],
+              "subject": "[CI] E2E tests failed on ${{ github.ref_name }}",
+              "html": "<p>The Playwright suite failed on commit <code>${{ github.sha }}</code>.</p><p><a href=\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\">View run</a></p>"
+            }'
