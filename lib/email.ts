@@ -826,3 +826,58 @@ export function newsletterEmail(opts: {
     }),
   }
 }
+
+/** Sent when a user signs in from a device/browser we haven't seen before. */
+export function loginAlertEmail(opts: {
+  name: string
+  device: string
+  ip: string
+  occurredAt: Date
+}): { subject: string; html: string } {
+  const { name, device, ip, occurredAt } = opts
+  // Friendly time format: "Apr 28, 2026 at 4:32 PM UTC"
+  const when = occurredAt.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+    timeZone: 'UTC',
+  })
+  const greeting = name ? `Hi ${htmlEscape(name)},` : 'Hi,'
+  return {
+    subject: 'New sign-in to your Hangar Marketplace account',
+    html: modernLayout({
+      preheader: `New sign-in from ${device}. If this wasn't you, change your password.`,
+      eyebrow:   'Security',
+      title:     'New sign-in detected',
+      subtitle:  `${greeting} we noticed a new sign-in to your account from a device or browser we haven't seen before.`,
+      heroCaption: '🔐',
+      heroGradient: 'linear-gradient(135deg,#1e293b 0%,#475569 60%,#94a3b8 100%)',
+      sections: [{
+        title: 'Sign-in details',
+        html: `
+          <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;">
+            <tr>
+              <td style="padding:6px 0;width:120px;color:#6b7280;">Device</td>
+              <td style="padding:6px 0;font-weight:600;">${htmlEscape(device)}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#6b7280;">IP address</td>
+              <td style="padding:6px 0;font-weight:600;">${htmlEscape(ip)}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#6b7280;">When</td>
+              <td style="padding:6px 0;font-weight:600;">${htmlEscape(when)}</td>
+            </tr>
+          </table>
+          <p style="margin:14px 0 0;font-size:14px;color:#374151;line-height:1.65;">
+            If this was you, no action is needed. If you don't recognise this sign-in, secure your account by resetting your password right away.
+          </p>`,
+      }],
+      cta: {
+        label: 'Reset my password',
+        href:  `${SITE_URL}/forgot-password`,
+        hint:  `Resetting will sign out all existing sessions.`,
+      },
+      footerIntro: `You're getting this because we noticed a new sign-in to your Hangar Marketplace account.`,
+    }),
+  }
+}

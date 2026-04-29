@@ -261,12 +261,25 @@ async function notifyAdminsOfNewApplication(payload: {
  * 2. Marks the application as approved
  * 3. Sets is_broker = true in the user's Supabase metadata
  * 4. Sends a VIP welcome email
+ *
+ * Sensitive action: requires password re-verification (in addition to the
+ * admin-email gate) so a stolen admin session alone can't promote arbitrary
+ * users to verified-broker status.
  */
-export async function approveBrokerApplication(applicationId: string, userId: string) {
+export async function approveBrokerApplication(
+  applicationId: string,
+  userId: string,
+  password?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
-  if (!isAdmin(user.email)) throw new Error('Not authorized')
+  if (!user) return { ok: false, error: 'Not authenticated' }
+  if (!isAdmin(user.email)) return { ok: false, error: 'Not authorized' }
+
+  // Re-verify the admin's password before doing anything irreversible.
+  const { verifyCurrentPassword } = await import('@/lib/reauth')
+  const reauth = await verifyCurrentPassword(password)
+  if (!reauth.ok) return { ok: false, error: reauth.error }
 
   // Fetch the application details
   const { data: app, error: appError } = await supabaseAdmin
@@ -275,7 +288,7 @@ export async function approveBrokerApplication(applicationId: string, userId: st
     .eq('id', applicationId)
     .single()
 
-  if (appError || !app) throw new Error('Application not found')
+  if (appError || !app) return { ok: false, error: 'Application not found' }
 
   // Create the broker profile (check for duplicate first)
   const { data: existing } = await supabaseAdmin
@@ -321,7 +334,9 @@ export async function approveBrokerApplication(applicationId: string, userId: st
       .select('id')
       .single()
 
-    if (profileError || !newProfile) throw new Error(profileError?.message ?? 'Failed to create broker profile')
+    if (profileError || !newProfile) {
+      return { ok: false, error: profileError?.message ?? 'Failed to create broker profile' }
+    }
     profileId = newProfile.id
   }
 
@@ -359,6 +374,7 @@ export async function approveBrokerApplication(applicationId: string, userId: st
   revalidatePath('/admin')
   revalidatePath('/broker')
   revalidatePath('/broker/dashboard')
+  return { ok: true }
 }
 
 /**

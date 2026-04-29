@@ -15,6 +15,7 @@ import { headers } from 'next/headers'
 import { createServerClient } from '@/lib/supabase-server'
 import { sendEmail, welcomeEmail } from '@/lib/email'
 import { verifyTurnstileToken } from '@/lib/turnstile'
+import { recordAndAlertLogin } from '@/lib/loginAlerts'
 
 export type AuthState = { error: string; email?: string; name?: string } | null
 
@@ -50,10 +51,37 @@ export async function login(
   }
 
   const supabase = await createServerClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
     return { error: 'Invalid email or password. Please try again.', email }
+  }
+
+  // Login alert: log this sign-in, and if it's a new device, email the user.
+  // We await this (typically <600ms total) instead of fire-and-forget because
+  // serverless functions can drop in-flight promises once the response is
+  // sent — so a void call would silently lose the email on cold starts.
+  // recordAndAlertLogin swallows its own errors so a flaky DB or email
+  // service never blocks the redirect.
+  try {
+    const u = signInData.user
+    if (u) {
+      const h = await headers()
+      const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim()
+            ?? h.get('x-real-ip')
+            ?? h.get('cf-connecting-ip')
+            ?? null
+      const ua = h.get('user-agent') ?? null
+      await recordAndAlertLogin({
+        userId:   u.id,
+        email:    u.email ?? email,
+        name:     (u.user_metadata?.full_name as string | undefined) ?? null,
+        ip,
+        userAgent: ua,
+      })
+    }
+  } catch (err) {
+    console.error('[login] login-alert wiring failed:', err)
   }
 
   redirect(next)

@@ -451,12 +451,22 @@ export default function AdminListingsManager({
   }
 
   async function handleGrantSponsor(id: string, days: number) {
+    // Sensitive action: re-prompt for the admin password before spending
+    // platform revenue. window.prompt is a placeholder UX — it's the smallest
+    // change that adds the security gate. If you ever onboard another admin,
+    // swap this for a real modal.
+    const password = window.prompt(
+      `Re-enter your password to comp ${days}-day sponsorship on this listing.\n\n` +
+      `(This is a security check — actions that spend platform revenue require it.)`
+    )
+    if (!password) return  // cancelled
+
     setAction(id + '_sponsor', 'loading')
     try {
       const res = await fetch('/api/admin/listings/sponsor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listing_id: id, duration_days: days }),
+        body: JSON.stringify({ listing_id: id, duration_days: days, password }),
       })
       if (res.ok) {
         const { sponsored_until } = await res.json() as { sponsored_until: string }
@@ -466,6 +476,8 @@ export default function AdminListingsManager({
         setAction(id + '_sponsor', 'done')
         setTimeout(() => setAction(id + '_sponsor', 'idle'), 2500)
       } else {
+        const { error } = await res.json().catch(() => ({})) as { error?: string }
+        alert(error ?? 'Sponsorship failed.')
         setAction(id + '_sponsor', 'error')
       }
     } catch {

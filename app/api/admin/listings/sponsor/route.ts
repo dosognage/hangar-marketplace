@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verifyCurrentPassword } from '@/lib/reauth'
 
 /**
  * POST /api/admin/listings/sponsor
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: { listing_id?: string; duration_days?: number }
+  let body: { listing_id?: string; duration_days?: number; password?: string }
   try {
     body = await req.json()
   } catch {
@@ -49,6 +50,14 @@ export async function POST(req: NextRequest) {
   }
   if (!ALLOWED_DAYS.has(days)) {
     return NextResponse.json({ error: 'duration_days must be 7, 30, or 90' }, { status: 400 })
+  }
+
+  // Sensitive action: re-verify the admin's password before granting comp.
+  // This is "spending" platform revenue, so we want a real-time auth check
+  // even though the admin-email gate already passed.
+  const reauth = await verifyCurrentPassword(body.password)
+  if (!reauth.ok) {
+    return NextResponse.json({ error: reauth.error }, { status: 403 })
   }
 
   const { data: listing, error: fetchErr } = await supabaseAdmin

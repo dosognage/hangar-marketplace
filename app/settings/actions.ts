@@ -3,6 +3,7 @@
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { geocodeLocation } from '@/lib/geocode'
+import { verifyCurrentPassword } from '@/lib/reauth'
 import { revalidatePath } from 'next/cache'
 
 export type SettingsState = {
@@ -51,9 +52,17 @@ export async function saveProfile(
   })
   if (metaError) return { error: 'Failed to save profile: ' + metaError.message }
 
-  // If email changed, trigger Supabase confirmation flow
+  // If email changed, require password re-verification first. Email is the
+  // primary recovery vector — protecting it stops stolen-session takeover.
+  // The Supabase confirmation flow (link sent to new inbox) is a second
+  // factor on top of this, but we want a real-time gate before kicking that
+  // off so the attacker doesn't even get to spam the new inbox.
   let emailNote = ''
   if (new_email && new_email !== user.email) {
+    const password = (formData.get('current_password') as string | null) ?? ''
+    const reauth = await verifyCurrentPassword(password)
+    if (!reauth.ok) return { error: reauth.error, field: 'current_password' }
+
     const { error: emailError } = await supabase.auth.updateUser({ email: new_email })
     if (emailError) return { error: 'Failed to update email: ' + emailError.message }
     emailNote = ' Check your new inbox to confirm the email change.'

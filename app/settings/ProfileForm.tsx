@@ -52,6 +52,11 @@ export default function ProfileForm({
   const [avatarSrc, setAvatarSrc]       = useState(currentAvatar)
   const [uploading, setUploading]       = useState(false)
   const [uploadMsg, setUploadMsg]       = useState<{ ok: boolean; text: string } | null>(null)
+  // Track the email field so we can reveal the password-confirmation input
+  // only when the user is actually changing their email — no friction for
+  // the common case of saving name/phone updates.
+  const [emailDraft, setEmailDraft] = useState(currentEmail)
+  const emailChanging = emailDraft.trim() !== '' && emailDraft.trim() !== currentEmail
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -219,7 +224,8 @@ export default function ProfileForm({
               id="email"
               name="email"
               type="email"
-              defaultValue={currentEmail}
+              value={emailDraft}
+              onChange={e => setEmailDraft(e.target.value)}
               disabled={pending}
               style={{
                 ...inputStyle,
@@ -227,6 +233,39 @@ export default function ProfileForm({
               }}
             />
           </div>
+
+          {/* Password re-verification — only shown when the email is changing.
+              Email is the recovery vector for the whole account, so we ask
+              the user to prove they know their current password before
+              kicking off the Supabase confirmation flow. */}
+          {emailChanging && (
+            <div style={{
+              padding: '0.85rem 1rem',
+              backgroundColor: '#fffbeb',
+              border: '1px solid #fde68a',
+              borderRadius: '7px',
+            }}>
+              <label htmlFor="current_password" style={{ ...labelStyle, marginBottom: '0.35rem' }}>
+                Confirm with your current password
+              </label>
+              <p style={{ margin: '0 0 0.6rem', fontSize: '0.78rem', color: '#92400e', lineHeight: 1.5 }}>
+                Changing your email is a security-sensitive action. Please re-enter your current password to continue.
+              </p>
+              <input
+                id="current_password"
+                name="current_password"
+                type="password"
+                required
+                placeholder="Current password"
+                autoComplete="current-password"
+                disabled={pending}
+                style={{
+                  ...inputStyle,
+                  borderColor: state.field === 'current_password' ? '#f87171' : '#d1d5db',
+                }}
+              />
+            </div>
+          )}
 
           {/* Broker sync note */}
           {isBroker && (
