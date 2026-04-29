@@ -307,6 +307,11 @@ export async function approveBrokerApplication(applicationId: string, userId: st
         phone:          app.phone,
         website:        app.website,
         bio:            app.bio,
+        // Default the public-facing contact email to whatever the broker
+        // submitted on their application. They can change it later via the
+        // broker dashboard, but this prevents the "no email button on my
+        // public profile" surprise immediately after approval.
+        contact_email:  app.email,
         is_unlicensed:  app.is_unlicensed ?? false,
         // Approval = verified. The verified-broker badge on listings, the
         // public profile page, and any "verified" gating downstream all
