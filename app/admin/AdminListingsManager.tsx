@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import FeetInchesInput from '@/app/components/FeetInchesInput'
 import AssignBrokerPopover, { type BrokerOption } from './AssignBrokerPopover'
+import PasswordPromptModal from '@/app/components/PasswordPromptModal'
 
 export type AdminListing = {
   id: string
@@ -384,6 +385,10 @@ export default function AdminListingsManager({
   const [assigningId, setAssigningId] = useState<string | null>(null)
   // Duration selection per listing for the "Comp sponsor" control. Defaults to 30d.
   const [sponsorDays, setSponsorDays] = useState<Record<string, number>>({})
+  // Pending sponsorship awaiting password re-verification. Null when no
+  // modal is open; { id, days } when the admin has clicked Comp X days
+  // and we're waiting for them to enter their password.
+  const [pendingSponsor, setPendingSponsor] = useState<{ id: string; days: number } | null>(null)
 
   // Unique states for the filter dropdown
   const states = useMemo(() => {
@@ -450,17 +455,19 @@ export default function AdminListingsManager({
     }
   }
 
-  async function handleGrantSponsor(id: string, days: number) {
-    // Sensitive action: re-prompt for the admin password before spending
-    // platform revenue. window.prompt is a placeholder UX — it's the smallest
-    // change that adds the security gate. If you ever onboard another admin,
-    // swap this for a real modal.
-    const password = window.prompt(
-      `Re-enter your password to comp ${days}-day sponsorship on this listing.\n\n` +
-      `(This is a security check — actions that spend platform revenue require it.)`
-    )
-    if (!password) return  // cancelled
+  // Click handler for the "Comp X days" button. Doesn't itself perform the
+  // action — just opens the password modal. confirmGrantSponsor below runs
+  // once the admin enters their password.
+  function handleGrantSponsor(id: string, days: number) {
+    setPendingSponsor({ id, days })
+  }
 
+  // Called from PasswordPromptModal after the admin enters their password.
+  // Throws on failure so the modal surfaces the error inline; resolves on
+  // success after which we close the modal and update the listing row.
+  async function confirmGrantSponsor(password: string) {
+    if (!pendingSponsor) return
+    const { id, days } = pendingSponsor
     setAction(id + '_sponsor', 'loading')
     try {
       const res = await fetch('/api/admin/listings/sponsor', {
@@ -475,13 +482,19 @@ export default function AdminListingsManager({
         ))
         setAction(id + '_sponsor', 'done')
         setTimeout(() => setAction(id + '_sponsor', 'idle'), 2500)
-      } else {
-        const { error } = await res.json().catch(() => ({})) as { error?: string }
-        alert(error ?? 'Sponsorship failed.')
-        setAction(id + '_sponsor', 'error')
+        setPendingSponsor(null)
+        return
       }
-    } catch {
+      // Surface the server's error message inline in the modal so the admin
+      // can correct (e.g. wrong password) without losing context.
+      const { error } = await res.json().catch(() => ({})) as { error?: string }
       setAction(id + '_sponsor', 'error')
+      throw new Error(error ?? 'Sponsorship failed.')
+    } catch (err) {
+      // Re-throw so PasswordPromptModal renders the message inline.
+      // Network/JSON errors bubble through as well.
+      setAction(id + '_sponsor', 'error')
+      throw err instanceof Error ? err : new Error('Sponsorship failed.')
     }
   }
 
@@ -533,6 +546,18 @@ export default function AdminListingsManager({
           onAssigned={handleBrokerAssigned}
         />
       )}
+
+      {/* Password re-auth for comp-sponsorship — opens whenever the admin
+          clicks any "Comp X days" button. confirmGrantSponsor handles the
+          actual API call once they enter their password. */}
+      <PasswordPromptModal
+        open={pendingSponsor !== null}
+        title={pendingSponsor ? `Comp ${pendingSponsor.days}-day sponsorship` : 'Comp sponsorship'}
+        description="Re-enter your password to confirm. This action grants free sponsorship placement, so we ask for it explicitly each time."
+        confirmLabel="Comp it"
+        onSubmit={confirmGrantSponsor}
+        onCancel={() => setPendingSponsor(null)}
+      />
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <div style={{
