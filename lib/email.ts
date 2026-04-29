@@ -827,6 +827,102 @@ export function newsletterEmail(opts: {
   }
 }
 
+/** Weekly admin digest — landed in Andre's inbox every Monday morning. */
+export function weeklyDigestEmail(opts: {
+  rangeStart: Date
+  rangeEnd:   Date
+  snapshot: {
+    newListings:        number
+    newListingsByType:  Record<string, number>
+    pendingListings:    number
+    approvedListings:   number
+    newUsers:           number
+    newBrokerApps:      number
+    pendingBrokerApps:  number
+    brokersApproved:    number
+    newInquiries:       number
+    newSavedSearches:   number
+    newRequests:        number
+    pendingRequests:    number
+    newSponsorships:    number
+  }
+  priorities: Array<{
+    emoji:  string
+    title:  string
+    detail: string
+    cta?:   { label: string; href: string }
+  }>
+}): { subject: string; html: string } {
+  const { rangeStart, rangeEnd, snapshot, priorities } = opts
+  const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const range = `${fmt(rangeStart)} – ${fmt(rangeEnd)}`
+
+  // Activity table — only render rows with non-zero values to keep clean.
+  const rows: Array<[string, number]> = [
+    ['New listings',                  snapshot.newListings],
+    ['Listings approved',             snapshot.approvedListings],
+    ['Pending listings (queue)',      snapshot.pendingListings],
+    ['New broker applications',       snapshot.newBrokerApps],
+    ['Brokers approved',              snapshot.brokersApproved],
+    ['Pending broker apps (queue)',   snapshot.pendingBrokerApps],
+    ['New buyer inquiries',           snapshot.newInquiries],
+    ['New hangar requests',           snapshot.newRequests],
+    ['Active hangar requests',        snapshot.pendingRequests],
+    ['New sponsored listings',        snapshot.newSponsorships],
+    ['Active users (logins)',         snapshot.newUsers],
+    ['New saved searches',            snapshot.newSavedSearches],
+  ]
+  const activityHtml = `
+    <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;">
+      ${rows.map(([label, n]) => `
+        <tr>
+          <td style="padding:6px 0;color:#6b7280;">${htmlEscape(label)}</td>
+          <td style="padding:6px 0;text-align:right;font-weight:${n > 0 ? '700' : '500'};color:${n > 0 ? '#0f172a' : '#9ca3af'};">${n}</td>
+        </tr>`).join('')}
+    </table>`
+
+  const prioritiesHtml = priorities.map((p, i) => `
+    <div style="border-left:3px solid #1d4ed8;padding:12px 16px;margin-bottom:12px;background:#f8fafc;border-radius:0 8px 8px 0;">
+      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#1d4ed8;letter-spacing:0.04em;text-transform:uppercase;">
+        Priority ${i + 1}
+      </p>
+      <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#0f172a;">
+        ${p.emoji} ${htmlEscape(p.title)}
+      </p>
+      <p style="margin:0 0 ${p.cta ? '10' : '0'}px;font-size:13.5px;color:#475569;line-height:1.5;">
+        ${htmlEscape(p.detail)}
+      </p>
+      ${p.cta ? `<a href="${p.cta.href}" style="display:inline-block;padding:7px 14px;background:#0f172a;color:white;border-radius:6px;text-decoration:none;font-size:12.5px;font-weight:600;">${htmlEscape(p.cta.label)} →</a>` : ''}
+    </div>`).join('')
+
+  return {
+    subject: `Hangar Marketplace — Weekly digest (${range})`,
+    html: modernLayout({
+      preheader: `${snapshot.newListings} new listings · ${snapshot.pendingBrokerApps} broker apps in queue · ${priorities.length} priorities flagged.`,
+      eyebrow:   'Weekly digest',
+      title:     `Week of ${range}`,
+      subtitle:  `Quick read — last week’s activity and ${priorities.length} thing${priorities.length === 1 ? '' : 's'} worth your attention.`,
+      heroCaption: '📊',
+      heroGradient: 'linear-gradient(135deg,#0f172a 0%,#1e3a8a 60%,#3b82f6 100%)',
+      sections: [
+        {
+          title: 'Priorities for this week',
+          html:  prioritiesHtml,
+        },
+        {
+          title: 'Activity',
+          html:  activityHtml,
+        },
+      ],
+      cta: {
+        label: 'Open admin dashboard',
+        href:  `${SITE_URL}/admin`,
+      },
+      footerIntro: 'You’re getting this because you’re an admin on Hangar Marketplace.',
+    }),
+  }
+}
+
 /** Sent when a user signs in from a device/browser we haven't seen before. */
 export function loginAlertEmail(opts: {
   name: string
