@@ -87,16 +87,20 @@ test.describe('Admin comp-sponsor flow with password modal', () => {
 
   test('correct password performs the comp and updates sponsored_until', async ({ adminPage }) => {
     const supabase = getTestSupabaseAdmin()
+    // Filter to property_type='hangar' specifically — the admin UI's first
+    // listing card (which our test clicks) is always a hangar, but the
+    // most-recently-created listing for USER might be the airport home,
+    // which would mean we'd be polling the wrong row.
     const { data: candidate } = await supabase
       .from('listings')
       .select('id, sponsored_until, is_sponsored')
       .eq('status', 'approved')
+      .eq('property_type', 'hangar')
       .eq('contact_email', USER.email)
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
-    expect(candidate, 'no listing to comp').toBeTruthy()
-    const before = candidate!.sponsored_until
+    expect(candidate, 'no hangar listing to comp').toBeTruthy()
 
     await adminPage.goto()
     // The admin UI renders ONE Comp button per listing whose label reflects
@@ -117,14 +121,17 @@ test.describe('Admin comp-sponsor flow with password modal', () => {
     // Modal closes on success
     await expect(adminPage.passwordModal).not.toBeVisible({ timeout: 10_000 })
 
-    // sponsored_until should have moved forward
+    // After the comp, the listing should be sponsored and have a future
+    // sponsored_until. (beforeEach clears these so we don't need to
+    // compare to a prior value — any non-null sponsored_until is the
+    // signal that the comp landed.)
     await expect.poll(async () => {
       const { data } = await supabase
         .from('listings')
         .select('sponsored_until, is_sponsored')
         .eq('id', candidate!.id)
         .single()
-      return data?.is_sponsored === true && data?.sponsored_until !== before
-    }, { timeout: 10_000, message: 'sponsored_until did not change after comp' }).toBe(true)
+      return data?.is_sponsored === true && data?.sponsored_until != null
+    }, { timeout: 10_000, message: 'sponsored_until did not get set after comp' }).toBe(true)
   })
 })
