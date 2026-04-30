@@ -15,23 +15,26 @@ export type TestUser = {
   role:     'admin' | 'broker' | 'user'
 }
 
+// Use `||` (not `??`) so that empty-string env vars fall through to the
+// defaults. GitHub Actions renders unset secrets as '', which would
+// otherwise silently produce empty passwords and timeouts on login.
 export const ADMIN: TestUser = {
-  email:    process.env.TEST_ADMIN_EMAIL    ?? 'e2e+admin@hangarmarketplace.com',
-  password: process.env.TEST_ADMIN_PASSWORD ?? 'e2e-test-admin-pwd-2026',
+  email:    process.env.TEST_ADMIN_EMAIL    || 'e2e+admin@hangarmarketplace.com',
+  password: process.env.TEST_ADMIN_PASSWORD || 'e2e-test-admin-pwd-2026',
   fullName: 'E2E Admin',
   role:     'admin',
 }
 
 export const BROKER: TestUser = {
-  email:    process.env.TEST_BROKER_EMAIL    ?? 'e2e+broker@hangarmarketplace.com',
-  password: process.env.TEST_BROKER_PASSWORD ?? 'e2e-test-broker-pwd-2026',
+  email:    process.env.TEST_BROKER_EMAIL    || 'e2e+broker@hangarmarketplace.com',
+  password: process.env.TEST_BROKER_PASSWORD || 'e2e-test-broker-pwd-2026',
   fullName: 'E2E Broker',
   role:     'broker',
 }
 
 export const USER: TestUser = {
-  email:    process.env.TEST_USER_EMAIL    ?? 'e2e+user@hangarmarketplace.com',
-  password: process.env.TEST_USER_PASSWORD ?? 'e2e-test-user-pwd-2026',
+  email:    process.env.TEST_USER_EMAIL    || 'e2e+user@hangarmarketplace.com',
+  password: process.env.TEST_USER_PASSWORD || 'e2e-test-user-pwd-2026',
   fullName: 'E2E User',
   role:     'user',
 }

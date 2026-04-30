@@ -31,8 +31,28 @@ async function loginAndSave(page: import('@playwright/test').Page, user: TestUse
   await page.locator('input[type="email"]').first().fill(user.email)
   await page.locator('input[type="password"]').first().fill(user.password)
   await page.getByRole('button', { name: /sign in|log in/i }).click()
-  // Successful login redirects away from /login. Wait for that.
-  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 15_000 })
+
+  try {
+    // Successful login redirects away from /login. Wait for that.
+    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 15_000 })
+  } catch (e) {
+    // Surface the actual reason so we don't have to scrape Playwright
+    // traces every time. Most common causes: wrong password (Invalid
+    // email or password banner), missing test user (same banner),
+    // Turnstile not bypassed (button stays disabled).
+    const errorText = await page
+      .locator('[role="alert"], .error, [data-error], form')
+      .filter({ hasText: /invalid|wrong|not found|password|email/i })
+      .first()
+      .textContent()
+      .catch(() => null)
+    const url = page.url()
+    throw new Error(
+      `[auth.setup] Login did not redirect within 15s for ${user.email}. ` +
+      `URL=${url}. Form error text: ${errorText ?? '(none captured)'}`,
+    )
+  }
+
   // Sanity-check: we should now be authenticated
   await expect(page.getByRole('link', { name: /sign in/i })).toHaveCount(0)
   await page.context().storageState({ path: file })
