@@ -148,7 +148,10 @@ jobs:
   notify:
     name: Notify on failure
     needs: e2e
-    if: failure() && github.event_name != 'pull_request'
+    # Email only on the weekly scheduled run. Every push iteration spams
+    # the inbox during active development; the schedule run is the one
+    # that actually represents "is main healthy without anyone touching it".
+    if: failure() && github.event_name == 'schedule'
     runs-on: ubuntu-latest
     env:
       # Secrets can't be referenced in `if:` conditions, but they can be

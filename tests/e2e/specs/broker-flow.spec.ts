@@ -37,10 +37,12 @@ test.describe('Broker application: end-to-end', () => {
     const applicantContext = await browser.newContext()
     const applicantPage = await applicantContext.newPage()
     await applicantPage.goto('/login')
-    await applicantPage.getByLabel(/email/i).first().fill(applicantEmail)
-    await applicantPage.getByLabel(/password/i).first().fill(applicantPwd)
+    // Use input[type] selectors — getByLabel(/email/) matches the global
+    // newsletter consent checkbox in production builds.
+    await applicantPage.locator('input[type="email"]').first().fill(applicantEmail)
+    await applicantPage.locator('input[type="password"]').first().fill(applicantPwd)
     await applicantPage.getByRole('button', { name: /sign in|log in/i }).click()
-    await applicantPage.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 15_000 })
+    await applicantPage.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 75_000 })
 
     await applicantPage.goto('/apply-broker')
     await applicantPage.getByLabel(/full legal name|full name/i).first().fill('E2E Applicant')

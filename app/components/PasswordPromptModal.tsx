@@ -128,7 +128,7 @@ export default function PasswordPromptModal({
             }}
           />
           {error && (
-            <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: '#dc2626' }}>
+            <p role="alert" data-testid="password-modal-error" style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: '#dc2626' }}>
               {error}
             </p>
           )}

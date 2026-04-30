@@ -39,7 +39,7 @@ export class AdminPage extends BasePage {
   get passwordModalInput():  Locator { return this.page.getByPlaceholder(/current password/i) }
   get passwordModalConfirm(): Locator { return this.page.getByRole('button', { name: /comp it/i }) }
   get passwordModalCancel(): Locator { return this.page.getByRole('button', { name: /^cancel$/i }) }
-  get passwordModalError():  Locator { return this.page.locator('div[style*="dc2626"]').first() }
+  get passwordModalError():  Locator { return this.page.locator('[data-testid="password-modal-error"]') }
 
   async goto(): Promise<void> {
     await this.page.goto('/admin')

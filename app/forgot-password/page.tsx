@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
         </p>
 
         {state?.error && (
-          <div style={errorStyle}>{state.error}</div>
+          <div role="alert" data-testid="forgot-error" style={errorStyle}>{state.error}</div>
         )}
 
         <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

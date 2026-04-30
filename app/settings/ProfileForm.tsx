@@ -280,7 +280,7 @@ export default function ProfileForm({
 
           {/* Feedback */}
           {state.success && (
-            <div style={{
+            <div role="status" data-testid="profile-success" style={{
               padding: '0.6rem 0.85rem', backgroundColor: '#f0fdf4',
               border: '1px solid #bbf7d0', borderRadius: '7px',
               fontSize: '0.85rem', color: '#166534',
@@ -294,7 +294,7 @@ export default function ProfileForm({
             </div>
           )}
           {state.error && (
-            <div style={{
+            <div role="alert" data-testid="profile-error" style={{
               padding: '0.6rem 0.85rem', backgroundColor: '#fef2f2',
               border: '1px solid #fecaca', borderRadius: '7px',
               fontSize: '0.85rem', color: '#dc2626',

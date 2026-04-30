@@ -31,7 +31,7 @@ function LoginForm() {
       </p>
 
       {state?.error && (
-        <div style={errorStyle}>{state.error}</div>
+        <div role="alert" data-testid="login-error" style={errorStyle}>{state.error}</div>
       )}
 
       <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
