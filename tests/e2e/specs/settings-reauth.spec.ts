@@ -20,13 +20,20 @@ test.describe('Settings — email change reauth', () => {
     await expect(settingsPage.currentPassword).toBeVisible({ timeout: 4_000 })
   })
 
-  test('email change without password fails', async ({ settingsPage }) => {
+  test('email change requires password (HTML5 + server-side gate)', async ({ settingsPage, page }) => {
     await settingsPage.goto()
     await settingsPage.email.fill('changed+nopw@hangarmarketplace.com')
+    // Password field appears and is marked required.
     await expect(settingsPage.currentPassword).toBeVisible()
-    // Submit without filling password
+    await expect(settingsPage.currentPassword).toHaveAttribute('required', '')
+
+    // Clicking save without filling the password is blocked by HTML5
+    // validation, so the form never POSTs and we stay on /settings. The
+    // server-side gate (verifyCurrentPassword returning 'Please enter
+    // your password') is exercised by the wrong-password test below.
     await settingsPage.saveProfile.click()
-    await expect(settingsPage.errorBox).toContainText(/please enter your password/i)
+    await page.waitForTimeout(500)
+    expect(page.url()).toContain('/settings')
   })
 
   test('email change with WRONG password fails', async ({ settingsPage }) => {

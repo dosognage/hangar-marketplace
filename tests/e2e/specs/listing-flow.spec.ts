@@ -14,6 +14,10 @@ import { USER } from '../helpers/test-users'
 
 test.use({ storageState: AUTH_STATES.user })
 
+// Photo uploads to Supabase storage on a cold CI runner can take 30+s for
+// three files. Bump the per-test timeout so waitForURL gets its full 60s.
+test.describe.configure({ timeout: 120_000 })
+
 test.describe('Listing submission @listings', () => {
   test('contact info is prefilled from user profile', async ({ submitListingPage }) => {
     await submitListingPage.goto()
