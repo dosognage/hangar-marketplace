@@ -32,13 +32,13 @@ jobs:
 
     env:
       CI: 'true'
-      # Tests run against a Next.js dev server that Playwright spins up
-      # locally (see playwright.config.ts webServer block). The dev server
-      # inherits this env block, which points at the e2e-test Supabase
-      # branch — never production. To override with a deployed URL (e.g. a
-      # Vercel preview that's pre-wired to the test branch), set the
-      # PLAYWRIGHT_BASE_URL repo secret to that URL.
-      PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
+      # CI ALWAYS spins up Next.js locally and tests against it. We
+      # deliberately ignore the PLAYWRIGHT_BASE_URL secret here — that
+      # secret existed to point at a Vercel preview, but the local-server
+      # path is more reliable (no preview-deployment race conditions, no
+      # production DB risk). If we ever want to test against a deployed
+      # URL again, switch this back to ${{ secrets.PLAYWRIGHT_BASE_URL }}.
+      PLAYWRIGHT_BASE_URL: 'http://localhost:3000'
 
       # Supabase test branch (project ref pukcxxgafgrieetkgogy)
       NEXT_PUBLIC_SUPABASE_URL:     ${{ secrets.TEST_SUPABASE_URL }}
@@ -50,10 +50,9 @@ jobs:
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
 
       # Site URL — affects redirect URLs in server actions and emails.
-      # When tests boot Next.js on localhost we want everything to point
-      # there, not at production.
-      NEXT_PUBLIC_SITE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
-      NEXT_PUBLIC_APP_URL:  ${{ secrets.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
+      # Hardcoded to localhost; CI always tests against the local server.
+      NEXT_PUBLIC_SITE_URL: 'http://localhost:3000'
+      NEXT_PUBLIC_APP_URL:  'http://localhost:3000'
 
       # Listing trial date — keep it in the future so paywall logic stays
       # off in CI unless we explicitly want to test the paid path.

@@ -85,20 +85,20 @@ async function loginAndSave(page: import('@playwright/test').Page, user: TestUse
     // can take 30+ seconds. 75s leaves headroom under the 90s test timeout.
     await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 75_000 })
   } catch (e) {
-    const errorText = await page
-      .locator('[role="alert"], .error, [data-error]')
-      .first()
-      .textContent()
-      .catch(() => null)
     const url = page.url()
     const buttonText = await page.getByRole('button', { name: /sign in|log in|signing/i }).first().textContent().catch(() => null)
+    // The login page's error <div> has no role/class/data-attr, so we just
+    // dump the whole card-level text and look for known error phrases.
+    const cardText = await page.locator('h1:has-text("Sign in")').locator('..').textContent().catch(() => null)
+    const bodyText = await page.locator('body').textContent().catch(() => null)
     throw new Error(
       `[auth.setup] Login did not redirect within 75s for ${user.email}.\n` +
       `  URL: ${url}\n` +
-      `  Form error: ${errorText ?? '(none captured)'}\n` +
       `  Submit button text: ${buttonText ?? '(not found)'}\n` +
-      `  Network log (last 20):\n    ${networkLog.slice(-20).join('\n    ') || '(empty)'}\n` +
-      `  Console log (last 20):\n    ${consoleLog.slice(-20).join('\n    ') || '(empty)'}\n`,
+      `  Login card text:\n    ${(cardText ?? '(not found)').replace(/\s+/g, ' ').slice(0, 600)}\n` +
+      `  Body text (first 1000 chars):\n    ${(bodyText ?? '(empty)').replace(/\s+/g, ' ').slice(0, 1000)}\n` +
+      `  Network log (last 30):\n    ${networkLog.slice(-30).join('\n    ') || '(empty)'}\n` +
+      `  Console log (last 30):\n    ${consoleLog.slice(-30).join('\n    ') || '(empty)'}\n`,
     )
   }
 
