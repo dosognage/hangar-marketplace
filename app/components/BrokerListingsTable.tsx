@@ -46,6 +46,8 @@ const STATUS_COLOR: Record<string, string> = {
   approved: '#16a34a',
   pending:  '#d97706',
   rejected: '#dc2626',
+  sold:     '#0e7490',
+  closed:   '#0e7490',
 }
 
 function SortIcon({ dir, active }: { dir: SortDir; active: boolean }) {
@@ -292,7 +294,7 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
 
                 {/* Actions */}
                 <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     <a
                       href={`/listing/${row.id}?from=broker-dashboard&tab=analytics`}
                       style={{
@@ -313,6 +315,18 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
                     >
                       Edit
                     </a>
+                    {row.status !== 'sold' && row.status !== 'closed' && (
+                      <a
+                        href={`/listing/${row.id}/mark-sold`}
+                        style={{
+                          fontSize: '0.75rem', color: '#15803d', textDecoration: 'none',
+                          padding: '0.25rem 0.6rem', border: '1px solid #86efac',
+                          borderRadius: '5px', backgroundColor: '#f0fdf4', fontWeight: 600,
+                        }}
+                      >
+                        Sold
+                      </a>
+                    )}
                   </div>
                 </td>
               </tr>

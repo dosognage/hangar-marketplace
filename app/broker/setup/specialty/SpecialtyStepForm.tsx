@@ -88,7 +88,7 @@ export default function SpecialtyStepForm({ defaultAirports }: Props) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <Link href="/broker/setup/avatar" style={backLink}>← Back</Link>
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-          <Link href="/broker/setup/preferences" style={skipBtn}>
+          <Link href="/broker/setup/tour" style={skipBtn}>
             Skip for now
           </Link>
           <button type="submit" disabled={pending} style={primaryBtn(pending)}>

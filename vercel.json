@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/market-scan",
       "schedule": "0 14 * * 1"
+    },
+    {
+      "path": "/api/cron/market-snapshot",
+      "schedule": "0 2 1 * *"
     }
   ]
 }

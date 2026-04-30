@@ -24,7 +24,7 @@ export default async function PreferencesStepPage() {
   return (
     <SetupShell currentId="preferences" completedIds={completedIds}>
       <div style={{ marginBottom: '1.5rem' }}>
-        <p style={EYEBROW}>Step 5 · Required</p>
+        <p style={EYEBROW}>Step 6 · Required</p>
         <h1 style={H1}>Preferences</h1>
         <p style={P}>
           Two quick toggles plus our weekly market intelligence newsletter. All changeable later.

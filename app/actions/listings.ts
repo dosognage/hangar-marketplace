@@ -228,6 +228,157 @@ export async function updateListing(
   redirect(isBroker ? '/broker/dashboard' : '/dashboard')
 }
 
+// ── Mark listing as sold / leased ──────────────────────────────────────────
+
+export type MarkSoldState =
+  | { error?: string; success?: boolean; redirectTo?: string }
+  | null
+
+const VALID_SOLD_VIA      = ['platform', 'off_platform', 'lease_signed', 'other']
+const VALID_BUYER_TYPES   = ['cash', 'financed', 'business', 'investor', 'owner_occupant', 'other']
+const VALID_SELECTION_REASONS = [
+  'best_price', 'best_terms', 'faster_close', 'broker_connection',
+  'only_offer', 'all_cash', 'fewer_contingencies', 'other',
+]
+
+/**
+ * Capture a sale (or completed lease) on a listing.
+ *
+ * Two paths feed this action:
+ *   1. The lightweight panel on the edit page (just sale_price + sold_via +
+ *      sold_at).
+ *   2. The full "Congratulations on the sale" page at /listing/[id]/mark-sold,
+ *      which collects the richer market-intelligence fields below.
+ *
+ * Either path always updates listings.{status, sold_at, sale_price, sold_via}.
+ * The richer page additionally upserts a row into listing_sale_outcomes —
+ * we only write to that table when at least one of the rich fields is set.
+ *
+ * Form fields expected (all optional except none — we never block the action):
+ *   - sale_price       number  — actual sale price / lease rate
+ *   - sold_via         enum    — platform | off_platform | lease_signed | other
+ *   - sold_at          ISO     — defaults to now()
+ *   - asking_at_sale   number  — final asking at close
+ *   - buyer_type       enum    — cash | financed | business | investor | owner_occupant | other
+ *   - buyer_state      string  — 2-letter state
+ *   - offer_count      number
+ *   - received_multiple_offers checkbox
+ *   - selection_reasons[]      — multi-select chip values
+ *   - notes            string
+ */
+export async function markListingSold(
+  listingId: string,
+  _prevState: MarkSoldState,
+  formData: FormData,
+): Promise<MarkSoldState> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+
+  // Auth: same two-path rule we use in updateListing — owner OR assigned broker.
+  const { data: existing } = await supabaseAdmin
+    .from('listings')
+    .select('id, user_id, broker_profile_id, status, listing_type, created_at, asking_price, monthly_lease')
+    .eq('id', listingId)
+    .single()
+  if (!existing) return { error: 'Listing not found.' }
+
+  const userBrokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  const isOwner = existing.user_id === user.id
+  const isAssignedBroker =
+    !!userBrokerProfileId && existing.broker_profile_id === userBrokerProfileId
+  if (!isOwner && !isAssignedBroker) return { error: 'Not authorised.' }
+
+  // ── Core sale fields on listings ──────────────────────────────────────────
+  const salePrice = parseOptionalNumber(formData.get('sale_price'))
+
+  const soldViaRaw = (formData.get('sold_via') as string | null) ?? null
+  const soldVia = soldViaRaw && VALID_SOLD_VIA.includes(soldViaRaw) ? soldViaRaw : null
+
+  const soldAtRaw = (formData.get('sold_at') as string | null) ?? null
+  const soldAt = soldAtRaw && !Number.isNaN(new Date(soldAtRaw).getTime())
+    ? new Date(soldAtRaw).toISOString()
+    : new Date().toISOString()
+
+  const isLease = existing.listing_type === 'lease' || existing.listing_type === 'space'
+  const nextStatus = isLease ? 'closed' : 'sold'
+
+  const { error: updErr } = await supabaseAdmin
+    .from('listings')
+    .update({
+      status:     nextStatus,
+      sold_at:    soldAt,
+      sale_price: salePrice,
+      sold_via:   soldVia,
+    })
+    .eq('id', listingId)
+  if (updErr) return { error: updErr.message }
+
+  // ── Rich sale outcome fields on listing_sale_outcomes (optional) ──────────
+  const askingAtSale = parseOptionalNumber(formData.get('asking_at_sale'))
+    ?? (isLease ? existing.monthly_lease : existing.asking_price)
+    ?? null
+
+  const buyerTypeRaw = (formData.get('buyer_type') as string | null) ?? null
+  const buyerType = buyerTypeRaw && VALID_BUYER_TYPES.includes(buyerTypeRaw) ? buyerTypeRaw : null
+
+  const buyerStateRaw = (formData.get('buyer_state') as string | null) ?? null
+  const buyerState = buyerStateRaw && /^[a-zA-Z]{2}$/.test(buyerStateRaw)
+    ? buyerStateRaw.toUpperCase() : null
+
+  const offerCount = parseOptionalNumber(formData.get('offer_count'))
+  const receivedMultiple = formData.get('received_multiple_offers') === 'on'
+    || formData.get('received_multiple_offers') === 'true'
+
+  const reasonsRaw = formData.getAll('selection_reasons').map(v => String(v))
+  const selectionReasons = reasonsRaw.filter(r => VALID_SELECTION_REASONS.includes(r))
+
+  const notesRaw = (formData.get('notes') as string | null) ?? null
+  const notes = notesRaw ? notesRaw.trim().slice(0, 2000) : null
+
+  const daysOnMarket = Math.max(
+    0,
+    Math.floor((new Date(soldAt).getTime() - new Date(existing.created_at).getTime()) / 86_400_000),
+  )
+
+  // Only write the outcomes row if the user actually filled in at least one
+  // of the rich fields. Saves us from littering the table with noise rows.
+  const hasRichData = !!(
+    buyerType || buyerState || offerCount != null || receivedMultiple ||
+    selectionReasons.length > 0 || notes || askingAtSale != null
+  )
+
+  if (hasRichData) {
+    const { error: outErr } = await supabaseAdmin
+      .from('listing_sale_outcomes')
+      .upsert({
+        listing_id:               listingId,
+        captured_by:              user.id,
+        sale_price:               salePrice,
+        asking_at_sale:           askingAtSale,
+        days_on_market:           daysOnMarket,
+        offer_count:              offerCount,
+        received_multiple_offers: receivedMultiple,
+        buyer_type:               buyerType,
+        buyer_state:              buyerState,
+        selection_reasons:        selectionReasons,
+        notes,
+      }, { onConflict: 'listing_id' })
+    if (outErr) {
+      // Don't fail the whole action — the listing is already marked sold.
+      // Log and continue so the user lands on the success page.
+      console.error('[markListingSold] outcomes upsert failed:', outErr)
+    }
+  }
+
+  revalidatePath('/broker/dashboard')
+  revalidatePath('/dashboard')
+  revalidatePath(`/listing/${listingId}`)
+  revalidatePath(`/listing/${listingId}/edit`)
+  revalidatePath(`/listing/${listingId}/mark-sold`)
+  return { success: true, redirectTo: `/listing/${listingId}/mark-sold?done=1` }
+}
+
 // ── Toggle saved listing ───────────────────────────────────────────────────
 
 /**

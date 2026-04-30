@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Building2, Camera, MapPin, Sliders, FileText, Plane } from 'lucide-react'
+import { Building2, Camera, MapPin, Sliders, FileText, Plane, Sparkles } from 'lucide-react'
 import SetupShell from './SetupShell'
 import { loadSetupContext } from './loadSetupContext'
 
@@ -55,6 +55,7 @@ export default async function WelcomePage() {
         <ChecklistRow icon={<Building2 size={16} strokeWidth={1.75} />} label="Confirm your brokerage and contact info" />
         <ChecklistRow icon={<Camera     size={16} strokeWidth={1.75} />} label="Upload a photo (optional, but recommended)" />
         <ChecklistRow icon={<MapPin     size={16} strokeWidth={1.75} />} label="Mark your specialty airports (optional)" />
+        <ChecklistRow icon={<Sparkles   size={16} strokeWidth={1.75} />} label="Tour the broker-only tools you just unlocked" />
         <ChecklistRow icon={<Sliders    size={16} strokeWidth={1.75} />} label="Set notification preferences and opt into the weekly market intelligence email" />
         <ChecklistRow icon={<FileText   size={16} strokeWidth={1.75} />} label="Land on the listing form, ready to post" />
       </div>

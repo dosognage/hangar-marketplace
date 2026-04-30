@@ -14,6 +14,7 @@ export type SetupStepId =
   | 'profile'
   | 'avatar'
   | 'specialty'
+  | 'tour'
   | 'preferences'
   | 'done'
 
@@ -76,8 +77,19 @@ export const SETUP_STEPS: SetupStep[] = [
     isComplete: (p) => (p.specialty_airports?.length ?? 0) > 0,
   },
   {
-    id:       'preferences',
+    id:       'tour',
     index:    5,
+    path:     '/broker/setup/tour',
+    title:    'Tour',
+    subtitle: 'See the features that come with your verified broker badge.',
+    required: false,
+    // Informational page — always considered "complete" so the progress bar
+    // doesn't penalize brokers who skim through.
+    isComplete: () => true,
+  },
+  {
+    id:       'preferences',
+    index:    6,
     path:     '/broker/setup/preferences',
     title:    'Preferences',
     subtitle: 'Email visibility, alert radius, and our weekly market intelligence newsletter.',
@@ -86,7 +98,7 @@ export const SETUP_STEPS: SetupStep[] = [
   },
   {
     id:       'done',
-    index:    6,
+    index:    7,
     path:     '/broker/setup/done',
     title:    'Done',
     subtitle: 'You are ready to list.',

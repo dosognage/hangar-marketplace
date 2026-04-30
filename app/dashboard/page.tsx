@@ -48,6 +48,8 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
   pending_payment: { label: 'Payment required', color: '#92400e', bg: '#fef3c7' },
   approved: { label: 'Live',           color: '#166534', bg: '#dcfce7' },
   rejected: { label: 'Rejected',       color: '#991b1b', bg: '#fee2e2' },
+  sold:     { label: 'Sold',           color: '#0e7490', bg: '#cffafe' },
+  closed:   { label: 'Lease closed',   color: '#0e7490', bg: '#cffafe' },
 }
 
 export default async function DashboardPage() {
@@ -473,6 +475,17 @@ export default async function DashboardPage() {
                     }}>
                       Edit
                     </Link>
+                    {listing.status !== 'sold' && listing.status !== 'closed' && (
+                      <Link href={`/listing/${listing.id}/mark-sold`} style={{
+                        fontSize: '0.8rem', color: '#15803d', textDecoration: 'none',
+                        fontWeight: 600, whiteSpace: 'nowrap',
+                        padding: '0.35rem 0.85rem',
+                        border: '1px solid #86efac', borderRadius: '6px',
+                        backgroundColor: '#f0fdf4',
+                      }}>
+                        Sold
+                      </Link>
+                    )}
                     <DeleteListingButton listingId={listing.id} />
                   </div>
                 </div>

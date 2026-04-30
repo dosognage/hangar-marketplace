@@ -112,7 +112,7 @@ export default function PreferencesStepForm(props: Props) {
       {state?.error && <div style={errorBox}>{state.error}</div>}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
-        <Link href="/broker/setup/specialty" style={backLink}>← Back</Link>
+        <Link href="/broker/setup/tour" style={backLink}>← Back</Link>
         <button type="submit" disabled={pending} style={primaryBtn(pending)}>
           {pending ? 'Saving…' : 'Save and continue →'}
         </button>

@@ -11,6 +11,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import EditListingForm from './EditListingForm'
 import EditPhotoManager from './EditPhotoManager'
+import MarkSoldPanel from './MarkSoldPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +50,16 @@ export default async function EditListingPage({ params }: PageProps) {
       <EditPhotoManager listingId={id} initialPhotos={photos} />
       <div style={{ marginTop: '1.25rem' }}>
         <EditListingForm listing={listing} />
+      </div>
+      <div style={{ marginTop: '1.25rem' }}>
+        <MarkSoldPanel
+          listingId={listing.id}
+          listingType={listing.listing_type}
+          status={listing.status}
+          soldAt={listing.sold_at}
+          salePrice={listing.sale_price}
+          soldVia={listing.sold_via}
+        />
       </div>
     </div>
   )
