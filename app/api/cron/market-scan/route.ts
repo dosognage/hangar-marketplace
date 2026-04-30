@@ -9,12 +9,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, marketScanEmail } from '@/lib/email'
 import { buildMarketScan } from '@/lib/marketScan'
 
 export const dynamic = 'force-dynamic'
 
-const SCAN_TO = 'andre.dosogne@outlook.com'
+// Always send to admin, plus any broker who opted in during setup.
+const ADMIN_TO = 'andre.dosogne@outlook.com'
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
@@ -34,14 +36,38 @@ export async function GET(req: NextRequest) {
       signals,
     })
 
-    const result = await sendEmail({ to: SCAN_TO, subject, html })
-    if (!result.ok) {
-      console.error('[cron/market-scan] sendEmail failed:', result.error)
-      return NextResponse.json({ error: result.error }, { status: 500 })
+    // Fan out to admin + opted-in brokers. Brokers' rows are tagged with
+    // consent_source='broker_setup'. Only send to those who haven't
+    // unsubscribed (unsubscribed_at IS NULL) and who explicitly consented.
+    const { data: brokerSubs } = await supabaseAdmin
+      .from('email_subscribers')
+      .select('email')
+      .eq('consent_source', 'broker_setup')
+      .eq('marketing_consent', true)
+      .is('unsubscribed_at', null)
+
+    const recipients = new Set<string>([ADMIN_TO])
+    for (const s of (brokerSubs ?? [])) {
+      if (s.email) recipients.add(s.email)
     }
 
-    console.log('[cron/market-scan] sent ok', { id: result.id, signals: signals.length })
-    return NextResponse.json({ ok: true, sent_to: SCAN_TO, signals_count: signals.length })
+    let sent = 0
+    const failures: string[] = []
+    for (const to of recipients) {
+      const r = await sendEmail({ to, subject, html })
+      if (r.ok) sent++
+      else failures.push(`${to}: ${r.error}`)
+    }
+
+    console.log('[cron/market-scan] complete', { sent, failed: failures.length, signals: signals.length })
+    return NextResponse.json({
+      ok:             failures.length === 0,
+      sent,
+      failed:         failures.length,
+      signals_count:  signals.length,
+      recipients:     Array.from(recipients).length,
+      failures,
+    })
   } catch (err) {
     console.error('[cron/market-scan] failed:', err)
     const msg = err instanceof Error ? err.message : 'Unknown error'

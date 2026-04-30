@@ -590,6 +590,7 @@ export function brokerApprovedEmail(opts: {
 }): { subject: string; html: string } {
   const { name, profileId } = opts
   const profileUrl   = `${SITE_URL}/broker/${profileId}`
+  const setupUrl     = `${SITE_URL}/broker/setup`
   const dashboardUrl = `${SITE_URL}/broker/dashboard`
 
   const perks = [
@@ -626,10 +627,11 @@ export function brokerApprovedEmail(opts: {
         html: `<table width="100%" cellpadding="0" cellspacing="0">${perksHtml}</table>`,
       }],
       cta: {
-        label: 'Open your broker dashboard',
-        href:  dashboardUrl,
+        label: 'Set up my broker profile (3 min)',
+        href:  setupUrl,
+        hint:  'Quick guided setup before you post your first listing.',
       },
-      secondaryCta: { label: 'View my public profile', href: profileUrl },
+      secondaryCta: { label: 'Skip to dashboard', href: dashboardUrl },
       footerIntro: `You're getting this because your broker application was just approved on Hangar Marketplace.`,
     }),
   }
