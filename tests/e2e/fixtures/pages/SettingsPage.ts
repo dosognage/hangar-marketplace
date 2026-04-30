@@ -7,12 +7,13 @@ export class SettingsPage extends BasePage {
 
   get heading(): Locator { return this.page.getByRole('heading', { name: /profile settings|settings/i }).first() }
 
-  // Profile fields. Use input[type] selectors for email/password to avoid
-  // matching the global newsletter consent checkbox.
-  get fullName():        Locator { return this.page.getByLabel(/display name/i) }
-  get phone():           Locator { return this.page.getByLabel(/phone/i) }
-  get email():           Locator { return this.page.locator('input[type="email"]').first() }
-  get currentPassword(): Locator { return this.page.locator('input[name="current_password"], input[type="password"]').first() }
+  // Profile fields. Use input[name=...] / specific id selectors to avoid
+  // matching the global NewsletterSignup component's email input which
+  // also has type="email" and lives in the footer.
+  get fullName():        Locator { return this.page.locator('input[name="full_name"]') }
+  get phone():           Locator { return this.page.locator('input[name="phone"]') }
+  get email():           Locator { return this.page.locator('#email') }
+  get currentPassword(): Locator { return this.page.locator('input[name="current_password"]') }
   get saveProfile():     Locator { return this.page.getByRole('button', { name: /save profile/i }) }
 
   get reauthBanner(): Locator { return this.page.locator('text=/security-sensitive action/i') }

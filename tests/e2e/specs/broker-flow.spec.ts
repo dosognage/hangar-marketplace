@@ -45,13 +45,15 @@ test.describe('Broker application: end-to-end', () => {
     await applicantPage.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 75_000 })
 
     await applicantPage.goto('/apply-broker')
-    await applicantPage.getByLabel(/full legal name|full name/i).first().fill('E2E Applicant')
-    await applicantPage.getByLabel(/brokerage|firm name/i).first().fill('E2E Realty')
-    await applicantPage.getByLabel(/license state/i).first().fill('CA')
-    await applicantPage.getByLabel(/license number/i).first().fill('E2E-12345')
-    await applicantPage.getByLabel(/phone/i).first().fill('555-555-1212')
-    await applicantPage.getByLabel(/website/i).first().fill('https://e2e.example.com')
-    await applicantPage.getByLabel(/bio|about you/i).first().fill('E2E test applicant.')
+    // ApplyBrokerForm doesn't link labels to inputs via htmlFor/id, so
+    // getByLabel doesn't resolve. Use the actual input names.
+    await applicantPage.locator('input[name="full_name"]').fill('E2E Applicant')
+    await applicantPage.locator('input[name="brokerage"]').fill('E2E Realty')
+    await applicantPage.locator('input[name="license_state"]').fill('CA')
+    await applicantPage.locator('input[name="license_number"]').fill('E2E-12345')
+    await applicantPage.locator('input[name="phone"]').fill('555-555-1212')
+    await applicantPage.locator('input[name="website"]').fill('https://e2e.example.com')
+    await applicantPage.locator('textarea[name="bio"]').fill('E2E test applicant.')
     await applicantPage.getByRole('button', { name: /submit application|apply|send application/i }).first().click()
 
     // The application should now exist in the DB

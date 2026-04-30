@@ -12,6 +12,18 @@ import { ADMIN, USER } from '../helpers/test-users'
 test.use({ storageState: AUTH_STATES.admin })
 
 test.describe('Admin comp-sponsor flow with password modal', () => {
+  // Reset all seeded listings to is_sponsored=false before each test. The
+  // admin UI swaps the button label from "Comp ${days}d" to "Extend ${days}d"
+  // once a listing is sponsored, which would break the second test if the
+  // first one already comp'd. Clean state per-test = predictable selectors.
+  test.beforeEach(async () => {
+    const supabase = getTestSupabaseAdmin()
+    await supabase
+      .from('listings')
+      .update({ is_sponsored: false, sponsored_until: null })
+      .eq('contact_email', USER.email)
+  })
+
   test.beforeAll(async () => {
     // Ensure at least one approved listing exists for us to comp.
     const supabase = getTestSupabaseAdmin()
@@ -87,6 +99,13 @@ test.describe('Admin comp-sponsor flow with password modal', () => {
     const before = candidate!.sponsored_until
 
     await adminPage.goto()
+    // The admin UI renders ONE Comp button per listing whose label reflects
+    // the current dropdown selection (default 30). To click "Comp 7d" we
+    // first need to set the duration dropdown to 7. Scope to the first
+    // listing card to avoid matching multiple selects.
+    const firstCard = adminPage.page.locator('select').filter({ hasText: '7 days' }).first()
+    await firstCard.scrollIntoViewIfNeeded()
+    await firstCard.selectOption({ value: '7' })
     const btn = adminPage.compButton(7).first()
     await btn.scrollIntoViewIfNeeded()
     await btn.click()
