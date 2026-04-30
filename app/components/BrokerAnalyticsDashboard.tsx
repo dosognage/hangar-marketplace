@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { computeListingHealth, type ListingHealth } from '@/lib/listingHealth'
 import BrokerListingsTable from './BrokerListingsTable'
 
 type Listing = {
@@ -9,6 +10,14 @@ type Listing = {
   state: string
   status: string
   view_count: number
+  // Fields needed for listing-health computation
+  property_type: string
+  listing_type:  string
+  asking_price:  number | null
+  monthly_lease: number | null
+  description:   string | null
+  is_sponsored:  boolean
+  created_at:    string
   listing_photos: { storage_path: string; display_order: number }[]
 }
 
@@ -70,7 +79,12 @@ export default async function BrokerAnalyticsDashboard({ brokerProfileId, supaba
   // ── Fetch all listings for this broker (any status) ──────────────────────
   const { data: listings } = await supabaseAdmin
     .from('listings')
-    .select('id, title, airport_code, city, state, status, view_count, listing_photos(storage_path, display_order)')
+    .select(`
+      id, title, airport_code, city, state, status, view_count,
+      property_type, listing_type, asking_price, monthly_lease, description,
+      is_sponsored, created_at,
+      listing_photos(storage_path, display_order)
+    `)
     .eq('broker_profile_id', brokerProfileId)
     .order('created_at', { ascending: false })
 
@@ -183,6 +197,30 @@ export default async function BrokerAnalyticsDashboard({ brokerProfileId, supaba
   // Conversion rate: contacts / views (all time)
   const convRate = totalViews > 0 ? ((totalContacts / totalViews) * 100).toFixed(1) : '0.0'
 
+  // ── Compute per-listing health + improvement suggestions ─────────────────
+  // Each call hits the DB for comparables, so run in parallel.
+  const healthByListing: Record<string, ListingHealth> = {}
+  await Promise.all(safeListings.map(async l => {
+    const photoCount = (l.listing_photos ?? []).length
+    const inquiryCount = contactsByListing[l.id] ?? 0
+    healthByListing[l.id] = await computeListingHealth({
+      id:            l.id,
+      title:         l.title,
+      airport_code:  l.airport_code,
+      property_type: l.property_type,
+      listing_type:  l.listing_type,
+      asking_price:  l.asking_price,
+      monthly_lease: l.monthly_lease,
+      description:   l.description,
+      status:        l.status,
+      is_sponsored:  l.is_sponsored,
+      created_at:    l.created_at,
+      photo_count:   photoCount,
+      view_count:    l.view_count ?? 0,
+      inquiry_count: inquiryCount,
+    })
+  }))
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <section style={{ marginTop: '2.5rem' }}>
@@ -246,6 +284,7 @@ export default async function BrokerAnalyticsDashboard({ brokerProfileId, supaba
             conversionRate: views > 0 ? (contacts / views) * 100 : 0,
             topPhotoUrl:    topPath  ? topPath : null,  // photo_path is stored as full URL by PhotoGallery
             coverPhotoUrl:  coverPath ? photoUrl(supabaseUrl, coverPath) : null,
+            health:         healthByListing[listing.id],
           }
         })}
       />

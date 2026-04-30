@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/weekly-digest",
       "schedule": "0 13 * * 1"
+    },
+    {
+      "path": "/api/cron/market-scan",
+      "schedule": "0 14 * * 1"
     }
   ]
 }

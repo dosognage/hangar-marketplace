@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
+import type { ListingHealth } from '@/lib/listingHealth'
 
 export type ListingRow = {
   id: string
@@ -17,12 +18,14 @@ export type ListingRow = {
   conversionRate: number   // contacts / max(views, 1) * 100
   topPhotoUrl: string | null
   coverPhotoUrl: string | null
+  health: ListingHealth
 }
 
-type SortKey = 'views' | 'contacts' | 'saves' | 'shares' | 'photoViews' | 'conversionRate' | 'title'
+type SortKey = 'views' | 'contacts' | 'saves' | 'shares' | 'photoViews' | 'conversionRate' | 'title' | 'health'
 type SortDir = 'desc' | 'asc'
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'health',         label: 'Health Score' },
   { key: 'views',          label: 'Most Viewed' },
   { key: 'contacts',       label: 'Most Inquiries' },
   { key: 'saves',          label: 'Most Saved' },
@@ -31,6 +34,13 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'conversionRate', label: 'Best Conversion Rate' },
   { key: 'title',          label: 'Name (A–Z)' },
 ]
+
+const SEVERITY_COLOR: Record<string, string> = {
+  bad:  '#dc2626',
+  warn: '#d97706',
+  ok:   '#2563eb',
+  good: '#16a34a',
+}
 
 const STATUS_COLOR: Record<string, string> = {
   approved: '#16a34a',
@@ -49,8 +59,10 @@ function SortIcon({ dir, active }: { dir: SortDir; active: boolean }) {
 }
 
 export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>('views')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  // Default to health score so brokers see "what's hurt" first.
+  const [sortKey, setSortKey] = useState<SortKey>('health')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')   // ascending = lowest health first
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   function handleColumnClick(key: SortKey) {
     if (key === sortKey) {
@@ -67,8 +79,12 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
   }
 
   const sorted = [...rows].sort((a, b) => {
-    const av = a[sortKey]
-    const bv = b[sortKey]
+    if (sortKey === 'health') {
+      const av = a.health.score, bv = b.health.score
+      return sortDir === 'desc' ? bv - av : av - bv
+    }
+    const av = a[sortKey as keyof ListingRow]
+    const bv = b[sortKey as keyof ListingRow]
     if (typeof av === 'string' && typeof bv === 'string') {
       return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
     }
@@ -77,6 +93,7 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
 
   const cols: { key: SortKey; label: string; align?: 'right' }[] = [
     { key: 'title',          label: 'Listing' },
+    { key: 'health',         label: 'Health',      align: 'right' },
     { key: 'views',          label: 'Views',       align: 'right' },
     { key: 'contacts',       label: 'Inquiries',   align: 'right' },
     { key: 'saves',          label: 'Saves',       align: 'right' },
@@ -175,7 +192,8 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
           </thead>
           <tbody>
             {sorted.map((row, i) => (
-              <tr key={row.id} style={{ borderTop: i === 0 ? 'none' : '1px solid #f3f4f6' }}>
+              <Fragment key={row.id}>
+              <tr style={{ borderTop: i === 0 ? 'none' : '1px solid #f3f4f6' }}>
 
                 {/* Status badge */}
                 <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
@@ -201,6 +219,30 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
                   <span style={{ color: '#9ca3af', fontSize: '0.7rem' }}>
                     {row.airport_code} · {row.city}, {row.state}
                   </span>
+                </td>
+
+                {/* Health score badge */}
+                <td style={{ padding: '0.85rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <button
+                    onClick={() => setExpanded(prev => ({ ...prev, [row.id]: !prev[row.id] }))}
+                    title={expanded[row.id] ? 'Hide suggestions' : 'Show suggestions'}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                      padding: '0.2rem 0.65rem', borderRadius: '999px', border: 'none',
+                      backgroundColor: `${row.health.bandColor}18`,
+                      color: row.health.bandColor, fontWeight: 700, fontSize: '0.78rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span>{row.health.score}</span>
+                    <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      {row.health.band}
+                    </span>
+                    <svg width="9" height="9" viewBox="0 0 9 9"
+                      style={{ transform: expanded[row.id] ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s' }}>
+                      <path d="M1 3 L4.5 6.5 L8 3" stroke={row.health.bandColor} strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                    </svg>
+                  </button>
                 </td>
 
                 {/* Numeric columns */}
@@ -273,6 +315,85 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
                   </div>
                 </td>
               </tr>
+              {/* Expanded health diagnostics — toggled via the health badge */}
+              {expanded[row.id] && (
+                <tr style={{ backgroundColor: '#fafbff' }}>
+                  <td colSpan={11} style={{ padding: '0.9rem 1.5rem 1.4rem' }}>
+                    <div style={{
+                      display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) 2fr',
+                      gap: '1.5rem', alignItems: 'start',
+                    }}>
+                      {/* Left: comparable-market context */}
+                      <div style={{
+                        padding: '0.85rem 1rem', backgroundColor: 'white',
+                        border: '1px solid #e5e7eb', borderRadius: '8px',
+                      }}>
+                        <p style={{
+                          margin: '0 0 0.4rem', fontSize: '0.65rem', fontWeight: 700,
+                          color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em',
+                        }}>
+                          Compared to similar listings
+                        </p>
+                        <div style={{ display: 'grid', gap: '0.4rem', fontSize: '0.78rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#6b7280' }}>Same airport</span>
+                            <strong style={{ color: '#111827' }}>{row.health.comparables.countSameAirport}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#6b7280' }}>Same property type</span>
+                            <strong style={{ color: '#111827' }}>{row.health.comparables.countSameType}</strong>
+                          </div>
+                          {row.health.comparables.medianAskingPrice !== null && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#6b7280' }}>Median price</span>
+                              <strong style={{ color: '#111827' }}>${row.health.comparables.medianAskingPrice.toLocaleString()}</strong>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#6b7280' }}>Avg views</span>
+                            <strong style={{ color: '#111827' }}>{Math.round(row.health.comparables.avgViewCount)}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.4rem', borderTop: '1px solid #f3f4f6', marginTop: '0.2rem' }}>
+                            <span style={{ color: '#6b7280' }}>You vs avg</span>
+                            <strong style={{
+                              color: row.health.comparables.yourViewMultiple >= 1
+                                ? '#16a34a' : row.health.comparables.yourViewMultiple >= 0.5 ? '#d97706' : '#dc2626',
+                            }}>
+                              {(row.health.comparables.yourViewMultiple * 100).toFixed(0)}%
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: ranked suggestions */}
+                      <div>
+                        <p style={{
+                          margin: '0 0 0.6rem', fontSize: '0.65rem', fontWeight: 700,
+                          color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em',
+                        }}>
+                          Suggestions
+                        </p>
+                        {row.health.suggestions.map((s, idx) => (
+                          <div key={idx} style={{
+                            padding: '0.7rem 0.9rem', marginBottom: '0.5rem',
+                            borderLeft: `3px solid ${SEVERITY_COLOR[s.severity]}`,
+                            backgroundColor: 'white', border: '1px solid #f3f4f6',
+                            borderRadius: '0 8px 8px 0',
+                          }}>
+                            <p style={{ margin: '0 0 0.25rem', fontSize: '0.86rem', fontWeight: 700, color: '#111827' }}>
+                              {s.emoji} {s.title}
+                            </p>
+                            <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569', lineHeight: 1.5 }}>
+                              {s.detail}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>

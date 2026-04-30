@@ -782,7 +782,11 @@ export function newsletterEmail(opts: {
     ? `<p style="margin:0;font-size:14px;color:#64748b;">No new listings this month. Check back soon.</p>`
     : recentListings.map(l => {
         const typeLabel = l.listing_type === 'lease' ? 'For Lease' : l.listing_type === 'sale' ? 'For Sale' : 'Space Available'
-        const priceStr  = l.price ? `$${l.price.toLocaleString()}` : 'Contact for price'
+        // Lease listings show monthly rate with /mo suffix; sale listings
+        // show outright price. "Contact for price" if neither set.
+        const priceStr  = l.price
+          ? (l.listing_type === 'lease' ? `$${l.price.toLocaleString()}/mo` : `$${l.price.toLocaleString()}`)
+          : 'Contact for price'
         return `
           <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;background:#f8fafc;margin-bottom:10px;">
             <span style="display:inline-block;background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;
@@ -919,6 +923,64 @@ export function weeklyDigestEmail(opts: {
         href:  `${SITE_URL}/admin`,
       },
       footerIntro: 'You’re getting this because you’re an admin on Hangar Marketplace.',
+    }),
+  }
+}
+
+/** Weekly market-scan — aviation real estate signals from RSS feeds. */
+export function marketScanEmail(opts: {
+  rangeStart: Date
+  rangeEnd:   Date
+  signals: Array<{
+    title:       string
+    url:         string
+    source:      string
+    publishedAt: Date
+    summary?:    string
+  }>
+}): { subject: string; html: string } {
+  const { rangeStart, rangeEnd, signals } = opts
+  const fmtDay = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const range = `${fmtDay(rangeStart)} – ${fmtDay(rangeEnd)}`
+
+  const fmtAge = (d: Date) => {
+    const hrs = Math.round((Date.now() - d.getTime()) / 3_600_000)
+    if (hrs < 1)  return 'just now'
+    if (hrs < 24) return `${hrs}h ago`
+    return `${Math.round(hrs / 24)}d ago`
+  }
+
+  const items = signals.length === 0
+    ? `<p style="margin:0;font-size:14px;color:#64748b;">No new signals this week. The aviation real estate news cycle was quiet.</p>`
+    : signals.map(s => `
+        <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;background:#f8fafc;margin-bottom:10px;">
+          <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#1d4ed8;letter-spacing:0.05em;text-transform:uppercase;">
+            ${htmlEscape(s.source)} · ${htmlEscape(fmtAge(s.publishedAt))}
+          </p>
+          <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#0f172a;line-height:1.35;">
+            <a href="${s.url}" style="color:#0f172a;text-decoration:none;">${htmlEscape(s.title)}</a>
+          </p>
+          ${s.summary ? `<p style="margin:0;font-size:13px;color:#475569;line-height:1.55;">${htmlEscape(s.summary)}</p>` : ''}
+        </div>`).join('')
+
+  return {
+    subject: `Market scan — aviation real estate (${range})`,
+    html: modernLayout({
+      preheader: signals.length > 0
+        ? `${signals.length} signal${signals.length === 1 ? '' : 's'} from aviation news this week.`
+        : 'A quiet week in aviation real estate news.',
+      eyebrow:   'Market scan',
+      title:     `Week of ${range}`,
+      subtitle:  signals.length > 0
+        ? `${signals.length} aviation real estate signal${signals.length === 1 ? '' : 's'} from the last 7 days. Skim the headlines, dig into anything that affects your market.`
+        : 'No new aviation real estate signals this week — possibly worth investigating why news cycle went quiet.',
+      heroCaption: '📡',
+      heroGradient: 'linear-gradient(135deg,#0f172a 0%,#0369a1 60%,#0ea5e9 100%)',
+      sections: [{
+        title: 'This week\'s signals',
+        html:  items,
+      }],
+      footerIntro: 'You\'re getting this because you\'re an admin on Hangar Marketplace.',
     }),
   }
 }

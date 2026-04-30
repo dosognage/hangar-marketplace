@@ -49,14 +49,31 @@ export async function GET(req: NextRequest) {
     }
 
     // ── Fetch recent listings (approved in last 30 days) ──────────────────
+    // Bug fix: there's no `price` column on listings — sale uses asking_price,
+    // lease uses monthly_lease. Pull both and compute a unified `price`
+    // before passing to the email template.
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    const { data: recentListings } = await supabase
+    const { data: rawListings } = await supabase
       .from('listings')
-      .select('id, title, airport_name, airport_code, listing_type, price')
+      .select('id, title, airport_name, airport_code, listing_type, asking_price, monthly_lease, view_count, is_sponsored')
       .eq('status', 'approved')
+      .eq('is_sample', false)
       .gte('created_at', thirtyDaysAgo)
-      .order('created_at', { ascending: false })
+      .order('is_sponsored', { ascending: false })  // sponsored listings first
+      .order('view_count', { ascending: false })    // then most-viewed
+      .order('created_at', { ascending: false })    // then newest
       .limit(6)
+
+    // Normalise to the shape newsletterEmail() expects: a single `price` field.
+    // Sale listings → asking_price; lease listings → monthly_lease.
+    const recentListings = (rawListings ?? []).map(l => ({
+      id:           l.id,
+      title:        l.title,
+      airport_name: l.airport_name,
+      airport_code: l.airport_code,
+      listing_type: l.listing_type,
+      price:        l.listing_type === 'lease' ? l.monthly_lease : l.asking_price,
+    }))
 
     const now   = new Date()
     const month = now.toLocaleString('en-US', { month: 'long' })
