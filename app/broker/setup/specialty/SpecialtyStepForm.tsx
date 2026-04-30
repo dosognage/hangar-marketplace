@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
-import { saveSpecialtyStep, skipStep } from '../actions'
+import { saveSpecialtyStep } from '../actions'
 
 type Props = {
   defaultAirports: string[]
@@ -88,13 +88,9 @@ export default function SpecialtyStepForm({ defaultAirports }: Props) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <Link href="/broker/setup/avatar" style={backLink}>← Back</Link>
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={async () => { await skipStep('specialty') }}
-            style={skipBtn}
-          >
+          <Link href="/broker/setup/preferences" style={skipBtn}>
             Skip for now
-          </button>
+          </Link>
           <button type="submit" disabled={pending} style={primaryBtn(pending)}>
             {pending ? 'Saving…' : 'Save and continue →'}
           </button>
@@ -125,8 +121,7 @@ const errorBox: React.CSSProperties = {
 const backLink: React.CSSProperties = { fontSize: '0.875rem', color: '#64748b', textDecoration: 'none' }
 const skipBtn: React.CSSProperties = {
   padding: '0.7rem 1rem',
-  backgroundColor: 'transparent', color: '#64748b',
-  border: 'none', cursor: 'pointer',
+  color: '#64748b', textDecoration: 'none',
   fontSize: '0.875rem', fontWeight: 600,
 }
 function primaryBtn(disabled: boolean): React.CSSProperties {

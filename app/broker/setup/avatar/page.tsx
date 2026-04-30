@@ -2,7 +2,6 @@ import Link from 'next/link'
 import SetupShell from '../SetupShell'
 import { loadSetupContext } from '../loadSetupContext'
 import AvatarUpload from '@/app/broker/dashboard/AvatarUpload'
-import { skipStep } from '../actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,13 +11,6 @@ export const metadata = {
 
 export default async function AvatarStepPage() {
   const { profile, completedIds, brokerProfileId } = await loadSetupContext()
-
-  // Server action wrapper for the skip button — uses bind to avoid an extra
-  // route handler. The form's "submit" calls skipStep('avatar') which redirects.
-  const skip = async () => {
-    'use server'
-    await skipStep('avatar')
-  }
 
   return (
     <SetupShell currentId="avatar" completedIds={completedIds}>
@@ -48,9 +40,9 @@ export default async function AvatarStepPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.75rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <Link href="/broker/setup/profile" style={backLink}>← Back</Link>
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-          <form action={skip}>
-            <button type="submit" style={skipBtn}>Skip for now</button>
-          </form>
+          <Link href="/broker/setup/specialty" style={skipLink}>
+            Skip for now
+          </Link>
           <Link href="/broker/setup/specialty" style={primaryBtn}>
             Continue →
           </Link>
@@ -73,10 +65,9 @@ const primaryBtn: React.CSSProperties = {
   borderRadius: '8px', textDecoration: 'none',
   boxShadow: '0 4px 12px rgba(29,78,216,0.25)',
 }
-const skipBtn: React.CSSProperties = {
+const skipLink: React.CSSProperties = {
   padding: '0.7rem 1rem',
-  backgroundColor: 'transparent', color: '#64748b',
-  border: 'none', cursor: 'pointer',
+  color: '#64748b', textDecoration: 'none',
   fontSize: '0.875rem', fontWeight: 600,
 }
 const backLink: React.CSSProperties = { fontSize: '0.875rem', color: '#64748b', textDecoration: 'none' }

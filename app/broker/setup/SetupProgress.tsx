@@ -6,20 +6,33 @@
  * Renders numbered circles (one per step), a progress fill bar showing how
  * far along the user is, and lets the user navigate back to any previously-
  * visited or completed step. Pure CSS animations, no client deps.
+ *
+ * Important: this is a client component, so the server cannot pass the full
+ * SetupStep type (which contains an isComplete function) — Next.js refuses
+ * to serialise functions across the boundary. The server passes a plain
+ * data version (StepView) instead.
  */
 
 import Link from 'next/link'
-import type { SetupStep, SetupStepId } from './steps'
+import type { SetupStepId } from './steps'
+
+export type StepView = {
+  id:    SetupStepId
+  index: number
+  path:  string
+  title: string
+}
 
 type Props = {
-  steps:        SetupStep[]
+  steps:        StepView[]
   currentId:    SetupStepId
-  completedIds: Set<SetupStepId>
+  completedIds: SetupStepId[]   // Sets aren't serializable either; use array
 }
 
 export default function SetupProgress({ steps, currentId, completedIds }: Props) {
+  const completedSet = new Set(completedIds)
   const currentIdx = steps.findIndex(s => s.id === currentId)
-  const completedCount = steps.filter(s => completedIds.has(s.id)).length
+  const completedCount = steps.filter(s => completedSet.has(s.id)).length
   const progressPct = Math.round((completedCount / steps.length) * 100)
 
   return (
@@ -83,7 +96,7 @@ export default function SetupProgress({ steps, currentId, completedIds }: Props)
           }} />
 
           {steps.map((step) => {
-            const done   = completedIds.has(step.id)
+            const done   = completedSet.has(step.id)
             const active = step.id === currentId
             const visited = done || active // can navigate back
 
