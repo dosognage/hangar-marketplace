@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
+import { Bell, Mail } from 'lucide-react'
 import { savePreferencesStep } from '../actions'
 
 type Props = {
@@ -23,7 +24,7 @@ export default function PreferencesStepForm(props: Props) {
       {/* ── Alert radius — segmented selector ────────────────────────── */}
       <section>
         <div style={sectionHead}>
-          <span style={{ fontSize: '1.05rem' }}>📡</span>
+          <span style={iconBadge}><Bell size={16} strokeWidth={1.75} /></span>
           <div>
             <p style={sectionTitle}>Alert radius</p>
             <p style={sectionHint}>How far from your specialty airports should we ping you when a pilot posts a new request?</p>
@@ -101,7 +102,7 @@ export default function PreferencesStepForm(props: Props) {
               📨 Send me the weekly market intelligence newsletter
             </p>
             <p style={{ ...sectionHint, color: '#1e40af' }}>
-              Every Monday morning, a digest of aviation real estate signals — new airpark sales, FAA airport news, market shifts. Free for verified brokers. Unsubscribe any time.
+              Every Monday morning, a digest of aviation real estate signals: new airpark sales, FAA airport news, market shifts. Free for verified brokers. Unsubscribe any time.
             </p>
           </div>
         </label>

@@ -5,7 +5,7 @@ import ProfileStepForm from './ProfileStepForm'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Profile — Broker Setup | Hangar Marketplace',
+  title: 'Profile | Broker Setup',
 }
 
 export default async function ProfileStepPage() {
@@ -13,7 +13,7 @@ export default async function ProfileStepPage() {
   return (
     <SetupShell currentId="profile" completedIds={completedIds}>
       <div style={{ marginBottom: '1.5rem' }}>
-        <p style={EYEBROW}>Step 2 — Required</p>
+        <p style={EYEBROW}>Step 2 · Required</p>
         <h1 style={H1}>Your profile</h1>
         <p style={P}>
           This info shows on your public broker profile and on every listing you post. Make sure buyers can find you and reach you.

@@ -6,7 +6,7 @@ import AvatarUpload from '@/app/broker/dashboard/AvatarUpload'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Photo — Broker Setup | Hangar Marketplace',
+  title: 'Photo | Broker Setup',
 }
 
 export default async function AvatarStepPage() {
@@ -15,10 +15,10 @@ export default async function AvatarStepPage() {
   return (
     <SetupShell currentId="avatar" completedIds={completedIds}>
       <div style={{ marginBottom: '1.5rem' }}>
-        <p style={EYEBROW}>Step 3 — Optional</p>
+        <p style={EYEBROW}>Step 3 · Optional</p>
         <h1 style={H1}>Add a photo</h1>
         <p style={P}>
-          Brokers with a real headshot get notably more inbound contacts. Pilots want to know who they\'re dealing with — a logo or initials sets a different tone than a face.
+          Brokers with a real headshot get notably more inbound contacts. Pilots want to know who they&apos;re dealing with. A logo or initials sets a different tone than a face.
         </p>
       </div>
 

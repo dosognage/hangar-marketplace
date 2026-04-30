@@ -41,7 +41,7 @@ export async function saveProfileStep(_prev: unknown, formData: FormData): Promi
     if (!brokerage)      return { error: 'Brokerage name is required.' }
     if (!phone)          return { error: 'Phone number is required.' }
     if (!contact_email)  return { error: 'Contact email is required.' }
-    if (bio.length < 10) return { error: 'Bio should be at least 10 characters — pilots want to know who they\'re working with.' }
+    if (bio.length < 10) return { error: 'Bio should be at least 10 characters. Pilots want to know who they are working with.' }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact_email)) return { error: 'Please enter a valid contact email.' }
 
     const { error } = await supabaseAdmin
@@ -88,6 +88,9 @@ export async function saveSpecialtyStep(_prev: unknown, formData: FormData): Pro
 }
 
 // ── Step: Preferences (alert radius, email visibility, newsletter) ───────
+// Note: this is the LAST data-collection step in the wizard. We stamp
+// setup_completed_at here too so the done page has nothing to write during
+// render (calling revalidatePath inside a render is unsupported in Next.js).
 export async function savePreferencesStep(_prev: unknown, formData: FormData): Promise<{ error?: string }> {
   try {
     const { brokerProfileId, email } = await requireBrokerProfile()
@@ -101,6 +104,7 @@ export async function savePreferencesStep(_prev: unknown, formData: FormData): P
       .update({
         alert_radius_miles: alertRadius,
         hide_email:         hideEmail,
+        setup_completed_at: new Date().toISOString(),
       })
       .eq('id', brokerProfileId)
     if (error) return { error: error.message }

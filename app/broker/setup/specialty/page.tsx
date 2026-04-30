@@ -5,7 +5,7 @@ import SpecialtyStepForm from './SpecialtyStepForm'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Coverage — Broker Setup | Hangar Marketplace',
+  title: 'Coverage | Broker Setup',
 }
 
 export default async function SpecialtyStepPage() {
@@ -13,10 +13,10 @@ export default async function SpecialtyStepPage() {
   return (
     <SetupShell currentId="specialty" completedIds={completedIds}>
       <div style={{ marginBottom: '1.5rem' }}>
-        <p style={EYEBROW}>Step 4 — Optional</p>
+        <p style={EYEBROW}>Step 4 · Optional</p>
         <h1 style={H1}>Specialty airports</h1>
         <p style={P}>
-          Mark up to 10 airports you primarily work at. Buyers searching those airports will see your verified-broker badge in results, and you\'ll get email alerts when pilots post hangar requests within your alert radius of these airports.
+          Mark up to 10 airports you primarily work at. Buyers searching those airports will see your verified-broker badge in results, and you&apos;ll get email alerts when pilots post hangar requests within your alert radius of these airports.
         </p>
       </div>
       <SpecialtyStepForm

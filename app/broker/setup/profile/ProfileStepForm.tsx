@@ -60,7 +60,7 @@ export default function ProfileStepForm(props: Props) {
         />
       </Field>
 
-      <Field label="Bio" required hint="2-3 sentences. Pilots relate to pilots — mention any aviation background.">
+      <Field label="Bio" required hint="Two or three sentences. Pilots relate to pilots, so mention any aviation background.">
         <textarea
           name="bio"
           required

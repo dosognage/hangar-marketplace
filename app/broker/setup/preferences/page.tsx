@@ -6,7 +6,7 @@ import PreferencesStepForm from './PreferencesStepForm'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Preferences — Broker Setup | Hangar Marketplace',
+  title: 'Preferences | Broker Setup',
 }
 
 export default async function PreferencesStepPage() {
@@ -24,7 +24,7 @@ export default async function PreferencesStepPage() {
   return (
     <SetupShell currentId="preferences" completedIds={completedIds}>
       <div style={{ marginBottom: '1.5rem' }}>
-        <p style={EYEBROW}>Step 5 — Required</p>
+        <p style={EYEBROW}>Step 5 · Required</p>
         <h1 style={H1}>Preferences</h1>
         <p style={P}>
           Two quick toggles plus our weekly market intelligence newsletter. All changeable later.
