@@ -13,6 +13,7 @@
  */
 
 import { useRef, useState, useCallback } from 'react'
+import { Camera } from 'lucide-react'
 
 const MAX_PHOTOS = 40
 const MIN_PHOTOS = 3
@@ -97,7 +98,16 @@ export default function PhotoUploader({ onChange }: Props) {
           userSelect: 'none',
         }}
       >
-        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📷</div>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: '52px', height: '52px', borderRadius: '12px',
+          background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+          color: '#1d4ed8',
+          marginBottom: '0.65rem',
+          border: '1px solid #dbeafe',
+        }}>
+          <Camera size={24} strokeWidth={1.75} />
+        </div>
         <p style={{ margin: 0, fontWeight: '600', color: '#374151' }}>
           {files.length === 0
             ? 'Click or drag photos here'

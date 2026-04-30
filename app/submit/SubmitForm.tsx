@@ -16,6 +16,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import FeetInchesInput from '@/app/components/FeetInchesInput'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import { Sparkles, CreditCard, Warehouse, Home, Trees, Plane } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
 import { createListing, getListingFeeInfo } from '@/app/actions/listing'
@@ -599,7 +600,14 @@ export default function SubmitForm({
             alignItems: 'center',
             gap: '0.5rem',
           }}>
-            <span style={{ fontSize: '1.1rem' }}>🎉</span>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: '28px', height: '28px', borderRadius: '7px',
+              backgroundColor: 'white', color: '#16a34a',
+              border: '1px solid #bbf7d0', flexShrink: 0,
+            }}>
+              <Sparkles size={15} strokeWidth={2} />
+            </span>
             <span>
               <strong>Free to list:</strong> we&apos;re in our founding period
               {feeInfo.trialEnds && (
@@ -621,7 +629,14 @@ export default function SubmitForm({
             alignItems: 'flex-start',
             gap: '0.5rem',
           }}>
-            <span style={{ fontSize: '1.1rem', marginTop: '0.05rem' }}>💳</span>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: '28px', height: '28px', borderRadius: '7px',
+              backgroundColor: 'white', color: '#1d4ed8',
+              border: '1px solid #bfdbfe', flexShrink: 0,
+            }}>
+              <CreditCard size={15} strokeWidth={2} />
+            </span>
             <span>
               <strong>One-time listing fee:</strong>{' '}
               ${feeInfo.feeHangar} for hangars · ${feeInfo.feeHome} for airport homes &amp; land.
@@ -649,30 +664,37 @@ export default function SubmitForm({
         {/* ── Property Type ────────────────────────────────────────────── */}
         <Section title="Property Type">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.6rem' }}>
-            {PROPERTY_TYPE_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, property_type: opt.value }))}
-                style={{
-                  padding: '0.7rem 0.5rem',
-                  border: `2px solid ${formData.property_type === opt.value ? '#6366f1' : '#e5e7eb'}`,
-                  borderRadius: '8px',
-                  backgroundColor: formData.property_type === opt.value ? '#eef2ff' : 'white',
-                  color: formData.property_type === opt.value ? '#4338ca' : '#374151',
-                  fontWeight: formData.property_type === opt.value ? '700' : '500',
-                  fontSize: '0.875rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {opt.value === 'hangar'           && '🏗 '}
-                {opt.value === 'airport_home'     && '🏡 '}
-                {opt.value === 'land'             && '🌿 '}
-                {opt.value === 'fly_in_community' && '✈ '}
-                {opt.label}
-              </button>
-            ))}
+            {PROPERTY_TYPE_OPTIONS.map(opt => {
+              const active = formData.property_type === opt.value
+              const Icon =
+                opt.value === 'hangar'           ? Warehouse :
+                opt.value === 'airport_home'     ? Home      :
+                opt.value === 'land'             ? Trees     :
+                opt.value === 'fly_in_community' ? Plane     :
+                Warehouse
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, property_type: opt.value }))}
+                  style={{
+                    padding: '0.7rem 0.5rem',
+                    border: `2px solid ${active ? '#6366f1' : '#e5e7eb'}`,
+                    borderRadius: '8px',
+                    backgroundColor: active ? '#eef2ff' : 'white',
+                    color: active ? '#4338ca' : '#374151',
+                    fontWeight: active ? '700' : '500',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
+                  }}
+                >
+                  <Icon size={16} strokeWidth={1.75} />
+                  <span>{opt.label}</span>
+                </button>
+              )
+            })}
           </div>
         </Section>
 

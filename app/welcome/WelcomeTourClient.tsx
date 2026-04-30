@@ -51,7 +51,7 @@ export default function WelcomeTourClient(props: Props) {
       icon:     <MapPin size={24} />,
       accent:   '#1d4ed8',
       mock:     <BrowseMock />,
-      tryHref:  '/browse',
+      tryHref:  '/',
       tryLabel: 'Open browse',
     },
     {
