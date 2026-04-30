@@ -56,7 +56,9 @@ tests/
     │   ├── admin-reauth.spec.ts    # Comp-sponsor password modal
     │   ├── broker-flow.spec.ts     # Apply → approve with reauth → broker dashboard
     │   ├── listing-flow.spec.ts    # Submit listing → pending → approve
-    │   └── stripe-checkout.spec.ts # Stripe sponsor checkout (tagged @stripe)
+    │   ├── stripe-checkout.spec.ts # Stripe sponsor checkout via hosted UI (@stripe)
+    │   ├── stripe-checkout-api.spec.ts     # Sponsor checkout + portal API endpoints (@stripe-api)
+    │   └── stripe-webhook-handler.spec.ts  # Synthetic webhook events, no UI (@stripe-webhook)
     ├── .auth/                      # Saved auth states (gitignored)
     └── .test-results/              # Traces, screenshots, videos (gitignored)
 ```
@@ -126,8 +128,14 @@ npm run test:e2e:codegen http://localhost:3000
 # Run only smoke tests
 npx playwright test --grep @smoke
 
-# Skip Stripe tests (e.g. when STRIPE_SECRET_KEY isn't configured)
+# Skip all Stripe tests (e.g. when STRIPE_SECRET_KEY isn't configured)
 npx playwright test --grep-invert @stripe
+
+# Just the deterministic webhook tests (no Stripe UI, fastest paywall validation)
+npx playwright test --grep @stripe-webhook
+
+# Just the API endpoint tests (need a sk_test_ key but no UI)
+npx playwright test --grep @stripe-api
 
 # Run a single spec file
 npx playwright test specs/auth.spec.ts
