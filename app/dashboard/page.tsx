@@ -61,6 +61,23 @@ export default async function DashboardPage() {
     redirect('/login?next=/dashboard')
   }
 
+  // First-time user redirect: if they've never seen the welcome tour, send
+  // them there before showing the dashboard. The tour itself stamps
+  // welcome_seen_at when they finish or skip, so this redirect only fires
+  // once per user. Brokers get their own /broker/setup wizard, so we skip
+  // the welcome tour for them.
+  const isBroker = user.user_metadata?.is_broker === true
+  if (!isBroker) {
+    const { data: prefs } = await supabase
+      .from('user_preferences')
+      .select('welcome_seen_at')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!prefs?.welcome_seen_at) {
+      redirect('/welcome')
+    }
+  }
+
   // Fetch this user's listings (drafts + published together — we split below).
   const { data: allListings, error } = await supabase
     .from('listings')
@@ -112,7 +129,6 @@ export default async function DashboardPage() {
   }
 
   const displayName = user.user_metadata?.full_name ?? user.email ?? 'Seller'
-  const isBroker = user.user_metadata?.is_broker === true
 
   // Profile completion check
   const hasName    = !!user.user_metadata?.full_name?.trim()
