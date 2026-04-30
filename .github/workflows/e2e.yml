@@ -32,11 +32,15 @@ jobs:
 
     env:
       CI: 'true'
-      # Where to point tests. Defaults to production but PRs can override
-      # via the deployment_url commit status when Vercel preview is wired.
-      PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL }}
+      # Tests run against a Next.js dev server that Playwright spins up
+      # locally (see playwright.config.ts webServer block). The dev server
+      # inherits this env block, which points at the e2e-test Supabase
+      # branch — never production. To override with a deployed URL (e.g. a
+      # Vercel preview that's pre-wired to the test branch), set the
+      # PLAYWRIGHT_BASE_URL repo secret to that URL.
+      PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
 
-      # Supabase test branch
+      # Supabase test branch (project ref pukcxxgafgrieetkgogy)
       NEXT_PUBLIC_SUPABASE_URL:     ${{ secrets.TEST_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY:    ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
@@ -44,6 +48,16 @@ jobs:
       # Stripe test mode
       STRIPE_SECRET_KEY:     ${{ secrets.STRIPE_TEST_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+
+      # Site URL — affects redirect URLs in server actions and emails.
+      # When tests boot Next.js on localhost we want everything to point
+      # there, not at production.
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
+      NEXT_PUBLIC_APP_URL:  ${{ secrets.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
+
+      # Listing trial date — keep it in the future so paywall logic stays
+      # off in CI unless we explicitly want to test the paid path.
+      LISTING_TRIAL_ENDS: '2099-12-31'
 
       # Turnstile test bypass
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA'
@@ -89,13 +103,16 @@ jobs:
         run: npx playwright install-deps chromium
 
       - name: Run Playwright tests
-        # Until Vercel Preview deployments are wired to the test Supabase
-        # branch, CI runs against PRODUCTION (PLAYWRIGHT_BASE_URL), which
-        # doesn't have the seeded test users. So we limit CI to @smoke
-        # (page-render + auth-gate-redirect tests; no mutations) and skip
-        # the auth-state setup project. Once Preview env is wired up, drop
-        # the --grep and --no-deps flags to run the full suite.
-        run: npx playwright test --project=chromium --grep @smoke --no-deps
+        # Full suite: Playwright spins up a Next.js dev server (configured
+        # via webServer in playwright.config.ts) wired to the test Supabase
+        # branch via the env block above. Auth setup runs first and saves
+        # storage state for the seeded test users; specs that need auth
+        # use that state via test.use({ storageState }).
+        #
+        # Stripe tests are tagged @stripe / @stripe-api / @stripe-webhook
+        # and gracefully skip if their respective keys aren't configured —
+        # so this command is safe even when STRIPE_TEST_* secrets are unset.
+        run: npx playwright test --project=chromium
 
       - name: Upload Playwright report
         if: always()

@@ -183,7 +183,7 @@ export default async function BrokerDashboardPage({ searchParams }: { searchPara
           </div>
 
           <a
-            href="/broker/dashboard/setup"
+            href="/broker/setup"
             style={{
               flexShrink: 0,
               padding: '0.45rem 1rem',
