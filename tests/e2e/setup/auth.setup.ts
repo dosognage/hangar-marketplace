@@ -24,8 +24,12 @@ setup.beforeAll(() => {
 
 async function loginAndSave(page: import('@playwright/test').Page, user: TestUser, file: string) {
   await page.goto('/login')
-  await page.getByLabel(/email/i).first().fill(user.email)
-  await page.getByLabel(/password/i).first().fill(user.password)
+  // Scope to the form's actual <input type="email"|"password">. We can't
+  // use getByLabel(/email/i) because the global NewsletterSignup component
+  // has a checkbox labeled "I agree to receive ... emails" which sometimes
+  // wins .first() depending on render order.
+  await page.locator('input[type="email"]').first().fill(user.email)
+  await page.locator('input[type="password"]').first().fill(user.password)
   await page.getByRole('button', { name: /sign in|log in/i }).click()
   // Successful login redirects away from /login. Wait for that.
   await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 15_000 })

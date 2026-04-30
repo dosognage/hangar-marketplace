@@ -77,7 +77,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Node 20 was deprecated for Actions in 2026 — pin to 22 LTS to
+          # match Vercel's runtime and silence the deprecation warning.
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -127,6 +129,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces-${{ github.run_id }}
+          # if-no-files-found: warn (default) was creating noise on early
+          # setup failures where the dir is empty. Switch to ignore — the
+          # full HTML report is still uploaded above and contains traces.
+          if-no-files-found: ignore
           path: tests/e2e/.test-results/
           retention-days: 14
 
