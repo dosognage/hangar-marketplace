@@ -18,6 +18,12 @@ import { ADMIN, BROKER, USER, type TestUser } from '../helpers/test-users'
 
 const AUTH_DIR = path.resolve(__dirname, '..', '.auth')
 
+// Setup tests get a longer per-test timeout than the default 30s. The login
+// server action awaits recordAndAlertLogin which makes 2–3 Supabase calls
+// before redirecting; on a cold CI runner those round-trips can stretch to
+// 30+ seconds. 90s gives plenty of slack without masking real bugs.
+setup.setTimeout(90_000)
+
 setup.beforeAll(() => {
   if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR, { recursive: true })
 })
@@ -33,25 +39,24 @@ async function loginAndSave(page: import('@playwright/test').Page, user: TestUse
   await page.getByRole('button', { name: /sign in|log in/i }).click()
 
   try {
-    // Successful login redirects away from /login. The first server-action
-    // POST in dev mode can take 10-20s while Turbopack compiles the action,
-    // so we give it 60s rather than the default 15s.
-    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 60_000 })
+    // Successful login redirects away from /login. The login action awaits
+    // recordAndAlertLogin (2-3 Supabase calls), which on a cold CI runner
+    // can take 30+ seconds. 75s leaves headroom under the 90s test timeout.
+    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 75_000 })
   } catch (e) {
     // Surface the actual reason so we don't have to scrape Playwright
     // traces every time. Most common causes: wrong password (Invalid
     // email or password banner), missing test user (same banner),
     // Turnstile not bypassed (button stays disabled).
     const errorText = await page
-      .locator('[role="alert"], .error, [data-error], form')
-      .filter({ hasText: /invalid|wrong|not found|password|email/i })
+      .locator('[role="alert"], .error, [data-error]')
       .first()
       .textContent()
       .catch(() => null)
     const url = page.url()
     throw new Error(
-      `[auth.setup] Login did not redirect within 15s for ${user.email}. ` +
-      `URL=${url}. Form error text: ${errorText ?? '(none captured)'}`,
+      `[auth.setup] Login did not redirect within 75s for ${user.email}. ` +
+      `URL=${url}. Form error: ${errorText ?? '(none captured)'}`,
     )
   }
 
