@@ -478,14 +478,35 @@ export default async function BrokerDashboardPage({ searchParams }: { searchPara
                       sponsoredUntil={listing.sponsored_until}
                       hasStripeCustomer={!!listing.stripe_customer_id}
                     />
-                    <Link href={`/listing/${listing.id}/edit`} className="broker-edit-btn" style={{
-                      fontSize: '0.8rem', color: '#374151', textDecoration: 'none',
-                      fontWeight: '500', padding: '0.3rem 0.75rem',
-                      border: '1px solid #d1d5db', borderRadius: '6px',
-                      backgroundColor: 'white',
-                    }}>
-                      Edit
-                    </Link>
+                    {listing.status === 'sold' || listing.status === 'closed' ? (
+                      <Link href={`/listing/${listing.id}/mark-sold`} className="broker-edit-btn" style={{
+                        fontSize: '0.8rem', color: '#0e7490', textDecoration: 'none',
+                        fontWeight: 600, padding: '0.3rem 0.75rem',
+                        border: '1px solid #67e8f9', borderRadius: '6px',
+                        backgroundColor: '#ecfeff',
+                      }}>
+                        View sale recap →
+                      </Link>
+                    ) : (
+                      <>
+                        <Link href={`/listing/${listing.id}/edit`} className="broker-edit-btn" style={{
+                          fontSize: '0.8rem', color: '#374151', textDecoration: 'none',
+                          fontWeight: '500', padding: '0.3rem 0.75rem',
+                          border: '1px solid #d1d5db', borderRadius: '6px',
+                          backgroundColor: 'white',
+                        }}>
+                          Edit
+                        </Link>
+                        <Link href={`/listing/${listing.id}/mark-sold`} className="broker-edit-btn" style={{
+                          fontSize: '0.8rem', color: '#15803d', textDecoration: 'none',
+                          fontWeight: 600, padding: '0.3rem 0.75rem',
+                          border: '1px solid #86efac', borderRadius: '6px',
+                          backgroundColor: '#f0fdf4',
+                        }}>
+                          Mark as Sold
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
               )

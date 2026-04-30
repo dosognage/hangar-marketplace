@@ -468,23 +468,35 @@ export default async function DashboardPage() {
                     {listing.stripe_customer_id && (
                       <ManageBillingButton listingId={listing.id} />
                     )}
-                    <Link href={`/listing/${listing.id}/edit`} style={{
-                      fontSize: '0.8rem', color: '#374151', textDecoration: 'none',
-                      fontWeight: '500', whiteSpace: 'nowrap',
-                      padding: '0.35rem 0.85rem', border: '1px solid #d1d5db', borderRadius: '6px',
-                    }}>
-                      Edit
-                    </Link>
-                    {listing.status !== 'sold' && listing.status !== 'closed' && (
+                    {listing.status === 'sold' || listing.status === 'closed' ? (
                       <Link href={`/listing/${listing.id}/mark-sold`} style={{
-                        fontSize: '0.8rem', color: '#15803d', textDecoration: 'none',
+                        fontSize: '0.8rem', color: '#0e7490', textDecoration: 'none',
                         fontWeight: 600, whiteSpace: 'nowrap',
                         padding: '0.35rem 0.85rem',
-                        border: '1px solid #86efac', borderRadius: '6px',
-                        backgroundColor: '#f0fdf4',
+                        border: '1px solid #67e8f9', borderRadius: '6px',
+                        backgroundColor: '#ecfeff',
                       }}>
-                        Sold
+                        View sale recap →
                       </Link>
+                    ) : (
+                      <>
+                        <Link href={`/listing/${listing.id}/edit`} style={{
+                          fontSize: '0.8rem', color: '#374151', textDecoration: 'none',
+                          fontWeight: '500', whiteSpace: 'nowrap',
+                          padding: '0.35rem 0.85rem', border: '1px solid #d1d5db', borderRadius: '6px',
+                        }}>
+                          Edit
+                        </Link>
+                        <Link href={`/listing/${listing.id}/mark-sold`} style={{
+                          fontSize: '0.8rem', color: '#15803d', textDecoration: 'none',
+                          fontWeight: 600, whiteSpace: 'nowrap',
+                          padding: '0.35rem 0.85rem',
+                          border: '1px solid #86efac', borderRadius: '6px',
+                          backgroundColor: '#f0fdf4',
+                        }}>
+                          Mark as Sold
+                        </Link>
+                      </>
                     )}
                     <DeleteListingButton listingId={listing.id} />
                   </div>

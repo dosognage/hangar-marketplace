@@ -104,7 +104,7 @@ export default function MarkSoldFormClient(props: Props) {
         </h1>
         <p style={heroSub}>
           A handful of optional questions help us power the quarterly market intelligence reports.
-          Your individual answers stay private — we only ever publish anonymized, airport-level aggregates.
+          Your individual answers stay private. We only ever publish anonymized, airport-level aggregates.
         </p>
       </div>
 

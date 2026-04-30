@@ -305,27 +305,40 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
                     >
                       View
                     </a>
-                    <a
-                      href={`/listing/${row.id}/edit`}
-                      style={{
-                        fontSize: '0.75rem', color: '#374151', textDecoration: 'none',
-                        padding: '0.25rem 0.6rem', border: '1px solid #d1d5db',
-                        borderRadius: '5px', backgroundColor: 'white', fontWeight: '500',
-                      }}
-                    >
-                      Edit
-                    </a>
-                    {row.status !== 'sold' && row.status !== 'closed' && (
+                    {row.status === 'sold' || row.status === 'closed' ? (
                       <a
                         href={`/listing/${row.id}/mark-sold`}
                         style={{
-                          fontSize: '0.75rem', color: '#15803d', textDecoration: 'none',
-                          padding: '0.25rem 0.6rem', border: '1px solid #86efac',
-                          borderRadius: '5px', backgroundColor: '#f0fdf4', fontWeight: 600,
+                          fontSize: '0.75rem', color: '#0e7490', textDecoration: 'none',
+                          padding: '0.25rem 0.6rem', border: '1px solid #67e8f9',
+                          borderRadius: '5px', backgroundColor: '#ecfeff', fontWeight: 600,
                         }}
                       >
-                        Sold
+                        View sale recap →
                       </a>
+                    ) : (
+                      <>
+                        <a
+                          href={`/listing/${row.id}/edit`}
+                          style={{
+                            fontSize: '0.75rem', color: '#374151', textDecoration: 'none',
+                            padding: '0.25rem 0.6rem', border: '1px solid #d1d5db',
+                            borderRadius: '5px', backgroundColor: 'white', fontWeight: '500',
+                          }}
+                        >
+                          Edit
+                        </a>
+                        <a
+                          href={`/listing/${row.id}/mark-sold`}
+                          style={{
+                            fontSize: '0.75rem', color: '#15803d', textDecoration: 'none',
+                            padding: '0.25rem 0.6rem', border: '1px solid #86efac',
+                            borderRadius: '5px', backgroundColor: '#f0fdf4', fontWeight: 600,
+                          }}
+                        >
+                          Mark as Sold
+                        </a>
+                      </>
                     )}
                   </div>
                 </td>

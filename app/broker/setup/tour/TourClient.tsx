@@ -44,35 +44,35 @@ const SLIDES: Slide[] = [
   {
     key:      'newsletter',
     eyebrow:  'Weekly market intelligence',
-    title:    'A weekly newsletter your competitors don\'t get.',
-    body:     'Every Monday morning: new airpark sales, FAA news, market shifts, and the deals that closed in your specialty airports. Subscribers-only — no public archive.',
+    title:    'A weekly newsletter your competitors do not get.',
+    body:     'Every Monday morning: new airpark sales, FAA news, market shifts, and the deals that closed in your specialty airports. Subscribers-only, no public archive.',
     icon:     <Mail size={24} />,
     accent:   '#0e7490',
     mock:     <NewsletterMock />,
-    tryHref:  '/about#newsletter',
-    tryLabel: 'See last week\'s edition',
+    tryHref:  '/newsletter/sample',
+    tryLabel: 'Read this month\'s newsletter',
   },
   {
     key:      'sponsored',
     eyebrow:  'Sponsored placement',
     title:    'Promote your hottest listings to the top of search.',
-    body:     'Sponsor a listing and it pins to the top of browse, search results, and the monthly newsletter. $99/month, cancel anytime through your customer portal.',
+    body:     'Sponsor a listing and it pins to the top of browse, search results, and the monthly newsletter. Three tiers: $29 for 7 days, $79 for 30 days, $149 for 90 days. One-time charge, no auto-renew.',
     icon:     <Sparkles size={24} />,
     accent:   '#7c3aed',
     mock:     <SponsoredMock />,
-    tryHref:  '/broker/dashboard',
-    tryLabel: 'Browse the sponsorship UI',
+    tryHref:  '/sponsor',
+    tryLabel: 'See the sponsorship tiers',
   },
   {
     key:      'sold-data',
     eyebrow:  'Sale outcome capture',
     title:    'Mark a listing sold and we close the loop on the market.',
-    body:     'When a listing closes, you get a one-page form to record price, days on market, buyer type, and offer dynamics. Your individual data stays private — we publish only anonymised airport-level aggregates.',
+    body:     'When a listing closes, you get a one-page form to record price, days on market, buyer type, and offer dynamics. Your individual data stays private. We publish only anonymised airport-level aggregates.',
     icon:     <Trophy size={24} />,
     accent:   '#16a34a',
     mock:     <SoldMock />,
     tryHref:  '/broker/dashboard',
-    tryLabel: 'Available on every listing edit',
+    tryLabel: 'Mark as sold sits next to Edit on every listing',
   },
   {
     key:      'alerts',
@@ -305,7 +305,7 @@ function SponsoredMock() {
         }}>Sponsored</span>
       </div>
       <p style={{ margin: '0.5rem 0 0', fontSize: '0.78rem', color: '#64748b' }}>
-        $99/month. Cancel anytime in the customer portal.
+        From $29 for 7 days. One-time charge, no auto-renew.
       </p>
     </div>
   )
