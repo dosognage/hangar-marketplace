@@ -131,24 +131,28 @@ export default defineConfig({
       : []),
   ],
 
-  // Lifecycle: when running in CI, spin up the Next.js dev server ourselves
-  // so the test runner doesn't depend on a Vercel preview being wired up to
-  // the test Supabase branch. Locally, we ASSUME you've already started the
-  // dev server in another terminal — saves the rebuild on every iteration.
+  // Lifecycle: when running in CI, spin up Next.js ourselves so we don't
+  // depend on a Vercel preview being pre-wired to the test Supabase branch.
   //
-  // The dev server inherits CI's process.env, which is loaded from GitHub
-  // secrets and points at the test Supabase branch + Stripe test keys (see
-  // .github/workflows/e2e.yml). When PLAYWRIGHT_BASE_URL is set to anything
-  // other than localhost, we skip webServer entirely and assume the URL is
-  // already serving (e.g. a deployed Vercel preview).
+  // CI uses `next build && next start` (production mode) — slower to boot
+  // but every route is fully compiled before tests start, so no surprise
+  // 15-second JIT compiles on the first server-action POST.
+  //
+  // Locally we use `npm run dev` for fast iteration, and assume you've
+  // already started a dev server in another terminal (so reuseExisting...).
+  //
+  // When PLAYWRIGHT_BASE_URL points anywhere other than localhost we skip
+  // the webServer entirely and trust the URL is already serving.
   webServer: BASE_URL.includes('localhost')
     ? {
-        command: 'npm run dev',
+        command: process.env.CI
+          ? 'npm run build && npm start -- -p 3000'
+          : 'npm run dev',
         url: BASE_URL,
         reuseExistingServer: !process.env.CI,
-        timeout: 180_000,
-        // Pipe the dev server's stdout/stderr through so failures during
-        // boot (e.g. missing env vars) actually surface in the CI logs.
+        timeout: 240_000,
+        // Pipe the server's stdout/stderr through so failures during boot
+        // (missing env vars, build errors) surface in the CI logs.
         stdout: 'pipe',
         stderr: 'pipe',
       }

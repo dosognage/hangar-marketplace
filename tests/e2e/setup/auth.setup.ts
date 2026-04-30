@@ -33,8 +33,10 @@ async function loginAndSave(page: import('@playwright/test').Page, user: TestUse
   await page.getByRole('button', { name: /sign in|log in/i }).click()
 
   try {
-    // Successful login redirects away from /login. Wait for that.
-    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 15_000 })
+    // Successful login redirects away from /login. The first server-action
+    // POST in dev mode can take 10-20s while Turbopack compiles the action,
+    // so we give it 60s rather than the default 15s.
+    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 60_000 })
   } catch (e) {
     // Surface the actual reason so we don't have to scrape Playwright
     // traces every time. Most common causes: wrong password (Invalid
