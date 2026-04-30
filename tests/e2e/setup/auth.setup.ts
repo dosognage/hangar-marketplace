@@ -26,9 +26,50 @@ setup.setTimeout(90_000)
 
 setup.beforeAll(() => {
   if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR, { recursive: true })
+
+  // Fail fast if the env vars the dev server needs are missing or wrong.
+  // Cheaper than 8 minutes of timeouts to discover the same problem.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!url) {
+    throw new Error(
+      '[auth.setup] NEXT_PUBLIC_SUPABASE_URL is not set. Configure ' +
+      'TEST_SUPABASE_URL in GitHub Actions repo secrets pointing at the ' +
+      'e2e-test branch (project ref pukcxxgafgrieetkgogy).',
+    )
+  }
+  if (url.includes('tokvsbyokppnyxbthysd')) {
+    throw new Error(
+      `[auth.setup] REFUSING to run: NEXT_PUBLIC_SUPABASE_URL points at ` +
+      `production. Tests must use the e2e-test branch.`,
+    )
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error(
+      '[auth.setup] SUPABASE_SERVICE_ROLE_KEY is not set. Configure ' +
+      'TEST_SUPABASE_SERVICE_ROLE_KEY in GitHub Actions repo secrets.',
+    )
+  }
 })
 
 async function loginAndSave(page: import('@playwright/test').Page, user: TestUser, file: string) {
+  // Capture everything happening during login so failures are debuggable
+  // from CI logs without having to download trace zips.
+  const networkLog: string[] = []
+  const consoleLog: string[] = []
+  page.on('response', async (res) => {
+    const u = res.url()
+    // Skip noise — only log requests to our origin (auth/login/api routes).
+    if (u.includes('/login') || u.includes('/api/') || u.includes('/auth/')) {
+      networkLog.push(`${res.status()} ${res.request().method()} ${u}`)
+    }
+  })
+  page.on('console', (msg) => {
+    consoleLog.push(`[${msg.type()}] ${msg.text()}`)
+  })
+  page.on('pageerror', (err) => {
+    consoleLog.push(`[pageerror] ${err.message}`)
+  })
+
   await page.goto('/login')
   // Scope to the form's actual <input type="email"|"password">. We can't
   // use getByLabel(/email/i) because the global NewsletterSignup component
@@ -44,19 +85,20 @@ async function loginAndSave(page: import('@playwright/test').Page, user: TestUse
     // can take 30+ seconds. 75s leaves headroom under the 90s test timeout.
     await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 75_000 })
   } catch (e) {
-    // Surface the actual reason so we don't have to scrape Playwright
-    // traces every time. Most common causes: wrong password (Invalid
-    // email or password banner), missing test user (same banner),
-    // Turnstile not bypassed (button stays disabled).
     const errorText = await page
       .locator('[role="alert"], .error, [data-error]')
       .first()
       .textContent()
       .catch(() => null)
     const url = page.url()
+    const buttonText = await page.getByRole('button', { name: /sign in|log in|signing/i }).first().textContent().catch(() => null)
     throw new Error(
-      `[auth.setup] Login did not redirect within 75s for ${user.email}. ` +
-      `URL=${url}. Form error: ${errorText ?? '(none captured)'}`,
+      `[auth.setup] Login did not redirect within 75s for ${user.email}.\n` +
+      `  URL: ${url}\n` +
+      `  Form error: ${errorText ?? '(none captured)'}\n` +
+      `  Submit button text: ${buttonText ?? '(not found)'}\n` +
+      `  Network log (last 20):\n    ${networkLog.slice(-20).join('\n    ') || '(empty)'}\n` +
+      `  Console log (last 20):\n    ${consoleLog.slice(-20).join('\n    ') || '(empty)'}\n`,
     )
   }
 
