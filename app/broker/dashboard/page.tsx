@@ -17,10 +17,16 @@ import BrokerProfileForm from './BrokerProfileForm'
 import BrokerAnalyticsDashboard from '@/app/components/BrokerAnalyticsDashboard'
 import SponsorButton from '@/app/components/SponsorButton'
 import TeamSection from './TeamSection'
+import DashboardTabs from './DashboardTabs'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 
-export default async function BrokerDashboardPage() {
+type SearchParams = Promise<{ tab?: string }>
+
+export default async function BrokerDashboardPage({ searchParams }: { searchParams: SearchParams }) {
+  // Default to the listings card view; switch to analytics on ?tab=analytics.
+  const params = await searchParams
+  const activeTab: 'listings' | 'analytics' = params.tab === 'analytics' ? 'analytics' : 'listings'
   const supabase = await createServerClient()
   const { data: { user }, error: userError } = await supabase.auth.getUser()
 
@@ -365,7 +371,11 @@ export default async function BrokerDashboardPage() {
         </div>
       )}
 
-      {/* Listings table */}
+      {/* Pill toggle between the two views */}
+      <DashboardTabs activeTab={activeTab} listingsCount={safeListings.length} />
+
+      {/* Listings card view — shown only when activeTab === 'listings' */}
+      {activeTab === 'listings' && (
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 style={{ margin: 0, fontSize: '1.05rem', color: '#111827' }}>Your Listings</h2>
@@ -412,9 +422,11 @@ export default async function BrokerDashboardPage() {
                   alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem',
                   cursor: 'pointer',
                 }}>
-                  {/* Stretched link — covers the whole card, sits behind buttons */}
+                  {/* Stretched link — covers the whole card, sits behind buttons.
+                      Includes the active tab so the listing-detail back button
+                      returns the broker to the same view they were on. */}
                   <Link
-                    href={`/listing/${listing.id}?from=broker-dashboard`}
+                    href={`/listing/${listing.id}?from=broker-dashboard&tab=listings`}
                     style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: '10px' }}
                     aria-label={`View listing: ${listing.title}`}
                   />
@@ -481,8 +493,17 @@ export default async function BrokerDashboardPage() {
           </div>
         )}
       </div>
+      )}
 
-      {/* Team section */}
+      {/* Analytics view — shown only when activeTab === 'analytics' */}
+      {activeTab === 'analytics' && (
+        <BrokerAnalyticsDashboard
+          brokerProfileId={brokerProfileId ?? profile.id}
+          supabaseUrl={SUPABASE_URL}
+        />
+      )}
+
+      {/* Team section — always visible regardless of tab */}
       <div style={{ marginTop: '2rem' }}>
         <TeamSection
           profileId={profile.id}
@@ -490,12 +511,6 @@ export default async function BrokerDashboardPage() {
           initialMembers={teamMembers}
         />
       </div>
-
-      {/* Analytics section */}
-      <BrokerAnalyticsDashboard
-        brokerProfileId={brokerProfileId ?? profile.id}
-        supabaseUrl={SUPABASE_URL}
-      />
 
       {/* Profile edit section */}
       <div style={{

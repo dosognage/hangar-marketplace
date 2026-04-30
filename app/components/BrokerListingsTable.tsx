@@ -208,9 +208,10 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
                   </span>
                 </td>
 
-                {/* Listing name */}
+                {/* Listing name — includes tab=analytics so the listing detail
+                    page's back-button returns the broker to this view, not browse. */}
                 <td style={{ padding: '0.85rem 1rem', maxWidth: '200px' }}>
-                  <a href={`/listing/${row.id}`} style={{
+                  <a href={`/listing/${row.id}?from=broker-dashboard&tab=analytics`} style={{
                     fontWeight: '600', color: '#111827', textDecoration: 'none',
                     display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
@@ -293,7 +294,7 @@ export default function BrokerListingsTable({ rows }: { rows: ListingRow[] }) {
                 <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
                   <div style={{ display: 'flex', gap: '0.4rem' }}>
                     <a
-                      href={`/listing/${row.id}?from=broker-dashboard`}
+                      href={`/listing/${row.id}?from=broker-dashboard&tab=analytics`}
                       style={{
                         fontSize: '0.75rem', color: '#6366f1', textDecoration: 'none',
                         padding: '0.25rem 0.6rem', border: '1px solid #c7d2fe',

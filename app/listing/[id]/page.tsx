@@ -24,7 +24,7 @@ import { formatFtIn } from '@/lib/dimensions'
 
 type ListingPageProps = {
   params:       Promise<{ id: string }>
-  searchParams: Promise<{ from?: string }>
+  searchParams: Promise<{ from?: string; tab?: string }>
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
@@ -149,10 +149,14 @@ function photoUrl(path: string) {
 }
 
 export default async function ListingDetailPage({ params, searchParams }: ListingPageProps) {
-  const { id }   = await params
-  const { from } = await searchParams
+  const { id }    = await params
+  const { from, tab } = await searchParams
   const fromBrokerDashboard = from === 'broker-dashboard'
-  const backHref  = fromBrokerDashboard ? '/broker/dashboard' : '/'
+  // Preserve which dashboard tab the broker was on so coming back lands them
+  // on the same view (analytics vs listings).
+  const backHref  = fromBrokerDashboard
+    ? (tab === 'analytics' ? '/broker/dashboard?tab=analytics' : '/broker/dashboard')
+    : '/'
   const backLabel = fromBrokerDashboard ? '← Back to dashboard' : '← Back to listings'
 
   // Get current user and saved state server-side (cookie auth — reliable)
