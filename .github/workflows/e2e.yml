@@ -59,6 +59,16 @@ jobs:
       # off in CI unless we explicitly want to test the paid path.
       LISTING_TRIAL_ENDS: '2099-12-31'
 
+      # Admin allowlist — must include the seeded e2e admin so admin specs
+      # (comp-sponsor, broker approval, etc.) can read/write. Add other
+      # admin-style emails here if specs cover them.
+      ADMIN_EMAILS: 'e2e+admin@hangarmarketplace.com'
+
+      # CRON_SECRET — needed by the cron endpoints. Tests don't actually
+      # hit cron URLs, but setting a value avoids env-var-missing errors
+      # during dev server startup.
+      CRON_SECRET: 'test-cron-secret-not-real'
+
       # Turnstile test bypass
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA'
       TURNSTILE_SECRET_KEY:           '1x0000000000000000000000000000000AA'
