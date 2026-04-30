@@ -98,8 +98,9 @@ export default function PreferencesStepForm(props: Props) {
             style={{ marginTop: '0.2rem', width: '18px', height: '18px', accentColor: '#1d4ed8' }}
           />
           <div>
-            <p style={{ ...sectionTitle, fontSize: '0.95rem', color: '#1e3a8a' }}>
-              📨 Send me the weekly market intelligence newsletter
+            <p style={{ ...sectionTitle, fontSize: '0.95rem', color: '#1e3a8a', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+              <Mail size={16} strokeWidth={1.75} />
+              <span>Send me the weekly market intelligence newsletter</span>
             </p>
             <p style={{ ...sectionHint, color: '#1e40af' }}>
               Every Monday morning, a digest of aviation real estate signals: new airpark sales, FAA airport news, market shifts. Free for verified brokers. Unsubscribe any time.
@@ -122,6 +123,13 @@ export default function PreferencesStepForm(props: Props) {
 
 const sectionHead: React.CSSProperties = {
   display: 'flex', gap: '0.6rem', alignItems: 'flex-start',
+}
+const iconBadge: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  width: '32px', height: '32px', borderRadius: '8px',
+  backgroundColor: '#eff6ff', color: '#1d4ed8',
+  border: '1px solid #dbeafe',
+  flexShrink: 0,
 }
 const sectionTitle: React.CSSProperties = {
   margin: '0 0 0.15rem', fontSize: '0.92rem', fontWeight: 700, color: '#0f172a',
