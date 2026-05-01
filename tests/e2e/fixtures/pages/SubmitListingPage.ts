@@ -21,7 +21,10 @@ export class SubmitListingPage extends BasePage {
   get contactPhone(): Locator { return this.page.locator('input[name="contact_phone"]') }
 
   get title():        Locator { return this.page.locator('input[name="title"]') }
+  get airportName():  Locator { return this.page.locator('input[name="airport_name"]') }
   get airportCode():  Locator { return this.page.locator('input[name="airport_code"]') }
+  get city():         Locator { return this.page.locator('input[name="city"]') }
+  get state():        Locator { return this.page.locator('input[name="state"]') }
   get askingPrice():  Locator { return this.page.locator('input[name="asking_price"]') }
   get description():  Locator { return this.page.locator('textarea[name="description"]') }
 

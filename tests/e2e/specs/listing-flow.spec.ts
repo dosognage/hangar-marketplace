@@ -31,7 +31,14 @@ test.describe('Listing submission @listings', () => {
 
     await submitListingPage.goto()
     await submitListingPage.title.fill(uniqueTitle)
+    // SubmitForm.tsx marks airport_name, airport_code, city, state, title,
+    // and contact fields all required. The contact ones auto-populate from
+    // the seeded user; we have to fill the geo fields ourselves or HTML5
+    // validation blocks the submit.
+    await submitListingPage.airportName.fill('Test Field')
     await submitListingPage.airportCode.fill('KZZE')
+    await submitListingPage.city.fill('Testville')
+    await submitListingPage.state.fill('CA')
     await submitListingPage.askingPrice.fill('125000')
     await submitListingPage.description.fill('E2E test listing — safe to delete.')
 
