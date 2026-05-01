@@ -715,6 +715,7 @@ export default function SubmitForm({
           <TwoCol>
             <Field label="Airport name *">
               <AirportAutocomplete
+                name="airport_name"
                 value={formData.airport_name}
                 onChange={(v) => setFormData(prev => ({ ...prev, airport_name: v }))}
                 onSelect={applyAirportSelection}

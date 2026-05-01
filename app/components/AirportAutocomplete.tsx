@@ -24,6 +24,8 @@ type Props = {
   placeholder?: string
   required?: boolean
   inputStyle?: React.CSSProperties
+  /** HTML name attribute, useful for form libraries and E2E test selectors */
+  name?: string
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -51,6 +53,7 @@ export default function AirportAutocomplete({
   placeholder = 'Paine Field',
   required = false,
   inputStyle = {},
+  name,
 }: Props) {
   const [suggestions, setSuggestions]   = useState<AirportSuggestion[]>([])
   const [open, setOpen]                  = useState(false)
@@ -122,6 +125,7 @@ export default function AirportAutocomplete({
       <div style={{ position: 'relative' }}>
         <input
           type="text"
+          name={name}
           value={value}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
