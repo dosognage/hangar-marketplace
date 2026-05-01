@@ -465,28 +465,40 @@ export default function SubmitForm({
 
       // If neither pin nor auto-geocode produced coords, do a final fallback
       // geocode using airport name + city + state (non-fatal, best-effort).
+      // Timeout-bounded — nominatim is a free service and can be slow or
+      // unreachable from some networks. Without this guard, a slow
+      // response would hang the entire submit flow indefinitely.
       if (resolvedLat == null || resolvedLng == null) {
         try {
           setUploadProgress('Getting location coordinates…')
           const geoQuery = encodeURIComponent(
             `${formData.airport_name}, ${formData.city}, ${formData.state}, USA`
           )
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/search?q=${geoQuery}&format=json&limit=1`,
-            { headers: { 'User-Agent': 'HangarMarketplace/1.0' } }
-          )
-          const geoData = await geoRes.json()
-          if (geoData[0]) {
-            await supabase
-              .from('listings')
-              .update({
-                latitude:  parseFloat(geoData[0].lat),
-                longitude: parseFloat(geoData[0].lon),
-              })
-              .eq('id', listingId)
+          const controller = new AbortController()
+          const abortTimer = setTimeout(() => controller.abort(), 5_000)
+          try {
+            const geoRes = await fetch(
+              `https://nominatim.openstreetmap.org/search?q=${geoQuery}&format=json&limit=1`,
+              {
+                headers: { 'User-Agent': 'HangarMarketplace/1.0' },
+                signal:  controller.signal,
+              }
+            )
+            const geoData = await geoRes.json()
+            if (geoData[0]) {
+              await supabase
+                .from('listings')
+                .update({
+                  latitude:  parseFloat(geoData[0].lat),
+                  longitude: parseFloat(geoData[0].lon),
+                })
+                .eq('id', listingId)
+            }
+          } finally {
+            clearTimeout(abortTimer)
           }
         } catch {
-          console.warn('Fallback geocoding failed — listing saved without coordinates.')
+          console.warn('Fallback geocoding failed or timed out — listing saved without coordinates.')
         }
       }
 
