@@ -16,6 +16,12 @@ import { test, expect, AUTH_STATES } from '../fixtures/test'
 import { getTestSupabaseAdmin } from '../helpers/supabase-admin'
 import { ADMIN, ephemeralEmail } from '../helpers/test-users'
 
+// Multi-context flow with two parallel browser contexts (applicant +
+// admin), each doing a full login, plus form submits and DB polling.
+// On a cold CI runner this easily exceeds the default 30s per-test
+// budget. 180s is generous but predictable.
+test.describe.configure({ timeout: 180_000 })
+
 test.describe('Broker application: end-to-end', () => {
   test('user applies, admin approves with password reauth, user becomes broker', async ({ browser, page }) => {
     // ── Step 1: spin up an ephemeral applicant ──────────────────────────

@@ -50,7 +50,10 @@ test.describe('Listing submission @listings', () => {
     // by stripe-webhook-handler.spec.ts at the API layer.
     await submitListingPage.draftButton.click()
 
-    await page.waitForURL(/\/dashboard/, { timeout: 30_000 })
+    // createListing inserts the listing, runs an optional fallback geocode
+    // (best-effort, can be slow), then redirects. Cold CI Supabase
+    // connections push this well past 30s, so give it 90s.
+    await page.waitForURL(/\/dashboard/, { timeout: 90_000 })
 
     // Listing should exist in draft state
     await expect.poll(async () => {
