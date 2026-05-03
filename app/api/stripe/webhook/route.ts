@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getStripe } from '@/lib/stripe'
+import { getStripe, SPONSOR_TIERS } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, newRequestAtAirportEmail } from '@/lib/email'
+
+/**
+ * Allowed sponsorship durations, derived from the canonical tier list.
+ * The webhook re-validates `duration_days` against this set even though
+ * the only writer today (sponsor-checkout) already validates — defence in
+ * depth so a future endpoint, admin mistake, or compromised path can't
+ * stamp `duration_days: 9999999` and hand out a 27,000-year sponsorship.
+ */
+const ALLOWED_SPONSOR_DAYS: ReadonlySet<number> = new Set(
+  SPONSOR_TIERS.map(t => t.days),
+)
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
@@ -42,8 +53,25 @@ export async function POST(req: NextRequest) {
 
     // ── Listing sponsorship ──────────────────────────────────────────────────
     if (type === 'listing_sponsor' && listing_id && session.payment_status === 'paid') {
-      const days = parseInt(duration_days ?? '30', 10)
-      const sponsoredUntil = new Date(Date.now() + days * 86_400_000).toISOString()
+      // Validate `duration_days` against the canonical tier set. Anything
+      // missing, non-numeric, or outside the allowed values gets rejected
+      // with 400 — Stripe will retry, but the deterministic failure is
+      // intentional. An attacker who somehow controlled this metadata
+      // (today they can't, but defence in depth) would otherwise get
+      // unbounded sponsorship duration.
+      const parsedDays = Number(duration_days)
+      if (!Number.isInteger(parsedDays) || !ALLOWED_SPONSOR_DAYS.has(parsedDays)) {
+        console.error(
+          `[webhook] Rejecting listing_sponsor — invalid duration_days=${duration_days} ` +
+          `(allowed: ${[...ALLOWED_SPONSOR_DAYS].join(', ')})`
+        )
+        return NextResponse.json(
+          { error: 'Invalid duration_days in metadata' },
+          { status: 400 },
+        )
+      }
+
+      const sponsoredUntil = new Date(Date.now() + parsedDays * 86_400_000).toISOString()
 
       const { error: sponsorError } = await supabaseAdmin
         .from('listings')
@@ -58,7 +86,7 @@ export async function POST(req: NextRequest) {
         console.error('[webhook] Failed to activate sponsorship:', sponsorError.message)
         return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
       }
-      console.log(`[webhook] Listing ${listing_id} sponsored for ${days} days (until ${sponsoredUntil})`)
+      console.log(`[webhook] Listing ${listing_id} sponsored for ${parsedDays} days (until ${sponsoredUntil})`)
     }
 
     // ── Listing fee payment ──────────────────────────────────────────────────

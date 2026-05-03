@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Mail } from 'lucide-react'
+import { safeNextPath } from '@/lib/safe-redirect'
 
 /**
  * Shown after signup when Supabase requires email confirmation.
@@ -7,8 +8,13 @@ import { Mail } from 'lucide-react'
  * logged in immediately and redirected to /dashboard instead.
  */
 export default async function ConfirmPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const { next } = await searchParams
-  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login'
+  const { next: rawNext } = await searchParams
+  // Defence in depth — `next` is also sanitized in the login action,
+  // but if a phishing link points directly at /signup/confirm with
+  // a hostile next, the "Go to login" button would carry the bad
+  // value into the login URL. Sanitizing here keeps the link clean.
+  const next = safeNextPath(rawNext)
+  const loginHref = next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login'
 
   return (
     <div style={{ maxWidth: '420px', margin: '4rem auto', textAlign: 'center' }}>

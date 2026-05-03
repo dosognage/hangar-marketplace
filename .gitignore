@@ -48,3 +48,7 @@ broker-prospects.xlsx
 /internal/
 # Office app lock files (LibreOffice/Excel) when xlsx files are open
 .~lock.*
+
+# Internal security audits — keep local-only so open-vulnerability details
+# don't leak via repo history. Move outside /docs/security-audit-* to commit.
+/docs/security-audit-*.md

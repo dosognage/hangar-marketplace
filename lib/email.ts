@@ -833,6 +833,43 @@ export function newsletterEmail(opts: {
   }
 }
 
+/**
+ * Sent when someone uses the manual /unsubscribe form.
+ *
+ * The form no longer unsubscribes directly (anyone could harass arbitrary
+ * recipients). Instead it triggers this email containing the recipient's
+ * existing unsubscribe_token; clicking the link runs the GET /api/unsubscribe
+ * handler. Same one-click UX, but proof-of-email-ownership.
+ */
+export function unsubscribeConfirmEmail(opts: {
+  unsubUrl: string
+}): { subject: string; html: string } {
+  const { unsubUrl } = opts
+  return {
+    subject: 'Confirm unsubscribe from Hangar Marketplace',
+    html: modernLayout({
+      preheader: `Click the button to confirm and you'll be removed from our marketing list.`,
+      eyebrow:   'Unsubscribe',
+      title:     'Confirm your unsubscribe',
+      subtitle:  `Someone (probably you) asked to be removed from the Hangar Marketplace marketing list. Confirm by clicking the button below — it's a one-time link.`,
+      sections: [{
+        html: `
+          <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">
+            If you didn't make this request you can safely ignore this email — your subscription stays active.
+          </p>`,
+      }],
+      cta: {
+        label: 'Confirm unsubscribe',
+        href:  unsubUrl,
+      },
+      footerIntro: `You're getting this because someone entered your email address on hangarmarketplace.com/unsubscribe.`,
+      footerLinks: [
+        { label: 'Contact us', href: 'mailto:hello@hangarmarketplace.com' },
+      ],
+    }),
+  }
+}
+
 /** Weekly admin digest — landed in Andre's inbox every Monday morning. */
 export function weeklyDigestEmail(opts: {
   rangeStart: Date

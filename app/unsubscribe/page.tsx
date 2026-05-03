@@ -18,12 +18,16 @@ function UnsubscribeContent() {
     setLoading(true)
     setError('')
     try {
+      // POST sends a confirmation email rather than unsubscribing
+      // directly — this prevents anyone from harassing arbitrary
+      // recipients off the list. The endpoint always returns 200 to
+      // avoid leaking which emails are/aren't subscribed.
       const res = await fetch('/api/unsubscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      if (!res.ok) throw new Error('Could not find that email.')
+      if (!res.ok) throw new Error('Something went wrong. Please try again.')
       setDone(true)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
@@ -62,7 +66,7 @@ function UnsubscribeContent() {
     <div style={cardStyle}>
       <h1 style={headingStyle}>Unsubscribe from emails</h1>
       <p style={bodyStyle}>
-        Enter your email address and we'll remove you from our marketing list immediately.
+        Enter your email address and we&apos;ll send you a one-click confirmation link to remove you from our marketing list.
       </p>
       <ManualForm email={email} setEmail={setEmail} loading={loading} done={done} error={error} onSubmit={handleManual} />
     </div>
@@ -82,7 +86,12 @@ function ManualForm({
   onSubmit: (e: React.FormEvent) => void
 }) {
   if (done) {
-    return <p style={{ color: '#34d399', fontSize: '0.9rem', marginTop: '1rem' }}>✓ You've been unsubscribed successfully.</p>
+    return (
+      <p style={{ color: '#34d399', fontSize: '0.9rem', marginTop: '1rem', lineHeight: 1.6 }}>
+        ✓ Check your inbox — if that address is on our list we just sent
+        you a one-click confirmation link. Click it to finish unsubscribing.
+      </p>
+    )
   }
   return (
     <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.25rem' }}>

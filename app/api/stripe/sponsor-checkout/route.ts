@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe, SPONSOR_TIERS } from '@/lib/stripe'
+import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 /**
@@ -9,8 +10,21 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
  *
  * Creates a Stripe Checkout session for sponsored listing placement.
  * On success the webhook sets is_sponsored=true + sponsored_until.
+ *
+ * SECURITY: Caller must be authenticated AND own the listing OR be an
+ * assigned broker on it. Without these checks any logged-in user could
+ * create a checkout session targeting another user's listing — they'd
+ * pay with their own card but the sponsorship would land on someone
+ * else's listing (effectively gifting / vandalism vector).
  */
 export async function POST(req: NextRequest) {
+  // ── Auth ───────────────────────────────────────────────────────────────
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  }
+
   const { listing_id, duration_days } = await req.json()
 
   if (!listing_id || !duration_days) {
@@ -22,16 +36,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid duration. Choose 7, 30, or 90 days.' }, { status: 400 })
   }
 
-  // Verify the listing exists and is approved
+  // Verify the listing exists, is approved, AND the caller is authorised
+  // to sponsor it. Two paths permitted (mirrors the edit-listing rule):
+  //   1. Caller IS the listing owner (user_id matches).
+  //   2. Caller is the assigned broker (broker_profile_id matches the
+  //      caller's broker_profile_id in user_metadata).
   const { data: listing, error } = await supabaseAdmin
     .from('listings')
-    .select('id, title, airport_code, city, state')
+    .select('id, title, airport_code, city, state, user_id, broker_profile_id')
     .eq('id', listing_id)
     .eq('status', 'approved')
     .single()
 
   if (error || !listing) {
     return NextResponse.json({ error: 'Listing not found or not approved' }, { status: 404 })
+  }
+
+  const userBrokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  const isOwner          = listing.user_id === user.id
+  const isAssignedBroker = !!userBrokerProfileId
+                         && listing.broker_profile_id === userBrokerProfileId
+  if (!isOwner && !isAssignedBroker) {
+    return NextResponse.json(
+      { error: 'You do not have permission to sponsor this listing.' },
+      { status: 403 },
+    )
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.hangarmarketplace.com'

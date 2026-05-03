@@ -16,6 +16,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { sendEmail, welcomeEmail } from '@/lib/email'
 import { verifyTurnstileToken } from '@/lib/turnstile'
 import { recordAndAlertLogin } from '@/lib/loginAlerts'
+import { safeNextPath } from '@/lib/safe-redirect'
 
 export type AuthState = { error: string; email?: string; name?: string } | null
 
@@ -44,7 +45,10 @@ export async function login(
 ): Promise<AuthState> {
   const email = (formData.get('email') as string)?.trim()
   const password = formData.get('password') as string
-  const next = (formData.get('next') as string) || '/'
+  // Sanitize `next` aggressively — see lib/safe-redirect.ts. Accepting
+  // attacker-controlled URLs here turns a successful login into a
+  // credential-reharvest phishing handoff (open-redirect).
+  const next = safeNextPath(formData.get('next') as string | null)
 
   if (!email || !password) {
     return { error: 'Email and password are required.', email }
@@ -98,7 +102,8 @@ export async function signup(
   const password = formData.get('password') as string
   const confirm = formData.get('confirmPassword') as string
   const marketingConsent = formData.get('marketingConsent') === 'on'
-  const next = (formData.get('next') as string) || '/'
+  // Same hardening as login — see lib/safe-redirect.ts.
+  const next = safeNextPath(formData.get('next') as string | null)
 
   if (!name || !email || !password) {
     return { error: 'All fields are required.', name, email }

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signup, type AuthState } from '@/app/actions/auth'
 import TurnstileWidget from '@/app/components/TurnstileWidget'
+import { safeNextPath } from '@/lib/safe-redirect'
 
 export default function SignupPage() {
   const [state, formAction, isPending] = useActionState<AuthState, FormData>(
@@ -12,7 +13,10 @@ export default function SignupPage() {
     null
   )
   const searchParams = useSearchParams()
-  const next = searchParams.get('next') ?? '/'
+  // Sanitize on the client too — see lib/safe-redirect.ts. The signup
+  // server action also sanitizes, but cleaning here keeps the hidden
+  // input + "Sign in" link href safe.
+  const next = safeNextPath(searchParams.get('next'))
 
   return (
     <div style={{ maxWidth: '420px', margin: '3rem auto' }}>

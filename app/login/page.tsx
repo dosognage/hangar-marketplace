@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { login, type AuthState } from '@/app/actions/auth'
+import { safeNextPath } from '@/lib/safe-redirect'
 
 function LoginForm() {
   const [state, formAction, isPending] = useActionState<AuthState, FormData>(
@@ -18,7 +19,10 @@ function LoginForm() {
     null
   )
   const searchParams = useSearchParams()
-  const next = searchParams.get('next') ?? '/'
+  // Sanitize on the client too — the server action also sanitizes (so an
+  // attacker can't bypass us by hand-crafting the form), but cleaning the
+  // value here keeps the hidden input + "Create one" link href safe.
+  const next = safeNextPath(searchParams.get('next'))
 
   // Preserve the email the user typed so it stays in the field on error
   const submittedEmail = state?.email ?? ''
