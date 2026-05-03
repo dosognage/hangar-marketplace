@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
-/** POST /api/saved-searches — create a new saved search / alert subscription */
+/**
+ * POST /api/saved-searches — create a new saved search / alert subscription.
+ *
+ * Uses supabaseAdmin (service role) because the saved_searches table has
+ * no public RLS policies — keeping it locked down means an attacker can't
+ * scrape the entire alert list (which contains every subscriber's email
+ * and search criteria). Anonymous subscriptions are still allowed via
+ * this endpoint; we just gate the DB write through our own validation.
+ */
 export async function POST(req: NextRequest) {
   let body: {
     email: string
@@ -20,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 })
   }
 
-  const { error } = await supabase.from('saved_searches').insert({
+  const { error } = await supabaseAdmin.from('saved_searches').insert({
     email,
     query:        query?.trim()       || null,
     listing_type: listingType?.trim() || null,

@@ -9,6 +9,7 @@
 import { redirect, notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 import EditListingForm from './EditListingForm'
 import EditPhotoManager from './EditPhotoManager'
 import MarkSoldPanel from './MarkSoldPanel'
@@ -34,8 +35,9 @@ export default async function EditListingPage({ params }: PageProps) {
 
   if (error || !listing) notFound()
 
-  // Ownership check: must be the listing owner or a broker assigned to it
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // Ownership check: must be the listing owner or a broker assigned to it.
+  // SECURITY: never trust user_metadata.broker_profile_id (user-editable).
+  const brokerProfileId = await resolveBrokerProfileId(user)
   const isOwner     = listing.user_id === user.id
   const isBrokerFor = brokerProfileId && listing.broker_profile_id === brokerProfileId
 

@@ -13,6 +13,7 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { isVerifiedBroker } from '@/lib/auth-broker'
 import WelcomeTourClient from './WelcomeTourClient'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +28,8 @@ export default async function WelcomePage() {
   if (!user) redirect('/login?next=/welcome')
 
   // Brokers go through the dedicated setup wizard, not this tour.
-  if (user.user_metadata?.is_broker === true) {
+  // Source from broker_profiles, not the user-editable user_metadata flag.
+  if (await isVerifiedBroker(user)) {
     redirect('/broker/setup')
   }
 

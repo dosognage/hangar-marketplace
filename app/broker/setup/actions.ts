@@ -9,6 +9,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase-server'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { nextStep, type SetupStepId } from './steps'
 
@@ -16,7 +17,10 @@ async function requireBrokerProfile(): Promise<{ brokerProfileId: string; email:
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // SECURITY: derive broker_profile_id from broker_profiles.user_id, not
+  // from JWT user_metadata. The latter is end-user-editable so an attacker
+  // could otherwise run setup steps against any broker's profile.
+  const brokerProfileId = await resolveBrokerProfileId(user)
   if (!brokerProfileId) throw new Error('No broker profile')
   return { brokerProfileId, email: user.email ?? '' }
 }

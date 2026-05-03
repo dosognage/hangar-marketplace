@@ -32,12 +32,10 @@ export default async function BrokerDashboardPage({ searchParams }: { searchPara
 
   if (userError || !user) redirect('/login?next=/broker/dashboard')
 
-  const isBroker = user.user_metadata?.is_broker === true
-  if (!isBroker) redirect('/apply-broker')
-
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
-
-  // Fetch broker profile
+  // SECURITY: derive broker identity from broker_profiles, not from JWT
+  // user_metadata (which is end-user-editable). The query below by
+  // user.id is the authoritative source of truth — if no row, the
+  // user is not a verified broker.
   const { data: profile } = await supabaseAdmin
     .from('broker_profiles')
     .select('*')
@@ -45,6 +43,8 @@ export default async function BrokerDashboardPage({ searchParams }: { searchPara
     .maybeSingle()
 
   if (!profile) redirect('/apply-broker')
+
+  const brokerProfileId = profile.id as string
 
   // Fetch team + members if broker is on a team
   const teamId = (profile as { team_id?: string | null }).team_id

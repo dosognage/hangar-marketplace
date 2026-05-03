@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 
@@ -57,8 +58,11 @@ export async function POST(request: NextRequest) {
     user_metadata: { ...user.user_metadata, avatar_url: publicUrl },
   })
 
-  // If user is a verified broker, sync avatar to broker_profiles too
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // If user is a verified broker, sync avatar to broker_profiles too.
+  // SECURITY: never trust user_metadata.broker_profile_id (user-editable
+  // — would let an attacker overwrite a victim broker's avatar by setting
+  // their own metadata to the victim's profile id). Look up by user.id.
+  const brokerProfileId = await resolveBrokerProfileId(user)
   if (brokerProfileId) {
     await supabaseAdmin
       .from('broker_profiles')

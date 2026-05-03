@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 /**
  * GET /api/cron/saved-searches-notify
@@ -7,6 +7,10 @@ import { supabase } from '@/lib/supabase'
  * Runs every hour via Vercel Cron.
  * For each saved search, finds listings created since last_notified_at
  * that match the criteria, and emails the subscriber.
+ *
+ * Uses supabaseAdmin throughout — saved_searches has no public RLS
+ * policies (intentionally locked down so the alert list can't be
+ * scraped), so an anon client would silently see zero rows.
  */
 
 const RESEND_API   = 'https://api.resend.com/emails'
@@ -25,7 +29,7 @@ export async function GET(req: NextRequest) {
   if (!apiKey) return NextResponse.json({ error: 'No RESEND_API_KEY' }, { status: 500 })
 
   // Fetch all saved searches
-  const { data: searches, error: searchErr } = await supabase
+  const { data: searches, error: searchErr } = await supabaseAdmin
     .from('saved_searches')
     .select('*')
     .order('created_at', { ascending: true })
@@ -42,7 +46,7 @@ export async function GET(req: NextRequest) {
       const since = search.last_notified_at ?? search.created_at
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let q: any = supabase
+      let q: any = supabaseAdmin
         .from('listings')
         .select('id, title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, square_feet')
         .eq('status', 'approved')
@@ -147,7 +151,7 @@ export async function GET(req: NextRequest) {
       })
 
       // Update last_notified_at so next run only picks up newer listings
-      await supabase
+      await supabaseAdmin
         .from('saved_searches')
         .update({ last_notified_at: new Date().toISOString() })
         .eq('id', search.id)

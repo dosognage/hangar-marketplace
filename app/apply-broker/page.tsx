@@ -9,6 +9,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
+import { isVerifiedBroker } from '@/lib/auth-broker'
 import ApplyBrokerForm from './ApplyBrokerForm'
 
 export const dynamic = 'force-dynamic'
@@ -20,8 +21,9 @@ export default async function ApplyBrokerPage() {
 
   if (!user) redirect('/login?next=/apply-broker')
 
-  // If already a verified broker, send them straight to their dashboard
-  if (user.user_metadata?.is_broker === true) redirect('/broker/dashboard')
+  // If already a verified broker, send them straight to their dashboard.
+  // Source from broker_profiles (lib/auth-broker), not user_metadata.
+  if (await isVerifiedBroker(user)) redirect('/broker/dashboard')
 
   return <ApplyBrokerForm />
 }

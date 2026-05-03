@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 
@@ -49,7 +50,9 @@ export async function POST(req: NextRequest) {
   }
 
   // Authorisation: owner OR assigned broker.
-  const userBrokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // SECURITY: never trust user_metadata.broker_profile_id — it's
+  // editable by end users. Always resolve from broker_profiles by user.id.
+  const userBrokerProfileId = await resolveBrokerProfileId(user)
   const isOwner          = listing.user_id === user.id
   const isAssignedBroker = !!userBrokerProfileId
                          && listing.broker_profile_id === userBrokerProfileId

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { CheckCircle, ClipboardList, Search, ArrowRight, Zap } from 'lucide-react'
 import type { Metadata } from 'next'
 import { createServerClient } from '@/lib/supabase-server'
+import { isVerifiedBroker } from '@/lib/auth-broker'
 
 // Uses auth cookies — never prerender statically.
 export const dynamic = 'force-dynamic'
@@ -20,7 +21,8 @@ export default async function SubmitSuccessPage({ searchParams }: Props) {
 
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const isBroker = user?.user_metadata?.is_broker === true
+  // Source from broker_profiles, not user_metadata.
+  const isBroker = await isVerifiedBroker(user)
 
   const dashboardHref = isBroker ? '/broker/dashboard' : '/dashboard'
 

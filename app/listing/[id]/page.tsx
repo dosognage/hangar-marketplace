@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@/lib/supabase-server'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import ContactForm from '@/app/components/ContactForm'
 import FavoriteButton from '@/app/components/FavoriteButton'
@@ -162,6 +163,10 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
   // Get current user and saved state server-side (cookie auth — reliable)
   const serverSupabase = await createServerClient()
   const { data: { user } } = await serverSupabase.auth.getUser()
+  // SECURITY: never read broker_profile_id from user_metadata. Resolve
+  // from broker_profiles by user.id so the Sponsor-button gate below
+  // can't be tricked into showing on listings the user doesn't own.
+  const userBrokerProfileId = await resolveBrokerProfileId(user)
 
   let initialSaved = false
   if (user) {
@@ -392,10 +397,10 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
         </div>
       )}
 
-      {/* Sponsor CTA — only shown to the listing owner */}
+      {/* Sponsor CTA — only shown to the listing owner or assigned broker */}
       {user && (
         user.id === typedListing.user_id ||
-        (user.user_metadata?.broker_profile_id && user.user_metadata.broker_profile_id === typedListing.broker_profile_id)
+        (userBrokerProfileId && userBrokerProfileId === typedListing.broker_profile_id)
       ) && (
         <div id="sponsor" style={{ marginBottom: '1.5rem' }}>
           <SponsorButton

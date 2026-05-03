@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
+import { isVerifiedBroker } from '@/lib/auth-broker'
 import { redirect } from 'next/navigation'
 import DeleteListingButton from '@/app/components/DeleteListingButton'
 import ManageBillingButton from '@/app/components/ManageBillingButton'
@@ -65,8 +66,9 @@ export default async function DashboardPage() {
   // them there before showing the dashboard. The tour itself stamps
   // welcome_seen_at when they finish or skip, so this redirect only fires
   // once per user. Brokers get their own /broker/setup wizard, so we skip
-  // the welcome tour for them.
-  const isBroker = user.user_metadata?.is_broker === true
+  // the welcome tour for them. Source broker status from broker_profiles
+  // (auth-trusted) rather than the user-editable is_broker metadata.
+  const isBroker = await isVerifiedBroker(user)
   if (!isBroker) {
     const { data: prefs } = await supabase
       .from('user_preferences')

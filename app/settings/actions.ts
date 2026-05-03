@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { geocodeLocation } from '@/lib/geocode'
 import { verifyCurrentPassword } from '@/lib/reauth'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 import { revalidatePath } from 'next/cache'
 
 export type SettingsState = {
@@ -68,8 +69,12 @@ export async function saveProfile(
     emailNote = ' Check your new inbox to confirm the email change.'
   }
 
-  // Sync name + phone to broker_profiles if user is a verified broker
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // Sync name + phone to broker_profiles if user is a verified broker.
+  // SECURITY: source from broker_profiles.user_id, not user_metadata. The
+  // old code let an attacker set their own user_metadata.broker_profile_id
+  // to a victim broker's UUID and overwrite that broker's profile via this
+  // path. resolveBrokerProfileId looks up by the auth-trusted user.id.
+  const brokerProfileId = await resolveBrokerProfileId(user)
   if (brokerProfileId) {
     await supabaseAdmin
       .from('broker_profiles')

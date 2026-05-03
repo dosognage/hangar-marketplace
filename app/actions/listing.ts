@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { sendEmail, listingSubmittedEmail } from '@/lib/email'
 import { getStripe } from '@/lib/stripe'
 import { notifyBuyersOfNewListing } from '@/lib/listingAlerts'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 
 export type ListingFormData = {
   title: string
@@ -95,8 +96,11 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
     redirect('/login?next=/submit')
   }
 
-  const isBroker        = user.user_metadata?.is_broker === true
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // SECURITY: never derive broker identity from JWT user_metadata. End
+  // users can write to it via supabase.auth.updateUser. The broker_profiles
+  // table is the source of truth (admin sets user_id at verification time).
+  const brokerProfileId = await resolveBrokerProfileId(user) ?? undefined
+  const isBroker        = brokerProfileId !== undefined
 
   const isHangar = !data.property_type || data.property_type === 'hangar'
   const isHome   = data.property_type === 'airport_home' || data.property_type === 'fly_in_community'
@@ -280,12 +284,14 @@ export async function getListingFeeInfo(): Promise<{
 
   // Best-effort broker check. If the cookie session isn't available (e.g. the
   // page is being prerendered), we fall through to false — the banner is
-  // purely cosmetic and not a security boundary.
+  // purely cosmetic and not a security boundary. Even so, source the answer
+  // from broker_profiles rather than the user-editable is_broker metadata,
+  // for consistency with the rest of the app.
   let isVerifiedBroker = false
   try {
     const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
-    isVerifiedBroker = user?.user_metadata?.is_broker === true
+    isVerifiedBroker = (await resolveBrokerProfileId(user)) !== null
   } catch {
     /* non-fatal */
   }

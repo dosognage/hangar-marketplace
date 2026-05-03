@@ -12,6 +12,7 @@
 import { redirect, notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 import MarkSoldFormClient from './MarkSoldFormClient'
 import SoldSuccessCard from './SoldSuccessCard'
 
@@ -42,7 +43,8 @@ export default async function MarkSoldPage({ params, searchParams }: PageProps) 
   if (error || !listing) notFound()
 
   // Auth: owner OR assigned broker.
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // SECURITY: never trust user_metadata.broker_profile_id (user-editable).
+  const brokerProfileId = await resolveBrokerProfileId(user)
   const isOwner   = listing.user_id === user.id
   const isAssigned = !!brokerProfileId && listing.broker_profile_id === brokerProfileId
   if (!isOwner && !isAssigned) {

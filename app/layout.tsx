@@ -297,7 +297,7 @@ export default async function RootLayout({
                   <MessageBell
                     initialUnread={initialUnreadMessages}
                     currentUserId={user.id}
-                    isBroker={user.user_metadata?.is_broker === true}
+                    isBroker={!!brokerProfileId}
                   />
                 ) : null}
                 {user ? (
@@ -308,8 +308,12 @@ export default async function RootLayout({
                     }
                     isAdmin={!!isAdmin}
                     pendingApplications={pendingApplications}
-                    isBroker={user.user_metadata?.is_broker === true}
-                    brokerProfileId={user.user_metadata?.broker_profile_id as string | undefined}
+                    // SECURITY: derive broker identity from broker_profiles
+                    // (queried above by user.id) rather than reading
+                    // user_metadata.is_broker / .broker_profile_id, both
+                    // of which are end-user-editable.
+                    isBroker={!!brokerProfileId}
+                    brokerProfileId={brokerProfileId}
                     hasTeam={hasTeam}
                   />
                 ) : (

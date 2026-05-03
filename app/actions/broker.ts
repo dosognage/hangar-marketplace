@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import { sendEmail, brokerApprovedEmail, brokerRejectedEmail, newBrokerApplicationEmail } from '@/lib/email'
 import { createNotification } from '@/lib/notifications'
 import { geocodeLocation } from '@/lib/geocode'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 
 function isAdmin(email: string | undefined): boolean {
   const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
@@ -32,11 +33,10 @@ export async function saveBrokerProfile(
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) return { error: 'You must be logged in.' }
 
-    const isBroker = user.user_metadata?.is_broker === true
-    if (!isBroker) return { error: 'Not a verified broker.' }
-
-    const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
-    if (!brokerProfileId) return { error: 'Broker profile not found.' }
+    // SECURITY: derive broker identity from broker_profiles, not JWT
+    // user_metadata (which is end-user-editable). See lib/auth-broker.ts.
+    const brokerProfileId = await resolveBrokerProfileId(user)
+    if (!brokerProfileId) return { error: 'Not a verified broker.' }
 
     const brokerage          = (formData.get('brokerage')          as string | null)?.trim() ?? ''
     const phone              = (formData.get('phone')              as string | null)?.trim() ?? ''
@@ -346,9 +346,18 @@ export async function approveBrokerApplication(
     .update({ status: 'approved' })
     .eq('id', applicationId)
 
-  // Set is_broker = true in user metadata
+  // Stamp the broker tag in BOTH user_metadata and app_metadata.
+  //
+  // - user_metadata is what existing client code reads from the session.
+  //   It's end-user-writeable, so we no longer trust it server-side for
+  //   auth decisions, but we keep writing it for backward compat /
+  //   client-side display.
+  // - app_metadata is service-role-only (Supabase Admin API only). RLS
+  //   policies and any future server checks should consult this. Spoof-
+  //   resistant going forward.
   await supabaseAdmin.auth.admin.updateUserById(userId, {
     user_metadata: { is_broker: true, broker_profile_id: profileId },
+    app_metadata:  { is_broker: true, broker_profile_id: profileId },
   })
 
   // Send VIP welcome email (fire-and-forget)

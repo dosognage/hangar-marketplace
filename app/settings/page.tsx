@@ -11,6 +11,7 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { isVerifiedBroker } from '@/lib/auth-broker'
 import type { Metadata } from 'next'
 import SettingsForm from './SettingsForm'
 import ProfileForm from './ProfileForm'
@@ -39,7 +40,8 @@ export default async function SettingsPage() {
   const fullName         = (user.user_metadata?.full_name    as string | null) ?? ''
   const phone            = (user.user_metadata?.phone        as string | null) ?? ''
   const avatarUrl        = (user.user_metadata?.avatar_url   as string | null) ?? null
-  const isBroker         = user.user_metadata?.is_broker === true
+  // Source from broker_profiles, not the user-editable metadata flag.
+  const isBroker         = await isVerifiedBroker(user)
   // Default true — opt-out model (read receipts on unless explicitly disabled)
   const readReceiptsEnabled = user.user_metadata?.read_receipts_enabled !== false
 

@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 
 // Accept literal 0 for optional numeric fields (HOA, tax). Empty string → null.
 function parseOptionalNumber(raw: FormDataEntryValue | null): number | null {
@@ -97,7 +98,9 @@ export async function updateListing(
   //   1. The user IS the listing owner.
   //   2. The user is a verified broker whose broker_profile_id matches the
   //      listing's broker_profile_id (admin assigned them this listing).
-  const userBrokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // SECURITY: resolve broker identity from the broker_profiles table — never
+  // from JWT user_metadata, which is end-user-editable. See lib/auth-broker.ts.
+  const userBrokerProfileId = await resolveBrokerProfileId(user)
   const isOwner       = existing.user_id === user.id
   const isAssignedBroker = !!userBrokerProfileId && existing.broker_profile_id === userBrokerProfileId
   if (!isOwner && !isAssignedBroker) {
@@ -113,8 +116,14 @@ export async function updateListing(
   // Published listings always reset to 'pending' so admin re-reviews edits.
   // Drafts are trickier: user picks via the save_mode field ("draft" keeps it
   // unpublished, "publish" runs the same gate as a new submission).
+  //
+  // SECURITY: `isBroker` here decides whether the draft skips admin review
+  // and the paywall. Reading user_metadata.is_broker would let any user
+  // self-promote and ship their own listing live. Source the answer from
+  // broker_profiles instead — !!userBrokerProfileId is true iff there's a
+  // verified profile (already loaded above). Defense in depth.
   const saveMode = formData.get('save_mode') as string | null
-  const isBroker = user.user_metadata?.is_broker === true
+  const isBroker = !!userBrokerProfileId
 
   let nextStatus: string
   if (existing.status === 'draft') {
@@ -283,7 +292,9 @@ export async function markListingSold(
     .single()
   if (!existing) return { error: 'Listing not found.' }
 
-  const userBrokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // SECURITY: resolve broker identity from broker_profiles, not JWT
+  // user_metadata (which is end-user-editable). See lib/auth-broker.ts.
+  const userBrokerProfileId = await resolveBrokerProfileId(user)
   const isOwner = existing.user_id === user.id
   const isAssignedBroker =
     !!userBrokerProfileId && existing.broker_profile_id === userBrokerProfileId

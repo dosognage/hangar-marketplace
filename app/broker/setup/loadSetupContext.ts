@@ -1,8 +1,12 @@
 /**
  * Per-page setup context loader. Pulls the current broker's profile and
  * computes which steps are already complete. Each step page calls this
- * server-side; the layout already enforced auth so we can trust the
- * user's broker_profile_id metadata.
+ * server-side; the layout already enforced auth.
+ *
+ * SECURITY: derive broker identity by looking up broker_profiles.user_id
+ * against the authenticated user.id. Never read it from JWT user_metadata
+ * (end-user editable; would let an attacker run setup against any other
+ * broker's profile).
  */
 
 import { createServerClient } from '@/lib/supabase-server'
@@ -29,16 +33,17 @@ export async function loadSetupContext(): Promise<SetupContext> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/broker/setup')
 
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
-  if (!brokerProfileId) redirect('/broker/dashboard')
-
+  // Look up by user.id — the auth-trusted column on broker_profiles —
+  // not by an attacker-controlled metadata id.
   const { data: profile, error } = await supabaseAdmin
     .from('broker_profiles')
     .select('id, full_name, brokerage, phone, contact_email, bio, avatar_url, specialty_airports, alert_radius_miles, setup_completed_at, license_state, license_number, website, is_unlicensed')
-    .eq('id', brokerProfileId)
+    .eq('user_id', user.id)
     .single()
 
   if (error || !profile) redirect('/broker/dashboard')
+
+  const brokerProfileId = profile.id
 
   const profileLike = profile as BrokerProfileLike
 

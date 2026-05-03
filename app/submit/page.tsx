@@ -44,18 +44,19 @@ export default async function SubmitPage() {
   let contactPhone = phoneMeta
   let contactEmail = authEmail
 
-  const brokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
-  if (brokerProfileId) {
-    const { data: bp } = await supabaseAdmin
-      .from('broker_profiles')
-      .select('full_name, phone, contact_email')
-      .eq('id', brokerProfileId)
-      .maybeSingle()
-    if (bp) {
-      if (bp.full_name)     contactName  = bp.full_name
-      if (bp.phone)         contactPhone = bp.phone
-      if (bp.contact_email) contactEmail = bp.contact_email
-    }
+  // SECURITY: query broker profile by auth-trusted user.id, not by an
+  // attacker-supplied user_metadata.broker_profile_id (which would let
+  // anyone prefill the form with any broker's contact info — minor info
+  // leak but easy to close by joining on user_id instead).
+  const { data: bp } = await supabaseAdmin
+    .from('broker_profiles')
+    .select('full_name, phone, contact_email')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  if (bp) {
+    if (bp.full_name)     contactName  = bp.full_name
+    if (bp.phone)         contactPhone = bp.phone
+    if (bp.contact_email) contactEmail = bp.contact_email
   }
 
   return (

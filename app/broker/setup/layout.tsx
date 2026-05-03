@@ -9,6 +9,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,8 +17,11 @@ export default async function BrokerSetupLayout({ children }: { children: React.
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/broker/setup')
-  if (user.user_metadata?.is_broker !== true) redirect('/broker/dashboard')
-  if (!user.user_metadata?.broker_profile_id) redirect('/broker/dashboard')
+  // SECURITY: never trust user_metadata.is_broker / broker_profile_id —
+  // both are end-user-editable. The presence of a broker_profiles row
+  // for this user.id is the only authoritative signal.
+  const brokerProfileId = await resolveBrokerProfileId(user)
+  if (!brokerProfileId) redirect('/broker/dashboard')
 
   return (
     <div style={{

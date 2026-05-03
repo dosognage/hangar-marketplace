@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe, SPONSOR_TIERS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { resolveBrokerProfileId } from '@/lib/auth-broker'
 
 /**
  * POST /api/stripe/sponsor-checkout
@@ -52,7 +53,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Listing not found or not approved' }, { status: 404 })
   }
 
-  const userBrokerProfileId = user.user_metadata?.broker_profile_id as string | undefined
+  // SECURITY: never trust user_metadata.broker_profile_id — it's
+  // editable by end users via supabase.auth.updateUser({ data: ... }).
+  // Always resolve from the broker_profiles table by user.id.
+  const userBrokerProfileId = await resolveBrokerProfileId(user)
   const isOwner          = listing.user_id === user.id
   const isAssignedBroker = !!userBrokerProfileId
                          && listing.broker_profile_id === userBrokerProfileId
