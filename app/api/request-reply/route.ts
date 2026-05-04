@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { htmlEscape } from '@/lib/email'
 
 const RESEND_API    = 'https://api.resend.com/emails'
 const FROM_ADDRESS  = 'Hangar Marketplace <notify@hangarmarketplace.com>'
@@ -44,45 +45,60 @@ export async function POST(req: NextRequest) {
 
   const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 
+  // SECURITY: HTML-escape every user-controlled field before interpolating
+  // it into the email body. Both the owner's reply (name/email/phone/
+  // message) AND the originating request's stored fields (contact_name,
+  // airport_name, airport_code) are end-user controlled, so all of them
+  // get escaped. URL contexts use percent-encoding instead.
+  const safeOwnerName    = htmlEscape(name)
+  const safeOwnerEmail   = htmlEscape(email)
+  const safeOwnerPhone   = phone ? htmlEscape(phone) : ''
+  const safeMessageHtml  = htmlEscape(message).replace(/\n/g, '<br>')
+  const safeReqName      = htmlEscape(hangarRequest.contact_name ?? '')
+  const safeAirportName  = htmlEscape(hangarRequest.airport_name ?? '')
+  const safeAirportCode  = htmlEscape(hangarRequest.airport_code ?? '')
+  const mailtoOwner      = encodeURI(`mailto:${email}`)
+  const telOwner         = phone ? encodeURI(`tel:${phone}`) : ''
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
       <div style="background: #1a3a5c; padding: 20px 28px; border-radius: 8px 8px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 20px;">Someone Has Space for You at ${hangarRequest.airport_code}!</h1>
+        <h1 style="color: white; margin: 0; font-size: 20px;">Someone Has Space for You at ${safeAirportCode}!</h1>
       </div>
       <div style="border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; padding: 28px;">
         <p style="margin: 0 0 20px; line-height: 1.6;">
-          Hi <strong>${hangarRequest.contact_name}</strong>,<br/>
-          A hangar owner at <strong>${hangarRequest.airport_name} (${hangarRequest.airport_code})</strong>
+          Hi <strong>${safeReqName}</strong>,<br/>
+          A hangar owner at <strong>${safeAirportName} (${safeAirportCode})</strong>
           saw your space request and has something available.
         </p>
 
-        <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Message from ${name}</p>
+        <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Message from ${safeOwnerName}</p>
         <div style="background: #f9fafb; border-left: 3px solid #1a3a5c; padding: 14px 16px; border-radius: 0 6px 6px 0; margin-bottom: 24px;">
-          <p style="margin: 0; line-height: 1.6;">${message.replace(/\n/g, '<br>')}</p>
+          <p style="margin: 0; line-height: 1.6;">${safeMessageHtml}</p>
         </div>
 
         <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Owner contact info</p>
         <table style="border-collapse: collapse;">
           <tr>
             <td style="padding: 5px 12px 5px 0; color: #6b7280; font-size: 14px;">Name</td>
-            <td style="padding: 5px 0; font-size: 14px;">${name}</td>
+            <td style="padding: 5px 0; font-size: 14px;">${safeOwnerName}</td>
           </tr>
           <tr>
             <td style="padding: 5px 12px 5px 0; color: #6b7280; font-size: 14px;">Email</td>
-            <td style="padding: 5px 0; font-size: 14px;"><a href="mailto:${email}" style="color:#6366f1;">${email}</a></td>
+            <td style="padding: 5px 0; font-size: 14px;"><a href="${mailtoOwner}" style="color:#6366f1;">${safeOwnerEmail}</a></td>
           </tr>
           ${phone ? `
           <tr>
             <td style="padding: 5px 12px 5px 0; color: #6b7280; font-size: 14px;">Phone</td>
-            <td style="padding: 5px 0; font-size: 14px;"><a href="tel:${phone}" style="color:#6366f1;">${phone}</a></td>
+            <td style="padding: 5px 0; font-size: 14px;"><a href="${telOwner}" style="color:#6366f1;">${safeOwnerPhone}</a></td>
           </tr>` : ''}
         </table>
 
         <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-          <a href="mailto:${email}?subject=Re: Hangar at ${hangarRequest.airport_code}"
+          <a href="${mailtoOwner}?subject=Re: Hangar at ${encodeURIComponent(hangarRequest.airport_code ?? '')}"
             style="display:inline-block; background:#111827; color:white; padding:10px 20px;
                    border-radius:6px; text-decoration:none; font-weight:600; font-size:14px;">
-            Reply to ${name}
+            Reply to ${safeOwnerName}
           </a>
         </div>
 

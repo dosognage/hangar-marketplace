@@ -115,7 +115,7 @@ export type ModernEmailArgs = {
   footerLinks?: Array<{ label: string; href: string }>
 }
 
-function htmlEscape(s: string): string {
+export function htmlEscape(s: string): string {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
