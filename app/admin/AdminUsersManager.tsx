@@ -32,38 +32,50 @@ type DeleteState =
   | { phase: 'error'; message: string }
 
 export default function AdminUsersManager({ users: initialUsers }: Props) {
-  const [users, setUsers]   = useState<AdminUser[]>(initialUsers)
-  const [query, setQuery]   = useState('')
-  const [filter, setFilter] = useState<'all' | 'broker' | 'has_listings' | 'no_listings'>('all')
-  const [del, setDel]       = useState<DeleteState>({ phase: 'idle' })
+  const [users, setUsers]     = useState<AdminUser[]>(initialUsers)
+  const [query, setQuery]     = useState('')
+  const [filter, setFilter]   = useState<'all' | 'broker' | 'has_listings' | 'no_listings'>('all')
+  const [del, setDel]         = useState<DeleteState>({ phase: 'idle' })
+  // Password reauth field for the delete-user modal. Required server-side
+  // (M1) — admin must re-enter their password before destroying a user.
+  const [password, setPassword] = useState('')
 
   const handleDeleteClick = useCallback((user: AdminUser) => {
+    setPassword('')
     setDel({ phase: 'confirm', user })
   }, [])
 
   const handleDeleteConfirm = useCallback(async () => {
     if (del.phase !== 'confirm') return
     const { user } = del
+    if (!password) {
+      setDel({ phase: 'error', message: 'Enter your admin password to confirm.' })
+      return
+    }
     setDel({ phase: 'deleting', userId: user.id })
 
     try {
       const res = await fetch('/api/admin/users', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ userId: user.id, password }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Delete failed')
 
       // Remove from local state so the row disappears immediately
       setUsers(prev => prev.filter(u => u.id !== user.id))
+      setPassword('')
       setDel({ phase: 'idle' })
     } catch (err) {
       setDel({ phase: 'error', message: err instanceof Error ? err.message : 'Unknown error' })
     }
-  }, [del])
+  }, [del, password])
 
-  const handleDeleteCancel = useCallback(() => setDel({ phase: 'idle' }), [])
+  const handleDeleteCancel = useCallback(() => {
+    setPassword('')
+    setDel({ phase: 'idle' })
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -119,10 +131,35 @@ export default function AdminUsersManager({ users: initialUsers }: Props) {
                     {del.user.email}
                   </p>
                 )}
-                <p style={{ margin: '0.75rem 0 1.5rem', color: '#6b7280', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                <p style={{ margin: '0.75rem 0 1rem', color: '#6b7280', fontSize: '0.85rem', lineHeight: 1.6 }}>
                   This permanently deletes their account, all listings, photos, saved searches, and broker data.
                   <strong style={{ color: '#dc2626' }}> This cannot be undone.</strong>
                 </p>
+                {del.phase === 'confirm' && (
+                  <div style={{ marginBottom: '1rem', textAlign: 'left' }}>
+                    <label htmlFor="admin-delete-pwd" style={{
+                      display: 'block', fontSize: '0.8rem', fontWeight: '600',
+                      color: '#374151', marginBottom: '0.35rem',
+                    }}>
+                      Re-enter your admin password to confirm
+                    </label>
+                    <input
+                      id="admin-delete-pwd"
+                      type="password"
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && password) handleDeleteConfirm() }}
+                      placeholder="Your password"
+                      autoFocus
+                      style={{
+                        width: '100%', padding: '0.55rem 0.75rem',
+                        border: '1px solid #d1d5db', borderRadius: '6px',
+                        fontSize: '0.875rem', boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: '0.65rem', justifyContent: 'flex-end' }}>
                   <button
                     onClick={handleDeleteCancel}

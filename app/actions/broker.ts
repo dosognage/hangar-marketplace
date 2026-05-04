@@ -424,6 +424,11 @@ export async function resendBrokerWelcomeEmail(
 /**
  * Reject a broker application.
  * Sends a polite rejection email.
+ *
+ * Intentionally one-click (no reauth) — an accidental reject is fully
+ * recoverable: the application row stays with status='rejected', the user
+ * can re-apply, and we have email notification. By contrast,
+ * approveBrokerApplication grants new privileges and IS reauth-gated.
  */
 export async function rejectBrokerApplication(applicationId: string) {
   const supabase = await createServerClient()

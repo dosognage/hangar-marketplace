@@ -80,6 +80,8 @@ export default function AdminHomesManager({
   const [sponsorDays, setSponsorDays] = useState<Record<string, number>>({})
   // Pending sponsorship awaiting password re-verification (modal flow).
   const [pendingSponsor, setPendingSponsor] = useState<{ id: string; days: number } | null>(null)
+  // M1: admin delete reauth — same modal pattern as comp-sponsor.
+  const [pendingDelete, setPendingDelete] = useState<{ id: string } | null>(null)
 
   const states = useMemo(() => {
     const s = new Set(listings.map(l => l.state).filter(Boolean))
@@ -184,24 +186,35 @@ export default function AdminHomesManager({
     }
   }
 
-  async function handleDelete(id: string) {
-    setAction(id + '_del', 'loading')
+  // M1: admin delete now requires fresh password proof. handleDelete just
+  // opens the password modal; runDeleteWithPassword (called by the modal)
+  // does the actual fetch with the password attached.
+  function handleDelete(id: string) {
     setConfirmDelete(null)
+    setPendingDelete({ id })
+  }
+
+  async function runDeleteWithPassword(password: string) {
+    if (!pendingDelete) return
+    const { id } = pendingDelete
+    setAction(id + '_del', 'loading')
     try {
       const res = await fetch('/api/admin/listings', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, password }),
       })
       if (res.ok) {
         setListings(prev => prev.filter(l => l.id !== id))
-      } else {
-        setAction(id + '_del', 'error')
-        setTimeout(() => setAction(id + '_del', 'idle'), 3000)
+        setPendingDelete(null)
+        return
       }
-    } catch {
+      const { error } = await res.json().catch(() => ({})) as { error?: string }
+      throw new Error(error ?? 'Delete failed.')
+    } catch (err) {
       setAction(id + '_del', 'error')
       setTimeout(() => setAction(id + '_del', 'idle'), 3000)
+      throw err instanceof Error ? err : new Error('Delete failed.')
     }
   }
 
@@ -530,6 +543,17 @@ export default function AdminHomesManager({
         confirmLabel="Comp it"
         onSubmit={confirmGrantSponsor}
         onCancel={() => setPendingSponsor(null)}
+      />
+
+      {/* M1: admin delete reauth — destroying any user's listing cascades
+          to photos + inquiries and is irreversible. */}
+      <PasswordPromptModal
+        open={pendingDelete !== null}
+        title="Delete listing"
+        description="Re-enter your password to confirm. This permanently deletes the listing, its photos, and all inquiries. Cannot be undone."
+        confirmLabel="Delete permanently"
+        onSubmit={runDeleteWithPassword}
+        onCancel={() => setPendingDelete(null)}
       />
     </div>
   )

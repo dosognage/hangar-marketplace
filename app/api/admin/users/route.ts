@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isAdminUser } from '@/lib/auth-admin'
+import { verifyCurrentPassword } from '@/lib/reauth'
 
 async function requireAdmin(req: NextRequest) {
   void req
@@ -30,7 +31,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const { userId } = await request.json()
+    const { userId, password } = await request.json()
     if (!userId || typeof userId !== 'string') {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
     }
@@ -38,6 +39,15 @@ export async function DELETE(request: NextRequest) {
     // Safety guard: admins cannot delete themselves
     if (userId === adminUser.id) {
       return NextResponse.json({ error: 'You cannot delete your own account.' }, { status: 400 })
+    }
+
+    // Sensitive admin action: nuking a user account cascades through every
+    // table they touch (listings, photos, inquiries, broker profile, the
+    // auth row itself). Require fresh password proof so a stolen admin
+    // session alone can't mass-delete users.
+    const reauth = await verifyCurrentPassword(password)
+    if (!reauth.ok) {
+      return NextResponse.json({ error: reauth.error }, { status: 403 })
     }
 
     // ── 1. Clean up user-owned rows ───────────────────────────────────────────

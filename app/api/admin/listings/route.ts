@@ -5,6 +5,7 @@ import { sendEmail, listingApprovedEmail, listingRejectedEmail, newListingAtAirp
 import { createNotification } from '@/lib/notifications'
 import { notifyBuyersOfNewListing } from '@/lib/listingAlerts'
 import { isAdminUser } from '@/lib/auth-admin'
+import { verifyCurrentPassword } from '@/lib/reauth'
 
 async function requireAdmin(req: NextRequest) {
   void req
@@ -225,8 +226,16 @@ export async function DELETE(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { id } = await request.json()
+    const { id, password } = await request.json()
     if (!id) return NextResponse.json({ error: 'Missing listing id' }, { status: 400 })
+
+    // Sensitive admin action — destroying any user's listing (and cascading
+    // to photos + inquiries) is irreversible. Require fresh password proof
+    // so a stolen admin session alone can't mass-delete listings.
+    const reauth = await verifyCurrentPassword(password)
+    if (!reauth.ok) {
+      return NextResponse.json({ error: reauth.error }, { status: 403 })
+    }
 
     // Fetch listing details before deleting so we can email the owner
     const { data: listing } = await supabaseAdmin
