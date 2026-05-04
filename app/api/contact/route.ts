@@ -3,6 +3,15 @@ import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createNotification } from '@/lib/notifications'
 import { htmlEscape } from '@/lib/email'
+import { checkAndRecord, parseIp } from '@/lib/rate-limit'
+import { validatePhone } from '@/lib/validate'
+
+// Per-IP rate-limit on inquiry submissions. Without it, a botnet can:
+//  - flood every listing's inbox with junk in seconds, ruining UX for sellers
+//  - drain our Resend send quota
+//  - DoS the function endpoint
+// 30s window is generous for a real human filling out a contact form.
+const RATE_LIMIT_MS = 30_000
 
 const RESEND_API = 'https://api.resend.com/emails'
 
@@ -18,6 +27,16 @@ const FROM_ADDRESS = 'Hangar Marketplace <notify@hangarmarketplace.com>'
 const TEST_TO = process.env.RESEND_TEST_TO
 
 export async function POST(req: NextRequest) {
+  // Rate-limit before doing any work — see lib/rate-limit.ts.
+  const ip = parseIp(req)
+  const limit = checkAndRecord('contact', ip, RATE_LIMIT_MS)
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Please wait a moment before sending another message.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(limit.retryAfterMs / 1000)) } },
+    )
+  }
+
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
     return NextResponse.json(
@@ -43,11 +62,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })
   }
 
-  const { buyerName, buyerEmail, buyerPhone, message, listingTitle, sellerName, sellerEmail, listingId } = body
+  const { buyerName, buyerEmail, buyerPhone: rawBuyerPhone, message, listingTitle, sellerName, sellerEmail, listingId } = body
 
   if (!buyerName || !buyerEmail || !message || !sellerEmail) {
     return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
   }
+
+  // M13: validate phone if provided. Reject malformed values rather than
+  // silently letting them through into the email/DB. Empty/missing is OK
+  // (phone is optional on the form). Invalid → drop it (don't 400 — the
+  // user might have typo'd; their inquiry is still valuable without a phone).
+  const buyerPhone = rawBuyerPhone ? (validatePhone(rawBuyerPhone) ?? '') : ''
 
   const listingUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/listing/${listingId}`
 

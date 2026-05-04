@@ -6,6 +6,7 @@ import NotificationBell from '@/app/components/NotificationBell'
 import MessageBell from '@/app/components/MessageBell'
 import ChatDrawer from '@/app/components/ChatDrawer'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { isAdminUser } from '@/lib/auth-admin'
 import ToastProvider from '@/app/components/ToastProvider'
 import ProgressBar from '@/app/components/ProgressBar'
 import SavedCountProvider from '@/app/components/SavedCountProvider'
@@ -91,12 +92,7 @@ export default async function RootLayout({
     const { data: { user: u } } = await supabase.auth.getUser()
     user = u
 
-    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean)
-
-    isAdmin = Boolean(user?.email && adminEmails.includes(user.email.toLowerCase()))
+    isAdmin = isAdminUser(user)
 
     if (user) {
       const { count } = await supabase

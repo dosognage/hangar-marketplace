@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { geocodeLocation } from '@/lib/geocode'
 import { listAllAuthUsers } from '@/lib/authUsers'
+import { isAdminUser } from '@/lib/auth-admin'
 
 /**
  * POST /api/admin/backfill-home-airports
@@ -26,13 +27,10 @@ import { listAllAuthUsers } from '@/lib/authUsers'
 export const dynamic = 'force-dynamic'
 
 async function requireAdmin(req: NextRequest) {
+  void req
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
-  if (!adminEmails.includes((user.email ?? '').toLowerCase())) return null
-  return user
+  return isAdminUser(user) ? user : null
 }
 
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))

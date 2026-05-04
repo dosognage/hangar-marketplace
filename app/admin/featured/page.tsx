@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { isAdminUser } from '@/lib/auth-admin'
 import FeatureButton from '@/app/admin/FeatureButton'
 import { Star } from 'lucide-react'
 
@@ -23,10 +24,7 @@ export default async function AdminFeaturedPage() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/admin/featured')
-
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
-  if (!adminEmails.includes((user.email ?? '').toLowerCase())) redirect('/')
+  if (!isAdminUser(user)) redirect('/')
 
   const { data: listings } = await supabaseAdmin
     .from('listings')

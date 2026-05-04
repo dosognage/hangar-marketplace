@@ -13,22 +13,15 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import type { BugReportPayload, LogEntry } from '@/lib/bug-report-types'
+import { checkAndRecord, parseIp } from '@/lib/rate-limit'
 
 const RESEND_API    = 'https://api.resend.com/emails'
 const ADMIN_EMAIL   = process.env.ADMIN_REPORT_EMAIL ?? 'hello@hangarmarketplace.com'
 const SITE_URL      = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hangarmarketplace.com'
 
-// Rate-limit: track recent submissions by IP (in-memory, resets on restart)
-const recentSubmissions = new Map<string, number>()
-const RATE_LIMIT_MS = 60_000   // 1 report per IP per minute
-
-function parseIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  )
-}
+// Rate-limit: 1 bug report per IP per minute. Shared in-memory bucket
+// helper — see lib/rate-limit.ts for the rationale.
+const RATE_LIMIT_MS = 60_000
 
 // ── Email builder ──────────────────────────────────────────────────────────
 
@@ -267,11 +260,14 @@ function buildEmail(payload: BugReportPayload): { subject: string; html: string 
 // ── Route handler ──────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  // Rate limit
+  // Rate limit — 1 report per IP per minute. See lib/rate-limit.ts.
   const ip = parseIp(req)
-  const lastSubmit = recentSubmissions.get(ip) ?? 0
-  if (Date.now() - lastSubmit < RATE_LIMIT_MS) {
-    return NextResponse.json({ error: 'Please wait a moment before sending another report.' }, { status: 429 })
+  const limit = checkAndRecord('bug-report', ip, RATE_LIMIT_MS)
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Please wait a moment before sending another report.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(limit.retryAfterMs / 1000)) } },
+    )
   }
 
   // Parse payload
@@ -324,16 +320,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to send report' }, { status: 500 })
   }
 
-  // Record submission for rate limiting
-  recentSubmissions.set(ip, Date.now())
-
-  // Clean up old rate limit entries periodically
-  if (recentSubmissions.size > 500) {
-    const cutoff = Date.now() - RATE_LIMIT_MS * 10
-    for (const [key, ts] of recentSubmissions) {
-      if (ts < cutoff) recentSubmissions.delete(key)
-    }
-  }
+  // Note: rate-limit was recorded earlier at the check. Even on Resend
+  // failure we keep the rate-limit hit so attackers can't retry-flood by
+  // forcing Resend errors.
 
   console.log(`[bug-report] Report sent from ${ip}: "${payload.description.slice(0, 60)}"`)
   return NextResponse.json({ ok: true })

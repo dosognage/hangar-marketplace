@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { isAdminEmail } from '@/lib/auth-admin'
 import AboutPhotoEditor from './AboutPhotoEditor'
 
 // /about touches supabaseAdmin (to look up the founder photo) and auth cookies
@@ -12,11 +13,6 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'About Us | Hangar Marketplace',
   description: 'Hangar Marketplace was built by an active airline pilot who got tired of searching for hangar space with no central place to look. Meet the founder.',
-}
-
-function isAdmin(email: string | undefined): boolean {
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
-  return adminEmails.includes((email ?? '').toLowerCase())
 }
 
 /** Check Supabase storage for an existing founder photo (jpg, png, webp). */
@@ -41,7 +37,7 @@ export default async function AboutPage() {
   try {
     const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
-    admin = isAdmin(user?.email)
+    admin = isAdminEmail(user?.email)
   } catch { /* not logged in */ }
 
   const photoUrl = await getFounderPhotoUrl()

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { verifyCurrentPassword } from '@/lib/reauth'
+import { isAdminUser } from '@/lib/auth-admin'
 
 /**
  * POST /api/admin/listings/sponsor
@@ -22,13 +23,10 @@ import { verifyCurrentPassword } from '@/lib/reauth'
 const ALLOWED_DAYS = new Set([7, 30, 90])
 
 async function requireAdmin(req: NextRequest) {
+  void req
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
-  if (!adminEmails.includes((user.email ?? '').toLowerCase())) return null
-  return user
+  return isAdminUser(user) ? user : null
 }
 
 export async function POST(req: NextRequest) {

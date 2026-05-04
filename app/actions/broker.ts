@@ -8,11 +8,7 @@ import { sendEmail, brokerApprovedEmail, brokerRejectedEmail, newBrokerApplicati
 import { createNotification } from '@/lib/notifications'
 import { geocodeLocation } from '@/lib/geocode'
 import { resolveBrokerProfileId } from '@/lib/auth-broker'
-
-function isAdmin(email: string | undefined): boolean {
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
-  return adminEmails.includes((email ?? '').toLowerCase())
-}
+import { isAdminEmail as isAdmin, adminEmailList } from '@/lib/auth-admin'
 
 export type BrokerProfileState = {
   success?: string
@@ -211,8 +207,7 @@ async function notifyAdminsOfNewApplication(payload: {
   bio:            string | null
   isUnlicensed:   boolean
 }): Promise<void> {
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+  const adminEmails = adminEmailList()
   if (adminEmails.length === 0) return
 
   // Resolve admin user ids so we can hit their notification bell too.

@@ -4,15 +4,13 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, listingApprovedEmail, listingRejectedEmail, newListingAtAirportEmail } from '@/lib/email'
 import { createNotification } from '@/lib/notifications'
 import { notifyBuyersOfNewListing } from '@/lib/listingAlerts'
+import { isAdminUser } from '@/lib/auth-admin'
 
 async function requireAdmin(req: NextRequest) {
+  void req
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
-  if (!adminEmails.includes((user.email ?? '').toLowerCase())) return null
-  return user
+  return isAdminUser(user) ? user : null
 }
 
 export async function POST(request: NextRequest) {

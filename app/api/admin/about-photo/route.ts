@@ -2,18 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sniffImage } from '@/lib/image-sniff'
+import { isAdminUser } from '@/lib/auth-admin'
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB (admin uploads, marketing photos can be larger)
-
-function isAdmin(email: string | undefined): boolean {
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
-  return adminEmails.includes((email ?? '').toLowerCase())
-}
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || !isAdmin(user.email)) {
+  if (!isAdminUser(user)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

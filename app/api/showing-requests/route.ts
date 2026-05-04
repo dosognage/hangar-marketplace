@@ -1,16 +1,25 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { sendEmail } from '@/lib/email'
+import { sendEmail, htmlEscape } from '@/lib/email'
+import { validatePhone, validateEmail } from '@/lib/validate'
 
 export async function POST(req: Request) {
   const body = await req.json()
   const {
     broker_profile_id, listing_id, requester_name, requester_email,
-    requester_phone, preferred_date, preferred_time, message,
+    requester_phone: rawPhone, preferred_date, preferred_time, message,
   } = body
 
   if (!broker_profile_id || !requester_name || !requester_email) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+
+  // M13: validate phone (optional field, drop on invalid).
+  const requester_phone = rawPhone ? (validatePhone(rawPhone) ?? '') : ''
+  // Reject obviously-invalid emails (the form already validates client-side
+  // but we don't trust that).
+  if (!validateEmail(requester_email)) {
+    return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
   }
 
   // Save to DB
@@ -53,6 +62,17 @@ export async function POST(req: Request) {
     ? new Date(preferred_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
     : 'Flexible'
 
+  // SECURITY: escape every user-supplied field before interpolation.
+  // Same H5 reasoning as contact + request-reply routes — without this
+  // a requester can inject HTML into the broker's inbox.
+  const safeName    = htmlEscape(requester_name)
+  const safeEmail   = htmlEscape(requester_email)
+  const safePhone   = requester_phone ? htmlEscape(requester_phone) : ''
+  const safeMessage = message ? htmlEscape(message) : ''
+  const safeTime    = preferred_time ? htmlEscape(preferred_time) : ''
+  const mailtoReq   = encodeURI(`mailto:${requester_email}`)
+  const telReq      = requester_phone ? encodeURI(`tel:${requester_phone}`) : ''
+
   const brokerEmail = broker?.contact_email
   if (brokerEmail) {
     await sendEmail({
@@ -74,16 +94,16 @@ export async function POST(req: Request) {
           <p style="margin:0 0 24px;color:#6b7280;font-size:14px;">Someone wants to schedule a showing with you on Hangar Marketplace.</p>
 
           <table style="width:100%;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;">
-            <tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Contact</td><td style="padding:10px 16px;font-size:14px;color:#111827;">${requester_name}</td></tr>
-            <tr><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Email</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;"><a href="mailto:${requester_email}" style="color:#2563eb;">${requester_email}</a></td></tr>
-            ${requester_phone ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Phone</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;"><a href="tel:${requester_phone}" style="color:#2563eb;">${requester_phone}</a></td></tr>` : ''}
+            <tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Contact</td><td style="padding:10px 16px;font-size:14px;color:#111827;">${safeName}</td></tr>
+            <tr><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Email</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;"><a href="${mailtoReq}" style="color:#2563eb;">${safeEmail}</a></td></tr>
+            ${requester_phone ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Phone</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;"><a href="${telReq}" style="color:#2563eb;">${safePhone}</a></td></tr>` : ''}
             <tr ${requester_phone ? '' : 'style="background:#f9fafb;"'}><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Preferred date</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#111827;">${dateStr}</td></tr>
-            ${preferred_time ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Preferred time</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#111827;">${preferred_time}</td></tr>` : ''}
-            ${message ? `<tr><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Message</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#374151;">${message}</td></tr>` : ''}
+            ${preferred_time ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Preferred time</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#111827;">${safeTime}</td></tr>` : ''}
+            ${message ? `<tr><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Message</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#374151;">${safeMessage}</td></tr>` : ''}
           </table>
 
-          <a href="mailto:${requester_email}" style="display:inline-block;padding:11px 26px;background:#1a3a5c;color:white;text-decoration:none;border-radius:7px;font-size:14px;font-weight:600;">
-            Reply to ${requester_name}
+          <a href="${mailtoReq}" style="display:inline-block;padding:11px 26px;background:#1a3a5c;color:white;text-decoration:none;border-radius:7px;font-size:14px;font-weight:600;">
+            Reply to ${safeName}
           </a>
         </td></tr>
         <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">

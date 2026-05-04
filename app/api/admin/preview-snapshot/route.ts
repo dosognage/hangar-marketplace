@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { buildMonthlySnapshot } from '@/lib/marketSnapshot'
+import { isAdminUser } from '@/lib/auth-admin'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -28,10 +29,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
-  if (!adminEmails.includes((user.email ?? '').toLowerCase())) {
+  if (!isAdminUser(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

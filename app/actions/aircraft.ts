@@ -3,6 +3,7 @@
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, modernLayout } from '@/lib/email'
+import { isAdminUser, adminEmailList } from '@/lib/auth-admin'
 import { revalidatePath } from 'next/cache'
 
 export type AircraftSpec = {
@@ -222,8 +223,7 @@ async function notifyAdminsOfAircraftRequest(payload: {
   model:          string
   notes:          string
 }): Promise<void> {
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+  const adminEmails = adminEmailList()
   if (adminEmails.length === 0) return
 
   const subject = `New aircraft request: ${payload.manufacturer ? payload.manufacturer + ' ' : ''}${payload.model}`
@@ -287,11 +287,8 @@ export type AircraftRequest = {
 async function ensureAdmin(): Promise<{ ok: boolean; email?: string }> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false }
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
-  if (!adminEmails.includes((user.email ?? '').toLowerCase())) return { ok: false }
-  return { ok: true, email: user.email ?? undefined }
+  if (!isAdminUser(user)) return { ok: false }
+  return { ok: true, email: user!.email ?? undefined }
 }
 
 /** Lists open + recently-closed aircraft requests for the admin queue. */

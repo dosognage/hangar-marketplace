@@ -68,9 +68,18 @@ function buildStateAbbr(addr: NominatimResult['address']): string {
   return STATE_ABBR[full] ?? full
 }
 
+// Cap at a generous human-typed address length. Without this, an attacker
+// can send 100KB+ query strings to amplify each request into a 100KB+
+// outbound call to Nominatim — a free way to abuse our Nominatim quota
+// and burn function execution time on parsing junk.
+const MAX_QUERY_LEN = 200
+
 export async function GET(req: NextRequest) {
-  const q = (req.nextUrl.searchParams.get('q') ?? '').trim()
-  if (q.length < 4) return NextResponse.json([])
+  const raw = (req.nextUrl.searchParams.get('q') ?? '').trim()
+  if (raw.length < 4) return NextResponse.json([])
+  // Truncate rather than 400 — keeps user-perceived UX (autocomplete still
+  // returns something for very long pastes) while bounding outbound cost.
+  const q = raw.slice(0, MAX_QUERY_LEN)
 
   const url = new URL('https://nominatim.openstreetmap.org/search')
   url.searchParams.set('q', q)

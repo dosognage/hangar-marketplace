@@ -8,8 +8,14 @@ const LOOKS_LIKE_CODE = /^[A-Z0-9]{2,6}$/i
 // Matches 2-letter US state abbreviations
 const LOOKS_LIKE_STATE = /^[A-Z]{2}$/i
 
+// Cap query length so an attacker can't blow out the Postgres ILIKE
+// scan with a huge pattern. 100 chars is well above any real airport
+// or city name a human would type.
+const MAX_QUERY_LEN = 100
+
 export async function GET(req: NextRequest) {
-  const q     = (req.nextUrl.searchParams.get('q') ?? '').trim()
+  const raw   = (req.nextUrl.searchParams.get('q') ?? '').trim()
+  const q     = raw.slice(0, MAX_QUERY_LEN)
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') ?? '8', 10), 20)
 
   if (q.length < 2) {

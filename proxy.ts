@@ -17,6 +17,7 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { isAdminEmail } from '@/lib/auth-admin'
 
 function getSessionCookieName(): string {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -57,16 +58,6 @@ function getSessionPayload(request: NextRequest): Record<string, unknown> | null
   }
 }
 
-/** Lazily-evaluated admin email allowlist. */
-function adminEmailSet(): Set<string> {
-  return new Set(
-    (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
-      .map(e => e.trim().toLowerCase())
-      .filter(Boolean),
-  )
-}
-
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -84,7 +75,7 @@ export function proxy(request: NextRequest) {
         { status: 401 },
       )
     }
-    if (!adminEmailSet().has(userEmail.toLowerCase())) {
+    if (!isAdminEmail(userEmail)) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 },
@@ -102,7 +93,7 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    if (!adminEmailSet().has(userEmail.toLowerCase())) {
+    if (!isAdminEmail(userEmail)) {
       // Logged in but not an admin → redirect home
       const url = request.nextUrl.clone()
       url.pathname = '/'

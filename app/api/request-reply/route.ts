@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { htmlEscape } from '@/lib/email'
+import { validatePhone } from '@/lib/validate'
 
 const RESEND_API    = 'https://api.resend.com/emails'
 const FROM_ADDRESS  = 'Hangar Marketplace <notify@hangarmarketplace.com>'
@@ -26,11 +27,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })
   }
 
-  const { requestId, name, email, phone, message } = body
+  const { requestId, name, email, phone: rawPhone, message } = body
 
   if (!requestId || !name || !email || !message) {
     return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
   }
+
+  // M13: validate phone if provided. Drop silently on invalid (optional field).
+  const phone = rawPhone ? (validatePhone(rawPhone) ?? '') : ''
 
   // Fetch the original request so we know who to email
   const { data: hangarRequest, error: fetchError } = await supabase

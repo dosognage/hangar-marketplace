@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { isAdminUser } from '@/lib/auth-admin'
 import BrokerApplicationButtons from './BrokerApplicationButtons'
 import ReGeocodeButton from './RegeoCodeButton'
 import BackfillHomeAirportsButton from './BackfillHomeAirportsButton'
@@ -47,11 +48,7 @@ export default async function AdminPage() {
 
   if (!user) redirect('/login?next=/admin')
 
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-
-  if (!adminEmails.includes((user.email ?? '').toLowerCase())) {
+  if (!isAdminUser(user)) {
     redirect('/')
   }
 
