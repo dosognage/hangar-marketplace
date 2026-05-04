@@ -35,6 +35,38 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // L2: idempotency dedup. Stripe occasionally redelivers events (network
+  // retries, our intermittent 5xx, etc). The handler logic is idempotent
+  // today, but recording event IDs guarantees that — INSERT ... ON CONFLICT
+  // DO NOTHING returns 0 rows when the event has already been processed,
+  // and we early-return 200 so Stripe stops retrying. See migration
+  // add_stripe_webhook_event_idempotency for the table + retention cron.
+  const { error: dedupError, count } = await supabaseAdmin
+    .from('stripe_webhook_events')
+    .insert({ event_id: event.id, event_type: event.type }, { count: 'exact' })
+    .select()
+    .single()
+    .then(
+      r => ({ error: r.error, count: r.error ? 0 : 1 }),
+      // Insert with ON CONFLICT-style behaviour via try/catch — Supabase's
+      // PostgrestError code 23505 is the unique-violation we want.
+      err => ({ error: err, count: 0 }),
+    )
+
+  if (dedupError) {
+    const code = (dedupError as { code?: string }).code
+    if (code === '23505') {
+      // Already processed — return 200 so Stripe stops retrying.
+      console.log(`[webhook] duplicate event ${event.id} (${event.type}) — skipping`)
+      return NextResponse.json({ received: true, deduped: true })
+    }
+    // Any other DB error: log and proceed. We'd rather double-process than
+    // drop a real event due to a transient DB hiccup. Idempotent handler
+    // logic is the second line of defence.
+    console.error('[webhook] dedup table insert failed (continuing):', dedupError)
+  }
+  void count
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as {
       metadata?: {

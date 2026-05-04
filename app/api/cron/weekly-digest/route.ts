@@ -12,13 +12,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, weeklyDigestEmail } from '@/lib/email'
 import { buildDigest } from '@/lib/digest'
+import { adminEmailList } from '@/lib/auth-admin'
 
 // Force dynamic — never pre-render. We need to query Supabase fresh every run.
 export const dynamic = 'force-dynamic'
-
-// The recipient. Currently a single admin inbox; if we ever onboard a team,
-// switch this to ADMIN_EMAILS.split(',') and loop.
-const DIGEST_TO = 'andre.dosogne@outlook.com'
 
 export async function GET(req: NextRequest) {
   // Cron auth gate — same pattern used by sponsorship-expiry / saved-searches.
@@ -38,16 +35,32 @@ export async function GET(req: NextRequest) {
       priorities,
     })
 
-    const result = await sendEmail({ to: DIGEST_TO, subject, html })
-    if (!result.ok) {
-      console.error('[cron/weekly-digest] sendEmail failed:', result.error)
-      return NextResponse.json({ error: result.error }, { status: 500 })
+    // L1: send to every admin in ADMIN_EMAILS rather than a hardcoded
+    // inbox. Each admin gets their own copy so we don't single-point-of-fail
+    // when the original recipient is on vacation.
+    const recipients = adminEmailList()
+    if (recipients.length === 0) {
+      console.warn('[cron/weekly-digest] ADMIN_EMAILS is empty — no recipients')
+      return NextResponse.json({ ok: false, sent_to: [] }, { status: 500 })
     }
 
-    console.log('[cron/weekly-digest] sent ok', { id: result.id, priorities: priorities.length })
+    const sendResults = await Promise.all(
+      recipients.map(to => sendEmail({ to, subject, html })),
+    )
+    const failed = sendResults.filter(r => !r.ok)
+    if (failed.length === recipients.length) {
+      console.error('[cron/weekly-digest] all sends failed:', failed.map(f => f.error))
+      return NextResponse.json({ error: 'All sends failed' }, { status: 500 })
+    }
+
+    console.log('[cron/weekly-digest] sent ok', {
+      recipients: recipients.length,
+      failed: failed.length,
+      priorities: priorities.length,
+    })
     return NextResponse.json({
       ok: true,
-      sent_to: DIGEST_TO,
+      sent_to: recipients,
       priorities_count: priorities.length,
       snapshot,
     })

@@ -12,11 +12,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, marketScanEmail } from '@/lib/email'
 import { buildMarketScan } from '@/lib/marketScan'
+import { adminEmailList } from '@/lib/auth-admin'
 
 export const dynamic = 'force-dynamic'
-
-// Always send to admin, plus any broker who opted in during setup.
-const ADMIN_TO = 'andre.dosogne@outlook.com'
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
@@ -46,7 +44,9 @@ export async function GET(req: NextRequest) {
       .eq('marketing_consent', true)
       .is('unsubscribed_at', null)
 
-    const recipients = new Set<string>([ADMIN_TO])
+    // L1: send to all admins (from ADMIN_EMAILS) instead of one hardcoded
+    // inbox, plus opted-in brokers.
+    const recipients = new Set<string>(adminEmailList())
     for (const s of (brokerSubs ?? [])) {
       if (s.email) recipients.add(s.email)
     }

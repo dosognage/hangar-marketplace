@@ -101,6 +101,13 @@ export default function PrivacyPage() {
           compliance. Unsubscribed users' emails are retained in a suppression list to prevent
           accidental re-subscription.
         </p>
+        <p>
+          <strong>Login activity:</strong> we log each successful sign-in with your IP address,
+          a brief description of your browser, and an approximate location derived from the IP.
+          We use this to send you "new device" alerts when an unfamiliar browser signs in to
+          your account, and to investigate suspicious activity. Login records are
+          automatically deleted after 90 days.
+        </p>
       </Section>
 
       <Section title="8. Your rights">

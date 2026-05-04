@@ -18,14 +18,21 @@ import { isAdminUser } from '@/lib/auth-admin'
 
 export const dynamic = 'force-dynamic'
 
-const DIGEST_TO = 'andre.dosogne@outlook.com'
-
 export async function GET(req: NextRequest) {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isAdminUser(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // L1: preview endpoints send to the calling admin's own inbox rather
+  // than a hardcoded recipient. This is a manual preview action — whoever
+  // clicked it wants to see the result, not necessarily the original
+  // hardcoded recipient.
+  const previewTo = user.email
+  if (!previewTo) {
+    return NextResponse.json({ error: 'Admin user has no email on file' }, { status: 500 })
   }
 
   const url = new URL(req.url)
@@ -45,11 +52,11 @@ export async function GET(req: NextRequest) {
     })
 
     if (send) {
-      const result = await sendEmail({ to: DIGEST_TO, subject, html })
+      const result = await sendEmail({ to: previewTo, subject, html })
       if (!result.ok) {
         return NextResponse.json({ error: result.error, snapshot, priorities }, { status: 500 })
       }
-      return NextResponse.json({ ok: true, sent_to: DIGEST_TO, id: result.id, snapshot, priorities })
+      return NextResponse.json({ ok: true, sent_to: previewTo, id: result.id, snapshot, priorities })
     }
 
     // Dry-run mode: return the rendered HTML so admin can inspect before sending.
