@@ -54,6 +54,16 @@ export async function login(
     return { error: 'Email and password are required.', email }
   }
 
+  // Bot-protection gate. Mirrors the signup flow — credential stuffing is
+  // the primary brute-force threat for an email/password login. Turnstile
+  // makes that orders of magnitude more expensive without inconveniencing
+  // real users (most pass invisibly, the rest see a one-click challenge).
+  const turnstileToken = formData.get('cf-turnstile-response') as string | null
+  const captcha = await verifyTurnstileToken(turnstileToken, await getClientIp())
+  if (!captcha.ok) {
+    return { error: captcha.error, email }
+  }
+
   const supabase = await createServerClient()
   const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password })
 

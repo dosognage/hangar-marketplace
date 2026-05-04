@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { resolveBrokerProfileId } from '@/lib/auth-broker'
+import { sniffImage } from '@/lib/image-sniff'
 
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 
@@ -12,6 +13,10 @@ const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
  * Uploads to the user-avatars bucket under {userId}/avatar.{ext},
  * then stores the public URL in auth user_metadata.avatar_url.
  * If the user is a verified broker, also updates broker_profiles.avatar_url.
+ *
+ * SECURITY: rejects any file whose first bytes don't match an allowlisted
+ * image format, regardless of the browser-supplied Content-Type or filename.
+ * SVG is intentionally NOT allowed (can embed scripts).
  *
  * Uses supabaseAdmin for storage to bypass RLS; auth is verified via cookie first.
  */
@@ -32,15 +37,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'File must be under 5 MB' }, { status: 400 })
   }
 
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-  const path = `${user.id}/avatar.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
+  const sniffed = sniffImage(buffer)
+  if (!sniffed) {
+    return NextResponse.json(
+      { error: 'Unsupported image type. Upload a JPG, PNG, WebP, or GIF.' },
+      { status: 400 },
+    )
+  }
+
+  // Use the SNIFFED extension + MIME, not anything from the form. Defends
+  // against polyglot files (a file that's both a valid PNG AND a valid HTML
+  // doc) by ensuring we always serve it as the format we verified.
+  const path = `${user.id}/avatar.${sniffed.ext}`
 
   // Upload (upsert so re-uploads overwrite the old file)
   const { error: uploadError } = await supabaseAdmin.storage
     .from('user-avatars')
     .upload(path, buffer, {
-      contentType: file.type,
+      contentType: sniffed.mime,
       upsert: true,
     })
 

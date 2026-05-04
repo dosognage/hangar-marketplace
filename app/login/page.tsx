@@ -12,6 +12,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { login, type AuthState } from '@/app/actions/auth'
 import { safeNextPath } from '@/lib/safe-redirect'
+import TurnstileWidget from '@/app/components/TurnstileWidget'
 
 function LoginForm() {
   const [state, formAction, isPending] = useActionState<AuthState, FormData>(
@@ -72,6 +73,13 @@ function LoginForm() {
             style={inputStyle}
           />
         </div>
+
+        {/* Bot-protection gate. Without this, the login endpoint is wide open
+            to credential-stuffing — leaked-elsewhere email/password pairs
+            tested at scale. Turnstile makes that orders of magnitude more
+            expensive without inconveniencing real users (most pass invisibly,
+            a tiny fraction see a one-click challenge). */}
+        <TurnstileWidget />
 
         <button type="submit" disabled={isPending} style={buttonStyle}>
           {isPending ? 'Signing in…' : 'Sign in'}
