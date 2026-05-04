@@ -47,6 +47,18 @@ test.describe('Broker application: end-to-end', () => {
     // newsletter consent checkbox in production builds.
     await applicantPage.locator('input[type="email"]').first().fill(applicantEmail)
     await applicantPage.locator('input[type="password"]').first().fill(applicantPwd)
+    // Inject Turnstile bypass token (see LoginPage.fillAndSubmit for full
+    // explanation — H1 added the gate, the test secret accepts any token).
+    await applicantPage.evaluate(() => {
+      let input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null
+      if (!input) {
+        input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = 'cf-turnstile-response'
+        document.querySelector('form')?.appendChild(input)
+      }
+      if (!input.value) input.value = 'e2e-bypass-token'
+    })
     await applicantPage.getByRole('button', { name: /sign in|log in/i }).click()
     await applicantPage.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 75_000 })
 

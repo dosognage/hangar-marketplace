@@ -13,6 +13,7 @@
 
 import { test, expect, AUTH_STATES } from '../fixtures/test'
 import { getTestSupabaseAdmin } from '../helpers/supabase-admin'
+import { USER } from '../helpers/test-users'
 
 const stripeConfigured = !!process.env.STRIPE_SECRET_KEY
                        && process.env.STRIPE_SECRET_KEY.startsWith('sk_test_')
@@ -23,25 +24,52 @@ test.describe('Stripe checkout API @stripe-api', () => {
   test.skip(!stripeConfigured, 'STRIPE_SECRET_KEY (sk_test_) not configured — skipping')
 
   test('sponsor-checkout returns a valid Stripe Checkout URL', async ({ request, baseURL }) => {
+    // Seed a listing OWNED by USER so the C1 ownership check passes.
+    // (Pre-C1 this test picked any approved listing, which now correctly
+    // returns 403 because the caller doesn't own it.)
     const supabase = getTestSupabaseAdmin()
-    const { data: listing } = await supabase
+    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers()
+    if (usersError) throw usersError
+    const userRow = users.find(u => u.email === USER.email)
+    expect(userRow, `seeded test user ${USER.email} not found`).toBeTruthy()
+
+    const { data: listing, error: seedError } = await supabase
       .from('listings')
+      .insert({
+        title:          'Sponsor test listing',
+        airport_name:   'Centennial',
+        airport_code:   'KAPA',
+        city:           'Denver',
+        state:          'CO',
+        property_type:  'hangar',
+        listing_type:   'sale',
+        ownership_type: 'fee_simple',
+        asking_price:   100_000,
+        status:         'approved',
+        is_sample:      false,
+        contact_name:   'E2E Tester',
+        contact_email:  'tests@example.com',
+        description:    'created by stripe-checkout-api.spec.ts',
+        user_id:        userRow!.id,
+      })
       .select('id')
-      .eq('status', 'approved')
-      .eq('is_sample', false)
-      .limit(1)
       .single()
-    expect(listing, 'no approved listing in test DB').toBeTruthy()
+    if (seedError) throw seedError
+    expect(listing?.id, 'failed to seed test listing').toBeTruthy()
 
-    const res = await request.post(`${baseURL}/api/stripe/sponsor-checkout`, {
-      data: { listing_id: listing!.id, duration_days: 7 },
-      headers: { 'content-type': 'application/json' },
-    })
+    try {
+      const res = await request.post(`${baseURL}/api/stripe/sponsor-checkout`, {
+        data: { listing_id: listing!.id, duration_days: 7 },
+        headers: { 'content-type': 'application/json' },
+      })
 
-    expect(res.ok(), `sponsor-checkout returned ${res.status()}: ${await res.text()}`).toBe(true)
-    const body = await res.json()
-    expect(body.url, 'no Stripe URL in response').toBeTruthy()
-    expect(body.url).toMatch(/^https:\/\/checkout\.stripe\.com\//)
+      expect(res.ok(), `sponsor-checkout returned ${res.status()}: ${await res.text()}`).toBe(true)
+      const body = await res.json()
+      expect(body.url, 'no Stripe URL in response').toBeTruthy()
+      expect(body.url).toMatch(/^https:\/\/checkout\.stripe\.com\//)
+    } finally {
+      await supabase.from('listings').delete().eq('id', listing!.id)
+    }
   })
 
   test('sponsor-checkout rejects unknown listing_id with 404', async ({ request, baseURL }) => {

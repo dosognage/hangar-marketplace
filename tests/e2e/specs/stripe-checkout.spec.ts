@@ -22,6 +22,7 @@
 import { test, expect, AUTH_STATES } from '../fixtures/test'
 import { getTestSupabaseAdmin } from '../helpers/supabase-admin'
 import { STRIPE_TEST_CARDS } from '../helpers/stripe-cards'
+import { USER } from '../helpers/test-users'
 
 test.use({ storageState: AUTH_STATES.user })
 
@@ -32,16 +33,38 @@ test.describe('Stripe sponsor checkout @stripe', () => {
   test.skip(!stripeConfigured, 'STRIPE_SECRET_KEY not configured for test mode — skipping')
 
   test('sponsor checkout completes and webhook updates DB', async ({ page }) => {
+    // Seed a listing OWNED by USER so the C1 ownership check passes —
+    // pre-C1 this test picked any approved listing, which now correctly
+    // 403s because the caller doesn't own it.
     const supabase = getTestSupabaseAdmin()
-    // Find a sponsorable listing (approved + not already sponsored)
-    const { data: listing } = await supabase
+    const { data: { users } } = await supabase.auth.admin.listUsers()
+    const userRow = users.find(u => u.email === USER.email)
+    expect(userRow, `seeded test user ${USER.email} not found`).toBeTruthy()
+
+    const { data: listing, error: seedError } = await supabase
       .from('listings')
+      .insert({
+        title:          'Sponsor checkout test listing',
+        airport_name:   'Centennial',
+        airport_code:   'KAPA',
+        city:           'Denver',
+        state:          'CO',
+        property_type:  'hangar',
+        listing_type:   'sale',
+        ownership_type: 'fee_simple',
+        asking_price:   100_000,
+        status:         'approved',
+        is_sponsored:   false,
+        is_sample:      false,
+        contact_name:   'E2E Tester',
+        contact_email:  'tests@example.com',
+        description:    'created by stripe-checkout.spec.ts',
+        user_id:        userRow!.id,
+      })
       .select('id, title')
-      .eq('status', 'approved')
-      .eq('is_sponsored', false)
-      .limit(1)
       .single()
-    expect(listing, 'no sponsorable listing found in test DB').toBeTruthy()
+    if (seedError) throw seedError
+    expect(listing, 'failed to seed listing').toBeTruthy()
 
     await page.goto(`/listing/${listing!.id}`)
     await page.getByRole('button', { name: /sponsor|boost|feature this listing/i }).first().click()
@@ -77,5 +100,8 @@ test.describe('Stripe sponsor checkout @stripe', () => {
       message: 'Stripe webhook did not update sponsored_until within 60s. Check ' +
                'STRIPE_WEBHOOK_SECRET and the Stripe webhook endpoint config.',
     }).toBe(true)
+
+    // Cleanup the seeded listing.
+    await supabase.from('listings').delete().eq('id', listing!.id)
   })
 })

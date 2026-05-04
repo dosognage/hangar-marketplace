@@ -27,6 +27,27 @@ export class LoginPage extends BasePage {
   async fillAndSubmit(email: string, password: string): Promise<void> {
     await this.email.fill(email)
     await this.password.fill(password)
+
+    // H1 added a Turnstile gate to the login server action. On GitHub
+    // Actions runners the Turnstile iframe doesn't load (network-restricted
+    // — same reason auth.spec.ts skips signup-happy-path in CI), so the
+    // cf-turnstile-response field never gets a real token and the server
+    // returns "Please complete the captcha". The test environment uses
+    // Cloudflare's "always passes" secret key (1x000…AA) which accepts
+    // ANY non-empty token, so injecting a placeholder is enough. Locally
+    // where the iframe DOES load, our placeholder is harmless because the
+    // iframe's onPass overwrites it with the real token before submit.
+    await this.page.evaluate(() => {
+      let input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null
+      if (!input) {
+        input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = 'cf-turnstile-response'
+        document.querySelector('form')?.appendChild(input)
+      }
+      if (!input.value) input.value = 'e2e-bypass-token'
+    })
+
     await this.submit.click()
   }
 
