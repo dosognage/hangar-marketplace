@@ -77,6 +77,29 @@ async function loginAndSave(page: import('@playwright/test').Page, user: TestUse
   // wins .first() depending on render order.
   await page.locator('input[type="email"]').first().fill(user.email)
   await page.locator('input[type="password"]').first().fill(user.password)
+
+  // Login is now Turnstile-gated (security audit H1). On GitHub Actions
+  // the Turnstile iframe doesn't load (same reason auth.spec.ts skips
+  // signup tests in CI), so the cf-turnstile-response input never gets
+  // its real token. Inject a dummy value — the test environment uses
+  // Cloudflare's "always passes" secret key (1x0000…AA) which returns
+  // success for any non-empty token. Locally the iframe DOES load, so
+  // this is harmless: setting the value before the iframe overwrites it
+  // is fine (the iframe's onPass replaces it again with the real token).
+  await page.evaluate(() => {
+    let input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null
+    if (!input) {
+      // Widget didn't mount at all — create the hidden input ourselves so
+      // the form submit carries the field.
+      input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = 'cf-turnstile-response'
+      const form = document.querySelector('form')
+      form?.appendChild(input)
+    }
+    if (!input.value) input.value = 'e2e-bypass-token'
+  })
+
   await page.getByRole('button', { name: /sign in|log in/i }).click()
 
   try {
