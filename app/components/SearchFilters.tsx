@@ -462,10 +462,14 @@ const wrapperStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   padding: '0.55rem 0.85rem',
-  height: '40px',
+  // Bumped 40px → 44px so iOS taps land cleanly inside the 44pt minimum
+  // tap-target band. Search filter row is the entry point for fly-in
+  // pilots scanning the QR; it has to feel right on iPhone.
+  height: '44px',
   border: '1px solid #d1d5db',
   borderRadius: '8px',
-  fontSize: '0.9rem',
+  // ≥ 16px (1rem) prevents iOS Safari auto-zoom on focus.
+  fontSize: '1rem',
   color: '#111827',
   backgroundColor: '#f9fafb',
   outline: 'none',

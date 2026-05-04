@@ -1,3 +1,4 @@
+import type { Viewport } from 'next'
 import Link from 'next/link'
 import './globals.css'
 import { createServerClient } from '@/lib/supabase-server'
@@ -46,7 +47,16 @@ export const metadata = {
       { rel: 'mask-icon', url: '/favicon.svg', color: '#1a3a5c' },
     ],
   },
-  manifest: '/site.webmanifest',
+  // PWA / iOS web-app integration. Pairs with app/manifest.ts so users who
+  // tap "Add to Home Screen" from Safari get a real app icon and a
+  // fullscreen launch experience (no browser chrome). Next.js auto-injects
+  // the <link rel="manifest"> tag pointing at /manifest.webmanifest, so no
+  // explicit `manifest:` field is needed.
+  appleWebApp: {
+    capable:        true,
+    title:          'Hangar Marketplace',
+    statusBarStyle: 'black-translucent',
+  },
   openGraph: {
     siteName: 'Hangar Marketplace',
     type: 'website',
@@ -67,6 +77,20 @@ export const metadata = {
     follow: true,
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' as const },
   },
+}
+
+// Viewport + theme color. The theme_color matches the deep navy used
+// throughout the app and shows up as the iOS Safari URL-bar tint and the
+// Android system navigation bar tint when installed as a PWA.
+export const viewport: Viewport = {
+  themeColor:    '#1a3a5c',
+  width:         'device-width',
+  initialScale:  1,
+  // Allow user pinch-zoom — accessibility requirement, even though most
+  // mobile sites disable it. Brokers reading specs in the sun on a phone
+  // need to zoom.
+  maximumScale:  5,
+  userScalable:  true,
 }
 
 export default async function RootLayout({
