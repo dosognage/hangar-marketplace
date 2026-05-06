@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signup, type AuthState } from '@/app/actions/auth'
@@ -17,6 +17,18 @@ export default function SignupPage() {
   // server action also sanitizes, but cleaning here keeps the hidden
   // input + "Sign in" link href safe.
   const next = safeNextPath(searchParams.get('next'))
+
+  // Force the Turnstile widget to remount after every server-action
+  // response. Cloudflare consumes Turnstile tokens on first verify; if
+  // signup fails for ANY reason (weak password, taken email, etc.) the
+  // form keeps the now-spent token rendered, and the next submit gets
+  // rejected with "captcha failed" even though the widget UI still shows
+  // ✓. Bumping a key forces React to throw away the old widget instance
+  // and mount a fresh one with a new token.
+  const [turnstileKey, setTurnstileKey] = useState(0)
+  useEffect(() => {
+    if (state) setTurnstileKey(k => k + 1)
+  }, [state])
 
   return (
     <div style={{ maxWidth: '420px', margin: '3rem auto' }}>
@@ -95,7 +107,7 @@ export default function SignupPage() {
             </label>
           </div>
 
-          <TurnstileWidget />
+          <TurnstileWidget key={turnstileKey} />
 
           <button type="submit" disabled={isPending} style={buttonStyle}>
             {isPending ? 'Creating account…' : 'Create account'}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { requestPasswordReset, type ForgotPasswordState } from '@/app/actions/auth'
 import TurnstileWidget from '@/app/components/TurnstileWidget'
@@ -10,6 +10,14 @@ export default function ForgotPasswordPage() {
     requestPasswordReset,
     null,
   )
+
+  // Reset Turnstile after every server-action response — tokens are
+  // single-use, so any retry needs a fresh widget. See signup/page.tsx
+  // for the full rationale.
+  const [turnstileKey, setTurnstileKey] = useState(0)
+  useEffect(() => {
+    if (state) setTurnstileKey(k => k + 1)
+  }, [state])
 
   // After a successful submit we always show the same generic confirmation,
   // regardless of whether the address is registered. Prevents email enumeration.
