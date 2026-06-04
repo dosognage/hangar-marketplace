@@ -1,34 +1,46 @@
 /**
- * Pre-spec authentication setup.
+ * Pre-spec authentication setup — programmatic.
  *
- * Runs once (as a Playwright "setup" project, before the rest of the suite)
- * to log in each role's seeded test user and save their cookies + storage
- * to disk. Subsequent tests then `test.use({ storageState: ... })` to start
- * pre-authenticated, skipping the login UI.
+ * Runs once (as the Playwright `setup` project, before everything else)
+ * to mint a Supabase session per role and bake the corresponding
+ * `sb-<ref>-auth-token` cookie into a storageState file. Downstream specs
+ * `test.use({ storageState: AUTH_STATES.<role> })` and start signed-in.
  *
- * This shaves ~3 seconds off every authenticated test and keeps spec files
- * focused on the behaviour they're actually testing instead of repeating
- * the same login dance over and over.
+ * We deliberately do NOT drive the login form here. The form path is
+ * brittle on GH Actions runners (Turnstile iframe blocked by network
+ * egress, cold-Supabase 30+ second redirect tails, React hydration race
+ * against the bypass-token injection). The login UI is exercised
+ * end-to-end by auth.spec.ts; setup's job is just to produce a cookie
+ * jar, and the SDK does that an order of magnitude faster and more
+ * reliably than puppeteering through the rendered page.
+ *
+ * Self-healing: if a test user is missing from the branch DB the
+ * helper creates them on the fly (see helpers/programmatic-auth.ts).
+ * This shields us from the historical foot-gun where adding a new role
+ * required a manual seed step that wasn't actually documented anywhere.
  */
 
-import { test as setup, expect } from '@playwright/test'
+import { test as setup } from '@playwright/test'
 import path from 'path'
 import fs from 'fs'
 import { ADMIN, BROKER, USER, type TestUser } from '../helpers/test-users'
+import {
+  ensureUserAndGetSession,
+  getSessionCookieName,
+} from '../helpers/programmatic-auth'
 
 const AUTH_DIR = path.resolve(__dirname, '..', '.auth')
 
-// Setup tests get a longer per-test timeout than the default 30s. The login
-// server action awaits recordAndAlertLogin which makes 2–3 Supabase calls
-// before redirecting; on a cold CI runner those round-trips can stretch to
-// 30+ seconds. 90s gives plenty of slack without masking real bugs.
-setup.setTimeout(90_000)
+// Programmatic setup is fast (<2s/role on a warm DB). Keep a generous
+// timeout anyway in case Supabase cold-starts on a fresh branch — the
+// admin createUser round-trip can stretch on first call after deploy.
+setup.setTimeout(30_000)
 
 setup.beforeAll(() => {
   if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR, { recursive: true })
 
-  // Fail fast if the env vars the dev server needs are missing or wrong.
-  // Cheaper than 8 minutes of timeouts to discover the same problem.
+  // Fail fast if the env vars the helper needs are missing or pointing
+  // at production — cheaper than 3 confusing setup failures.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   if (!url) {
     throw new Error(
@@ -39,8 +51,8 @@ setup.beforeAll(() => {
   }
   if (url.includes('tokvsbyokppnyxbthysd')) {
     throw new Error(
-      `[auth.setup] REFUSING to run: NEXT_PUBLIC_SUPABASE_URL points at ` +
-      `production. Tests must use the e2e-test branch.`,
+      '[auth.setup] REFUSING to run: NEXT_PUBLIC_SUPABASE_URL points at ' +
+      'production. Tests must use the e2e-test branch.',
     )
   }
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -51,93 +63,47 @@ setup.beforeAll(() => {
   }
 })
 
-async function loginAndSave(page: import('@playwright/test').Page, user: TestUser, file: string) {
-  // Capture everything happening during login so failures are debuggable
-  // from CI logs without having to download trace zips.
-  const networkLog: string[] = []
-  const consoleLog: string[] = []
-  page.on('response', async (res) => {
-    const u = res.url()
-    // Skip noise — only log requests to our origin (auth/login/api routes).
-    if (u.includes('/login') || u.includes('/api/') || u.includes('/auth/')) {
-      networkLog.push(`${res.status()} ${res.request().method()} ${u}`)
-    }
-  })
-  page.on('console', (msg) => {
-    consoleLog.push(`[${msg.type()}] ${msg.text()}`)
-  })
-  page.on('pageerror', (err) => {
-    consoleLog.push(`[pageerror] ${err.message}`)
-  })
+async function authenticateAndSave(
+  context: import('@playwright/test').BrowserContext,
+  user: TestUser,
+  file: string,
+): Promise<void> {
+  // 1) Mint a Supabase session (creates the user if missing).
+  const session = await ensureUserAndGetSession(user)
 
-  await page.goto('/login')
-  // Scope to the form's actual <input type="email"|"password">. We can't
-  // use getByLabel(/email/i) because the global NewsletterSignup component
-  // has a checkbox labeled "I agree to receive ... emails" which sometimes
-  // wins .first() depending on render order.
-  await page.locator('input[type="email"]').first().fill(user.email)
-  await page.locator('input[type="password"]').first().fill(user.password)
+  // 2) Bake the session into the browser context as the cookie our
+  //    server-side Supabase client reads. Format mirrors what
+  //    lib/supabase-server.ts writes during a real login: the cookie
+  //    VALUE is the JSON-serialized session, and the cookie attrs
+  //    (httpOnly, sameSite=Lax, path=/, 7-day maxAge) match the runtime.
+  const baseUrl  = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000'
+  const hostname = new URL(baseUrl).hostname
+  const secure   = baseUrl.startsWith('https://')
 
-  // Login is now Turnstile-gated (security audit H1). On GitHub Actions
-  // the Turnstile iframe doesn't load (same reason auth.spec.ts skips
-  // signup tests in CI), so the cf-turnstile-response input never gets
-  // its real token. Inject a dummy value — the test environment uses
-  // Cloudflare's "always passes" secret key (1x0000…AA) which returns
-  // success for any non-empty token. Locally the iframe DOES load, so
-  // this is harmless: setting the value before the iframe overwrites it
-  // is fine (the iframe's onPass replaces it again with the real token).
-  await page.evaluate(() => {
-    let input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null
-    if (!input) {
-      // Widget didn't mount at all — create the hidden input ourselves so
-      // the form submit carries the field.
-      input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = 'cf-turnstile-response'
-      const form = document.querySelector('form')
-      form?.appendChild(input)
-    }
-    if (!input.value) input.value = 'e2e-bypass-token'
-  })
+  await context.addCookies([{
+    name:     getSessionCookieName(),
+    value:    JSON.stringify(session),
+    domain:   hostname,
+    path:     '/',
+    httpOnly: true,
+    secure,
+    sameSite: 'Lax',
+    // 7 days, matching lib/supabase-server.ts.
+    expires:  Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
+  }])
 
-  await page.getByRole('button', { name: /sign in|log in/i }).click()
-
-  try {
-    // Successful login redirects away from /login. The login action awaits
-    // recordAndAlertLogin (2-3 Supabase calls), which on a cold CI runner
-    // can take 30+ seconds. 75s leaves headroom under the 90s test timeout.
-    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 75_000 })
-  } catch (e) {
-    const url = page.url()
-    const buttonText = await page.getByRole('button', { name: /sign in|log in|signing/i }).first().textContent().catch(() => null)
-    // The login page's error <div> has no role/class/data-attr, so we just
-    // dump the whole card-level text and look for known error phrases.
-    const cardText = await page.locator('h1:has-text("Sign in")').locator('..').textContent().catch(() => null)
-    const bodyText = await page.locator('body').textContent().catch(() => null)
-    throw new Error(
-      `[auth.setup] Login did not redirect within 75s for ${user.email}.\n` +
-      `  URL: ${url}\n` +
-      `  Submit button text: ${buttonText ?? '(not found)'}\n` +
-      `  Login card text:\n    ${(cardText ?? '(not found)').replace(/\s+/g, ' ').slice(0, 600)}\n` +
-      `  Body text (first 1000 chars):\n    ${(bodyText ?? '(empty)').replace(/\s+/g, ' ').slice(0, 1000)}\n` +
-      `  Network log (last 30):\n    ${networkLog.slice(-30).join('\n    ') || '(empty)'}\n` +
-      `  Console log (last 30):\n    ${consoleLog.slice(-30).join('\n    ') || '(empty)'}\n`,
-    )
-  }
-
-  // Sanity-check: we should now be authenticated
-  await expect(page.getByRole('link', { name: /sign in/i })).toHaveCount(0)
-  await page.context().storageState({ path: file })
+  // 3) Persist for downstream specs.
+  await context.storageState({ path: file })
 }
 
-setup('authenticate as admin', async ({ page }) => {
-  await loginAndSave(page, ADMIN, path.join(AUTH_DIR, 'admin.json'))
+setup('authenticate as admin', async ({ context }) => {
+  await authenticateAndSave(context, ADMIN, path.join(AUTH_DIR, 'admin.json'))
 })
 
-setup('authenticate as broker', async ({ page }) => {
-  await loginAndSave(page, BROKER, path.join(AUTH_DIR, 'broker.json'))
+setup('authenticate as broker', async ({ context }) => {
+  await authenticateAndSave(context, BROKER, path.join(AUTH_DIR, 'broker.json'))
 })
 
-setup('authenticate as regular user', async ({ page }) => {
-  await loginAndSave(page, USER, path.join(AUTH_DIR, 'user.json'))
+setup('authenticate as regular user', async ({ context }) => {
+  await authenticateAndSave(context, USER, path.join(AUTH_DIR, 'user.json'))
 })
