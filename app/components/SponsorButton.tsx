@@ -155,6 +155,11 @@ export default function SponsorButton({ listingId, sponsoredUntil, hasStripeCust
         {SPONSOR_TIERS.map(tier => (
           <button
             key={tier.days}
+            // Stable hook for E2E tests. The visible label `$29 / 7 days`
+            // overlaps with the confirm button copy below ("Sponsor for 7
+            // days ($29)") under any loose regex, so anchor on a data-testid
+            // that's tied to the tier identity (its day-count) instead.
+            data-testid={`sponsor-tier-${tier.days}`}
             onClick={() => setSelectedDays(tier.days)}
             style={{
               flex: 1, minWidth: '90px',
@@ -178,6 +183,9 @@ export default function SponsorButton({ listingId, sponsoredUntil, hasStripeCust
       </div>
 
       <button
+        // Separate hook from the tier buttons so E2E can click the actual
+        // checkout-start CTA without ambiguity.
+        data-testid="sponsor-checkout-confirm"
         onClick={startCheckout}
         disabled={loading}
         style={{

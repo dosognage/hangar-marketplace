@@ -69,8 +69,17 @@ test.describe('Stripe sponsor checkout @stripe', () => {
     await page.goto(`/listing/${listing!.id}`)
     await page.getByRole('button', { name: /sponsor|boost|feature this listing/i }).first().click()
 
-    // Pick the cheapest tier and proceed to Stripe Checkout
-    await page.getByRole('button', { name: /7[- ]day|\$29/i }).first().click()
+    // SponsorButton's expanded picker has TWO clickable layers:
+    //   1. Tier select buttons (`sponsor-tier-7`, `-30`, `-90`) — toggle
+    //      `selectedDays` state but never navigate.
+    //   2. The "Sponsor for X days ($Y)" confirm button
+    //      (`sponsor-checkout-confirm`) — calls the API and redirects.
+    // A loose name-based regex matches both, and Playwright's `.first()`
+    // picked the wrong one (the tier toggle) which silently no-op'd the
+    // navigation. Use data-testid anchors so the test exercises the actual
+    // flow: select the 7-day tier, THEN click the confirm CTA.
+    await page.getByTestId('sponsor-tier-7').click()
+    await page.getByTestId('sponsor-checkout-confirm').click()
     await page.waitForURL(/checkout\.stripe\.com/, { timeout: 15_000 })
 
     // Stripe-hosted checkout is in an iframe-free page now. Fill the test card.
@@ -80,8 +89,12 @@ test.describe('Stripe sponsor checkout @stripe', () => {
     await page.locator('#cardCvc,    [name="cardCvc"]').fill(card.cvc)
     // Cardholder name is required even in test mode
     await page.locator('#billingName, [name="billingName"]').fill('E2E Tester')
-    // Submit — Stripe redirects back to our success URL
-    await page.getByRole('button', { name: /pay|subscribe|complete/i }).click()
+    // Submit — Stripe's hosted checkout exposes a stable data-testid on the
+    // submit CTA (`hosted-payment-submit-button`). We use it directly rather
+    // than role+name regex because the page now shows several "Pay with X"
+    // accordion buttons (Card, Bank, Klarna, Link) that match a loose name
+    // regex and trigger Playwright strict-mode violations.
+    await page.getByTestId('hosted-payment-submit-button').click()
 
     // Land back on /listing/[id]?status=success or similar
     await page.waitForURL(/hangarmarketplace|localhost/, { timeout: 30_000 })
