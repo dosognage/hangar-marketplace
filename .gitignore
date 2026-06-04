@@ -53,3 +53,9 @@ broker-prospects.xlsx
 # Internal security audits — keep local-only so open-vulnerability details
 # don't leak via repo history. Move outside /docs/security-audit-* to commit.
 /docs/security-audit-*.md
+
+# Playwright auth state + ephemeral test artifacts.
+# .auth/ contains real Supabase JWTs after setup runs — never commit.
+# .test-results/ holds per-run videos/traces/screenshots — pure noise in diffs.
+/tests/e2e/.auth/
+/tests/e2e/.test-results/
