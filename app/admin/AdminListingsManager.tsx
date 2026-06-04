@@ -651,15 +651,26 @@ export default function AdminListingsManager({
               : null
 
             return (
-              <div key={listing.id} style={{
-                border: `1px solid ${listing.is_sample ? '#d1d5db' : '#e5e7eb'}`,
-                borderLeft: `4px solid ${sc.border}`,
-                borderRadius: '8px',
-                padding: '0.9rem 1.1rem',
-                backgroundColor: listing.is_sample ? '#f9fafb' : 'white',
-                opacity: isDeleting ? 0.4 : 1,
-                transition: 'opacity 0.2s',
-              }}>
+              <div
+                key={listing.id}
+                // Stable scope-anchor for E2E. The admin board shows ALL
+                // listings (any owner), so tests that need to operate on a
+                // specific seeded listing must scope by id — otherwise
+                // "first card" picks whatever ordering the query returned
+                // (which has bitten us when another user's listing happened
+                // to land first and was already sponsored, making the
+                // "Comp Nd" button selector match zero elements).
+                data-listing-id={listing.id}
+                style={{
+                  border: `1px solid ${listing.is_sample ? '#d1d5db' : '#e5e7eb'}`,
+                  borderLeft: `4px solid ${sc.border}`,
+                  borderRadius: '8px',
+                  padding: '0.9rem 1.1rem',
+                  backgroundColor: listing.is_sample ? '#f9fafb' : 'white',
+                  opacity: isDeleting ? 0.4 : 1,
+                  transition: 'opacity 0.2s',
+                }}
+              >
                 {/* Top row: title + status badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>

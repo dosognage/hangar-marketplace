@@ -103,14 +103,16 @@ test.describe('Admin comp-sponsor flow with password modal', () => {
     expect(candidate, 'no hangar listing to comp').toBeTruthy()
 
     await adminPage.goto()
-    // The admin UI renders ONE Comp button per listing whose label reflects
-    // the current dropdown selection (default 30). To click "Comp 7d" we
-    // first need to set the duration dropdown to 7. Scope to the first
-    // listing card to avoid matching multiple selects.
-    const firstCard = adminPage.page.locator('select').filter({ hasText: '7 days' }).first()
-    await firstCard.scrollIntoViewIfNeeded()
-    await firstCard.selectOption({ value: '7' })
-    const btn = adminPage.compButton(7).first()
+    // Scope STRICTLY to the seeded candidate listing via its data-listing-id
+    // attribute. The admin board shows listings from every owner — relying
+    // on "the first card" picks whatever ordering Supabase returned, and on
+    // CI that ordering has put another user's already-sponsored listing
+    // first (its button reads "Extend 7d", not "Comp 7d", so the matcher
+    // missed and the test timed out on scrollIntoViewIfNeeded).
+    const durationSelect = adminPage.durationSelectForListing(candidate!.id)
+    await durationSelect.scrollIntoViewIfNeeded()
+    await durationSelect.selectOption({ value: '7' })
+    const btn = adminPage.compButtonForListing(candidate!.id, 7)
     await btn.scrollIntoViewIfNeeded()
     await btn.click()
 
