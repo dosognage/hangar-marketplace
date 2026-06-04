@@ -19,6 +19,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import SearchFilters from '@/app/components/SearchFilters'
 import SplitView from '@/app/components/SplitView'
 import SaveSearchWidget from '@/app/components/SaveSearchWidget'
+import PreLaunchSignup from '@/app/components/PreLaunchSignup'
 import { geocodeLocation, distanceMiles } from '@/lib/geocode'
 import { getDefaultAircraft } from '@/app/actions/aircraft'
 
@@ -189,8 +190,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
 
   return (
-    // Negative margin breaks out of the layout's max-width / padding
-    // so the map can span the full viewport width
+    <>
+    {/* Negative margin breaks out of the layout's max-width / padding
+        so the map can span the full viewport width */}
     <div className="home-fullbleed" style={{ margin: '-2rem', display: 'flex', flexDirection: 'column', height: 'calc(100dvh - var(--header-h, 60px))', overflow: 'hidden' }}>
 
       {/* Search bar — desktop only; on mobile the floating bar in SplitView is used */}
@@ -238,5 +240,66 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         />
       </div>
     </div>
+
+    {/* ── Mobile app coming-soon strip ──────────────────────────────────────
+        The home page above is a full-viewport split view (map + listings),
+        so on mobile it's `position: fixed` and there's no "below" — this
+        section is hidden via the `home-app-coming-soon` class in
+        globals.css for that breakpoint. Desktop visitors scroll past the
+        map and land here.                                                  */}
+    <section
+      className="home-app-coming-soon"
+      aria-labelledby="home-app-coming-soon-title"
+      style={{
+        marginTop: '2.5rem',
+        padding: '2rem 2.25rem',
+        backgroundColor: '#0f172a',
+        backgroundImage: 'linear-gradient(135deg, #0f172a 0%, #1a3a5c 100%)',
+        borderRadius: '14px',
+        color: 'white',
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) minmax(280px, 420px)',
+        gap: '2rem',
+        alignItems: 'center',
+      }}
+    >
+      <div>
+        <span style={{
+          display: 'inline-block',
+          backgroundColor: 'rgba(96, 165, 250, 0.18)',
+          color: '#bfdbfe',
+          fontSize: '0.68rem',
+          fontWeight: '700',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          padding: '0.25rem 0.7rem',
+          borderRadius: '9999px',
+          marginBottom: '0.85rem',
+        }}>
+          Coming soon
+        </span>
+        <h2
+          id="home-app-coming-soon-title"
+          style={{
+            margin: '0 0 0.6rem',
+            fontSize: '1.4rem',
+            fontWeight: '800',
+            lineHeight: 1.25,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          Mobile app coming soon — get notified
+        </h2>
+        <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.925rem', lineHeight: 1.6, maxWidth: '52ch' }}>
+          Hangar Marketplace is launching native iOS and Android apps soon.
+          Drop your email — we&apos;ll let you know the moment they&apos;re live.
+        </p>
+      </div>
+
+      <div>
+        <PreLaunchSignup source="web-home" variant="compact" />
+      </div>
+    </section>
+    </>
   )
 }

@@ -451,6 +451,7 @@ export default async function RootLayout({
                   <FooterCol title="Company">
                     <FooterLink href="/about">About Us</FooterLink>
                     <FooterLink href="/blog">Blog</FooterLink>
+                    <FooterLink href="/app">Mobile app (soon)</FooterLink>
                     <FooterLink href="/privacy">Privacy Policy</FooterLink>
                     <FooterLink href="/unsubscribe">Unsubscribe</FooterLink>
                     <FooterLink href="/apply-broker">Broker verification</FooterLink>
