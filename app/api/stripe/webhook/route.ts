@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getStripe, SPONSOR_TIERS } from '@/lib/stripe'
+import Stripe from 'stripe'
+import { getStripe, SPONSOR_TIERS, HOST_TIERS, type HostTier } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, newRequestAtAirportEmail } from '@/lib/email'
 
@@ -75,6 +76,9 @@ export async function POST(req: NextRequest) {
         type?: string
         listing_id?: string
         duration_days?: string
+        // Host subscription mode metadata
+        user_id?: string
+        tier?: string
       }
       payment_status?: string
       customer?: string | null
@@ -139,6 +143,50 @@ export async function POST(req: NextRequest) {
       console.log(`[webhook] Listing ${listing_id} fee paid — moved to pending review`)
     }
 
+    // ── Host tier subscription created ─────────────────────────────────────
+    // checkout.session.completed for a subscription-mode session.
+    // We've stashed metadata.type='host_subscription' + metadata.user_id +
+    // metadata.tier on the session. Stripe also gives us subscription +
+    // customer IDs on the session object for mode='subscription'.
+    if (type === 'host_subscription' && session.payment_status !== 'unpaid') {
+      const userId  = session.metadata?.user_id as string | undefined
+      const tier    = session.metadata?.tier    as HostTier | undefined
+      const subId   = (session as unknown as { subscription?: string }).subscription
+      const custId  = stripeCustomerId
+
+      if (!userId || !tier || !subId || !custId) {
+        console.error(`[webhook] host_subscription missing fields — user=${userId} tier=${tier} sub=${subId} cust=${custId}`)
+        return NextResponse.json({ error: 'Invalid host_subscription metadata' }, { status: 400 })
+      }
+      if (!HOST_TIERS[tier]) {
+        console.error(`[webhook] host_subscription invalid tier=${tier}`)
+        return NextResponse.json({ error: 'Invalid tier' }, { status: 400 })
+      }
+
+      // Fetch the subscription to get current_period_end. The checkout
+      // session itself doesn't include the period boundary.
+      const stripe = getStripe()
+      const subscription = await stripe.subscriptions.retrieve(subId)
+      const periodEndIso = new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString()
+
+      const { error: upsertError } = await supabaseAdmin
+        .from('host_subscriptions')
+        .upsert({
+          user_id:                userId,
+          tier,
+          status:                 'active',
+          stripe_customer_id:     custId,
+          stripe_subscription_id: subId,
+          current_period_end:     periodEndIso,
+        }, { onConflict: 'user_id' })
+
+      if (upsertError) {
+        console.error('[webhook] host_subscription upsert failed:', upsertError.message)
+        return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+      }
+      console.log(`[webhook] Host ${userId} subscribed to ${tier} (sub=${subId}, ends=${periodEndIso})`)
+    }
+
     // ── Hangar request activation ────────────────────────────────────────────
     if (type === 'hangar_request' && request_id && session.payment_status === 'paid') {
       // ── Activate the request ─────────────────────────────────────────────
@@ -190,6 +238,106 @@ export async function POST(req: NextRequest) {
           console.log(`[webhook] Notified ${matchingListings.length} owners at ${updatedRequest.airport_code}`)
         }
       }
+    }
+  }
+
+  // ── Subscription lifecycle events ──────────────────────────────────────
+  // These fire AFTER the initial checkout.session.completed and cover
+  // ongoing state: tier swaps via Customer Portal, cancellations,
+  // payment failures, successful renewals.
+  if (event.type === 'customer.subscription.updated') {
+    const sub = event.data.object as Stripe.Subscription
+    const priceId = sub.items.data[0]?.price.id
+    const newTier: HostTier | null =
+      priceId === process.env.STRIPE_PRICE_PRO      ? 'pro'
+      : priceId === process.env.STRIPE_PRICE_FEATURED ? 'featured'
+      : null
+
+    if (!newTier) {
+      console.warn(`[webhook] subscription.updated ${sub.id}: price ${priceId} maps to no known tier — skipping`)
+      return NextResponse.json({ received: true })
+    }
+
+    // status semantics — Stripe statuses: active, past_due, unpaid,
+    // canceled, incomplete, trialing. We map:
+    //   active / trialing → 'active'
+    //   past_due / unpaid → 'grace_period' (14d enforced via cron, not Stripe)
+    //   canceled          → 'cancelled'
+    const ourStatus =
+      sub.status === 'active' || sub.status === 'trialing' ? 'active'
+      : sub.status === 'canceled'                          ? 'cancelled'
+      : sub.status === 'past_due' || sub.status === 'unpaid' ? 'grace_period'
+      : 'active'
+
+    const { error } = await supabaseAdmin
+      .from('host_subscriptions')
+      .update({
+        tier:                ourStatus === 'cancelled' ? 'free' : newTier,
+        status:              ourStatus,
+        current_period_end:  new Date((sub as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+      })
+      .eq('stripe_subscription_id', sub.id)
+
+    if (error) {
+      console.error('[webhook] subscription.updated DB update failed:', error.message)
+      return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+    }
+    console.log(`[webhook] Subscription ${sub.id} updated → tier=${newTier} status=${ourStatus}`)
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const sub = event.data.object as Stripe.Subscription
+    const { error } = await supabaseAdmin
+      .from('host_subscriptions')
+      .update({
+        tier:    'free',
+        status:  'cancelled',
+      })
+      .eq('stripe_subscription_id', sub.id)
+    if (error) {
+      console.error('[webhook] subscription.deleted DB update failed:', error.message)
+      return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+    }
+    console.log(`[webhook] Subscription ${sub.id} deleted — downgraded host to free`)
+  }
+
+  // Payment failure → 14-day grace period. The cron job
+  // (sweep_host_subscriptions_grace_period) downgrades to free after the
+  // window expires if no successful renewal arrives.
+  if (event.type === 'invoice.payment_failed') {
+    const invoice = event.data.object as Stripe.Invoice
+    const subId = (invoice as unknown as { subscription?: string }).subscription
+    if (!subId) return NextResponse.json({ received: true })
+
+    const graceEnd = new Date(Date.now() + 14 * 86_400_000).toISOString()
+    const { error } = await supabaseAdmin
+      .from('host_subscriptions')
+      .update({
+        status:              'grace_period',
+        current_period_end:  graceEnd,
+      })
+      .eq('stripe_subscription_id', subId)
+    if (error) {
+      console.error('[webhook] payment_failed DB update failed:', error.message)
+      return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+    }
+    console.log(`[webhook] Subscription ${subId} payment failed — grace until ${graceEnd}`)
+  }
+
+  // Successful renewal payment — clear grace_period, reset active.
+  if (event.type === 'invoice.payment_succeeded') {
+    const invoice = event.data.object as Stripe.Invoice
+    const subId = (invoice as unknown as { subscription?: string }).subscription
+    if (!subId) return NextResponse.json({ received: true })
+
+    const { error } = await supabaseAdmin
+      .from('host_subscriptions')
+      .update({ status: 'active' })
+      .eq('stripe_subscription_id', subId)
+      .neq('status', 'cancelled')   // don't accidentally revive cancelled subs
+    if (error) {
+      console.error('[webhook] payment_succeeded DB update failed:', error.message)
+      // Non-fatal — the next subscription.updated will reconcile.
     }
   }
 

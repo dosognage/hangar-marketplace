@@ -55,6 +55,11 @@ type Listing = Omit<MapListing, 'latitude' | 'longitude'> & {
   is_sample: boolean
   broker_profile_id: string | null
   listing_photos: Photo[]
+  // Host's paid subscription tier priority: 2=pro, 1=featured, 0=free.
+  // Stamped onto the row by the home page server query when the host's
+  // host_subscriptions row is active. Drives the Featured/Pro card badge
+  // and was already used in the page-level sort.
+  _tier_priority?: number
 }
 
 // Helpers
@@ -437,6 +442,12 @@ export default function SplitView({
           const coverPath = sortedPhotos[0]?.storage_path ?? null
           const isFeaturedActive  = isActiveFeatured(listing)
           const isSponsoredActive = isActiveSponsored(listing)
+          // Paid subscription tier (from host_subscriptions, stamped in
+          // app/page.tsx). Pro > Featured > Free. Takes precedence over
+          // the legacy admin-pinned is_featured badge.
+          const tierPriority      = listing._tier_priority ?? 0
+          const isPaidPro         = tierPriority === 2
+          const isPaidFeatured    = tierPriority === 1
 
           const price = listing.asking_price
             ? `$${listing.asking_price.toLocaleString()}`
@@ -497,8 +508,41 @@ export default function SplitView({
                     </div>
                   )}
 
-                  {/* Featured badge */}
-                  {isFeaturedActive && !isSponsoredActive && (
+                  {/* Pro badge (paid subscription, top-tier) */}
+                  {isPaidPro && !isSponsoredActive && (
+                    <div style={{
+                      position: 'absolute', top: '8px', left: '8px', zIndex: 10,
+                      display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                      padding: '0.18rem 0.55rem', borderRadius: '999px',
+                      background: 'linear-gradient(135deg, #1e3a8a 0%, #0891b2 100%)',
+                      color: 'white',
+                      fontSize: '0.68rem', fontWeight: '700',
+                      boxShadow: '0 2px 6px rgba(8,145,178,0.35)',
+                      pointerEvents: 'none',
+                    }}>
+                      <Star size={10} style={{ flexShrink: 0 }} /> Pro
+                    </div>
+                  )}
+
+                  {/* Featured badge (paid subscription, second-tier) */}
+                  {isPaidFeatured && !isPaidPro && !isSponsoredActive && (
+                    <div style={{
+                      position: 'absolute', top: '8px', left: '8px', zIndex: 10,
+                      display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                      padding: '0.18rem 0.5rem', borderRadius: '999px',
+                      backgroundColor: '#1e40af', color: 'white',
+                      fontSize: '0.68rem', fontWeight: '700',
+                      boxShadow: '0 1px 4px rgba(30,64,175,0.3)',
+                      pointerEvents: 'none',
+                    }}>
+                      <Star size={10} style={{ flexShrink: 0 }} /> Featured
+                    </div>
+                  )}
+
+                  {/* Legacy admin-pinned Featured badge — only shown when no
+                      paid tier badge applies. Stays orange so admin pins
+                      visually distinguish from paid Featured (blue). */}
+                  {isFeaturedActive && !isSponsoredActive && !isPaidPro && !isPaidFeatured && (
                     <div style={{
                       position: 'absolute', top: '8px', left: '8px', zIndex: 10,
                       display: 'inline-flex', alignItems: 'center', gap: '0.2rem',

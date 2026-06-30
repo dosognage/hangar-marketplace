@@ -28,3 +28,89 @@ export const SPONSOR_TIERS = [
 ] as const
 
 export type SponsorTier = typeof SPONSOR_TIERS[number]
+
+// ── Host subscription tiers ──────────────────────────────────────────────
+// Recurring monthly subscriptions a host pays for to upgrade ALL their
+// listings to Featured / Pro. See host_subscriptions table.
+//
+// `priceEnvVar` is the env var holding the Stripe Price ID. Set these
+// after running scripts/setup-stripe-tier-products.ts the first time.
+
+export type HostTier = 'free' | 'featured' | 'pro'
+
+export interface HostTierSpec {
+  id:               HostTier
+  label:            string
+  cents:            number       // $/month in cents
+  priceEnvVar:      string       // env var holding the Stripe Price ID
+  listingLimit:     number       // max listings on this tier (Infinity = no cap)
+  photoLimit:       number       // max photos per listing (Infinity = no cap)
+  badge:            string | null
+  searchPriority:   number       // 0 = bottom, higher = boosted to top
+  features:         string[]     // pricing-page bullet list
+}
+
+export const HOST_TIERS: Record<HostTier, HostTierSpec> = {
+  free: {
+    id:             'free',
+    label:          'Free',
+    cents:          0,
+    priceEnvVar:    '',
+    listingLimit:   1,
+    photoLimit:     5,
+    badge:          null,
+    searchPriority: 0,
+    features: [
+      '1 listing',
+      '5 photos per listing',
+      'Public inquiry form',
+      'Standard search placement',
+    ],
+  },
+  featured: {
+    id:             'featured',
+    label:          'Featured',
+    cents:          9900,
+    priceEnvVar:    'STRIPE_PRICE_FEATURED',
+    listingLimit:   5,
+    photoLimit:     15,
+    badge:          'Featured',
+    searchPriority: 1,
+    features: [
+      'Up to 5 listings',
+      '15 photos per listing',
+      'Boosted above Free in search',
+      'Featured badge on every card',
+      'Public inquiry form',
+    ],
+  },
+  pro: {
+    id:             'pro',
+    label:          'Pro',
+    cents:          29900,
+    priceEnvVar:    'STRIPE_PRICE_PRO',
+    listingLimit:   Number.POSITIVE_INFINITY,
+    photoLimit:     Number.POSITIVE_INFINITY,
+    badge:          'Pro',
+    searchPriority: 2,
+    features: [
+      'Unlimited listings',
+      'Unlimited photos',
+      'Top placement above Featured',
+      'Pro badge',
+      'View + inquiry analytics dashboard',
+      'Team accounts',
+      'Priority support',
+    ],
+  },
+}
+
+/**
+ * Tier sort priority for ORDER BY in listing queries. Stays in sync with
+ * the SQL host_tier_priority() function in migration
+ * hm_add_host_subscriptions.
+ */
+export function tierPriority(tier: HostTier | null | undefined): number {
+  if (!tier) return 0
+  return HOST_TIERS[tier]?.searchPriority ?? 0
+}

@@ -73,6 +73,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // Tier cap: refuse if this upload would push the listing over the
+  // host's per-listing photo limit (Free=5, Featured=15, Pro=unlimited).
+  // Surfaces a user-facing reason so the upgrade prompt is obvious.
+  const { canAddPhotos } = await import('@/lib/host-tier')
+  const cap = await canAddPhotos(user.id, listing_id, photos.length)
+  if (!cap.ok) {
+    return NextResponse.json(
+      { error: cap.reason, tier: cap.tier, limit: cap.limit, existing: cap.existing },
+      { status: 403 },
+    )
+  }
+
   const records = photos.map(p => ({
     listing_id,
     storage_path: p.storage_path,

@@ -51,6 +51,8 @@ type Listing = {
   is_sample: boolean
   broker_profile_id: string | null
   listing_photos: Photo[]
+  user_id?: string | null
+  _tier_priority?: number
 }
 
 type HomePageProps = {
@@ -167,9 +169,44 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
 
   const now = new Date()
+
+  // ── Tier-aware sort ─────────────────────────────────────────────────────
+  // Look up each listing host's current subscription tier and sort:
+  //   1. paid tier (pro > featured > free)
+  //   2. legacy is_featured (admin-pinned, no subscription)
+  //   3. created_at DESC (recency)
+  // One batched query for all unique user_ids — fast even with many listings.
+  const userIds = Array.from(new Set((listings ?? []).map((l: Listing) => l.user_id).filter(Boolean) as string[]))
+  const tierByUserId = new Map<string, number>()
+  if (userIds.length > 0) {
+    const { data: subs } = await supabase
+      .from('host_subscriptions')
+      .select('user_id, tier, status')
+      .in('user_id', userIds)
+    if (subs) {
+      for (const s of subs) {
+        // Cancelled / grace_period subs revert to free (priority 0). Active /
+        // trial subs get their tier's priority. Mirror of the SQL
+        // host_tier_priority() function semantics.
+        if (s.status === 'cancelled' || s.status === 'grace_period') continue
+        const p = s.tier === 'pro' ? 2 : s.tier === 'featured' ? 1 : 0
+        if (p > 0) tierByUserId.set(s.user_id, p)
+      }
+    }
+  }
+
   let safeListings: Listing[] = (listings ?? [])
-    .map((l: Listing) => ({ ...l, listing_photos: l.listing_photos ?? [] }))
-    .sort((a: Listing, b: Listing) => {
+    .map((l: Listing) => ({
+      ...l,
+      listing_photos: l.listing_photos ?? [],
+      // Stamp the host's tier priority onto the row for downstream sort +
+      // card badge rendering.
+      _tier_priority: tierByUserId.get(l.user_id ?? '') ?? 0,
+    }))
+    .sort((a: Listing & { _tier_priority?: number }, b: Listing & { _tier_priority?: number }) => {
+      const aTier = a._tier_priority ?? 0
+      const bTier = b._tier_priority ?? 0
+      if (aTier !== bTier) return bTier - aTier
       const aFeatured = a.is_featured && a.featured_until && new Date(a.featured_until) > now
       const bFeatured = b.is_featured && b.featured_until && new Date(b.featured_until) > now
       if (aFeatured && !bFeatured) return -1

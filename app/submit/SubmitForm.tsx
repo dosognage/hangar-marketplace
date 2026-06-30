@@ -461,6 +461,14 @@ export default function SubmitForm({
         isDraft,
       })
 
+      // Tier-cap rejection or other up-front error from the server action.
+      if ('error' in result) {
+        setStatus({ type: 'error', message: result.error })
+        setUploadProgress(null)
+        setLoading(false)
+        return
+      }
+
       const listingId = result.id
 
       // If neither pin nor auto-geocode produced coords, do a final fallback

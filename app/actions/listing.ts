@@ -58,12 +58,19 @@ export type ListingFormData = {
   isDraft?: boolean
 }
 
-export type CreateListingResult = {
-  id: string
-  requiresPayment?: boolean
-  checkoutUrl?: string
-  amount?: number
-}
+export type CreateListingResult =
+  | {
+      id: string
+      requiresPayment?: boolean
+      checkoutUrl?: string
+      amount?: number
+    }
+  | {
+      // Tier cap or other up-front rejection. The form surfaces this as
+      // a top-level error and offers the upgrade link.
+      error: string
+      upgradeUrl?: string
+    }
 
 const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
 
@@ -105,6 +112,20 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
   const isHangar = !data.property_type || data.property_type === 'hangar'
   const isHome   = data.property_type === 'airport_home' || data.property_type === 'fly_in_community'
   const isDraft  = data.isDraft === true
+
+  // Tier listing-count cap. Drafts and broker-owned listings bypass —
+  // brokers have their own seat-based pricing on broker_profiles, and
+  // a saved draft hasn't materially used a "slot" yet (lots of churn).
+  if (!isDraft && !isBroker) {
+    const { canCreateAnotherListing } = await import('@/lib/host-tier')
+    const cap = await canCreateAnotherListing(user.id)
+    if (!cap.ok) {
+      return {
+        error:      cap.reason,
+        upgradeUrl: '/pricing/host',
+      }
+    }
+  }
 
   // ── Determine status & fee ───────────────────────────────────────────────
   //
