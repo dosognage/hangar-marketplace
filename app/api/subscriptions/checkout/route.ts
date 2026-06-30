@@ -76,8 +76,8 @@ export async function POST(req: NextRequest) {
       ...(existing?.stripe_customer_id
         ? { customer: existing.stripe_customer_id }
         : { customer_email: user.email }),
-      success_url: `${SITE_URL}/host/billing?success=1`,
-      cancel_url:  `${SITE_URL}/host/billing?cancelled=1`,
+      success_url: `${SITE_URL}/dashboard/billing?success=1`,
+      cancel_url:  `${SITE_URL}/dashboard/billing?cancelled=1`,
       metadata: {
         type:    'host_subscription',
         user_id: user.id,

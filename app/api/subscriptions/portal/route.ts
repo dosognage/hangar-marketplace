@@ -9,7 +9,7 @@
  *   - Download invoices
  *
  * We don't build any of that UI ourselves — Stripe runs it. We just
- * provide the link from /host/billing.
+ * provide the link from /dashboard/billing.
  *
  * The host needs an existing Stripe Customer ID, which means they must
  * have had at least one paid event with us (subscription or sponsorship).
@@ -47,7 +47,7 @@ export async function POST(_req: NextRequest) {
   try {
     const portal = await stripe.billingPortal.sessions.create({
       customer:   sub.stripe_customer_id,
-      return_url: `${SITE_URL}/host/billing`,
+      return_url: `${SITE_URL}/dashboard/billing`,
     })
     return NextResponse.json({ url: portal.url })
   } catch (err) {
