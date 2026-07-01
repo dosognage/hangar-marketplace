@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import { supabase } from '@/lib/supabase'
 import { STATE_NAMES, stateToSlug } from '@/lib/states'
+import { allCitySlugs } from '@/lib/cities'
 
 // Queries Supabase for listing slugs at request time. Skip static prerender
 // so the build doesn't try to reach Supabase with no env vars exposed.
@@ -29,6 +30,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }))
 
+  // City landing pages — curated GA hubs. See lib/cities.ts for the
+  // registry. Slightly higher priority than state pages because they
+  // capture higher-intent long-tail queries ("hangar for sale denver").
+  const cityRoutes: MetadataRoute.Sitemap = allCitySlugs().map(slug => ({
+    url: `${SITE_URL}/hangars/city/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.88,
+  }))
+
   // Fetch approved listings
   const { data: listings } = await supabase
     .from('listings')
@@ -55,5 +66,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }))
 
-  return [...staticRoutes, ...stateRoutes, ...listingRoutes, ...airportRoutes]
+  return [...staticRoutes, ...stateRoutes, ...cityRoutes, ...listingRoutes, ...airportRoutes]
 }

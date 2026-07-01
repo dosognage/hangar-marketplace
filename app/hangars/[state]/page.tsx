@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { slugToState, slugToStateName, STATE_NAMES } from '@/lib/states'
+import { CITIES } from '@/lib/cities'
 import type { Metadata } from 'next'
 import type { MetadataRoute } from 'next'
 
@@ -159,6 +160,32 @@ export default async function StateHangarsPage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* Browse by city — surfaces curated city landing pages when we
+          have hand-written market context for cities in this state.
+          Skipped when no cities in this state are in the registry. */}
+      {(() => {
+        const stateCities = CITIES.filter(c => c.stateSlug === slug)
+        if (stateCities.length === 0) return null
+        return (
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.05rem', color: '#111827' }}>
+              Browse by city
+            </h2>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {stateCities.map(c => (
+                <Link key={c.slug} href={`/hangars/city/${c.slug}`}
+                      style={{ padding: '0.5rem 0.9rem', backgroundColor: 'white',
+                               border: '1px solid #e5e7eb', borderRadius: '999px',
+                               textDecoration: 'none', color: '#111827',
+                               fontSize: '0.85rem', fontWeight: 600 }}>
+                  {c.city} →
+                </Link>
+              ))}
+            </div>
+          </section>
+        )
+      })()}
 
       {/* Listings */}
       {typedListings.length === 0 ? (
