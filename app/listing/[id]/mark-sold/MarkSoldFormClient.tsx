@@ -279,8 +279,8 @@ export default function MarkSoldFormClient(props: Props) {
         {state?.error && <div style={errorBox}>{state.error}</div>}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <Link href={`/listing/${props.listingId}/edit`} style={backLink}>
-            ← Back to edit
+          <Link href="/dashboard" style={backLink}>
+            ← Back to my listings
           </Link>
           <button type="submit" disabled={pending} style={primaryBtn(pending)}>
             {pending ? 'Saving…' : `Confirm ${verb}`} <ChevronRight size={16} />
