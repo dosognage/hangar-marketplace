@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { slugToState, slugToStateName, STATE_NAMES } from '@/lib/states'
 import { CITIES } from '@/lib/cities'
+import HangarNightCrossPromo from '@/app/components/HangarNightCrossPromo'
 import type { Metadata } from 'next'
 import type { MetadataRoute } from 'next'
 
@@ -265,8 +266,17 @@ export default async function StateHangarsPage({ params }: Props) {
         </div>
       )}
 
+      {/* Cross-promo to HangarNight for overnight rentals in this state. */}
+      <div style={{ marginTop: '2.5rem' }}>
+        <HangarNightCrossPromo
+          context="state"
+          label={stateName}
+          hnHref={`https://hangarnight.com/?state=${stateDb}`}
+        />
+      </div>
+
       {/* Cross-link to other pages */}
-      <div style={{ marginTop: '3rem', padding: '1.5rem', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
+      <div style={{ marginTop: '0.5rem', padding: '1.5rem', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
         <h2 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: '#111827' }}>Looking for hangar space in {stateName}?</h2>
         <p style={{ margin: '0 0 1rem', fontSize: '0.875rem', color: '#6b7280', lineHeight: 1.6 }}>
           Post a free hangar request to let owners at {stateName} airports know you&apos;re looking. They&apos;ll reach out when space opens up.

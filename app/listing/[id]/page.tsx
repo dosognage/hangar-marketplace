@@ -600,6 +600,31 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
       {/* Fuel prices */}
       <FuelPrices airportCode={typedListing.airport_code} />
 
+      {/* Cross-promo to HangarNight for pilots who want to visit this
+          airport before committing to buy/lease. Symmetric to the HN
+          "looking to buy?" card on the HN listing detail page. */}
+      <a
+        href={`https://hangarnight.com/?query=${encodeURIComponent(typedListing.airport_code)}`}
+        target="_blank"
+        rel="noopener"
+        style={{
+          display: 'block', padding: '1rem 1.15rem',
+          backgroundColor: '#eff6ff', border: '1px solid #bfdbfe',
+          borderRadius: '10px', textDecoration: 'none', color: 'inherit',
+          marginBottom: '1.5rem',
+        }}
+      >
+        <p style={{ margin: '0 0 0.25rem', fontSize: '0.72rem', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#1e40af' }}>
+          Visiting {typedListing.airport_code} first?
+        </p>
+        <p style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', fontWeight: '700', color: '#111827' }}>
+          Book an overnight hangar at {typedListing.airport_code} on HangarNight
+        </p>
+        <p style={{ margin: 0, fontSize: '0.82rem', color: '#4b5563', lineHeight: 1.5 }}>
+          Fly out, walk the airport, meet the neighbors before you commit to a purchase or lease. HangarNight is our sister site for overnight hangar rentals. →
+        </p>
+      </a>
+
       {/* Contact form — hidden on sample listings, gated behind auth for others */}
       {typedListing.is_sample ? (
         <div style={{

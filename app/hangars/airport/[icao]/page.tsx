@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { stateToSlug } from '@/lib/states'
+import HangarNightCrossPromo from '@/app/components/HangarNightCrossPromo'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -228,8 +229,19 @@ export default async function AirportHangarsPage({ params }: Props) {
         })}
       </div>
 
+      {/* Cross-promo to HangarNight for pilots flying INTO this airport
+          before committing to a sale/lease. Symmetric to the HM promo
+          on HN listing detail pages. */}
+      <div style={{ marginTop: '2rem' }}>
+        <HangarNightCrossPromo
+          context="airport"
+          label={code}
+          hnHref={`https://hangarnight.com/?query=${encodeURIComponent(code)}`}
+        />
+      </div>
+
       {/* State cross-link */}
-      <div style={{ marginTop: '2.5rem', padding: '1.25rem 1.5rem', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px' }}>
+      <div style={{ marginTop: '0.5rem', padding: '1.25rem 1.5rem', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px' }}>
         <p style={{ margin: '0 0 0.5rem', fontWeight: '600', fontSize: '0.9rem', color: '#111827' }}>
           Looking for more hangars in {state}?
         </p>

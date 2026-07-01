@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { allCitySlugs, getCityBySlug, cityMatchNames, type CityEntry } from '@/lib/cities'
+import HangarNightCrossPromo from '@/app/components/HangarNightCrossPromo'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -240,6 +241,13 @@ export default async function CityHangarsPage({ params }: Props) {
           </div>
         </section>
       )}
+
+      {/* Cross-promo to HangarNight for the "visiting first" traveler. */}
+      <HangarNightCrossPromo
+        context="city"
+        label={`${entry.city}, ${entry.state}`}
+        hnHref={`https://hangarnight.com/?query=${encodeURIComponent(entry.city)}`}
+      />
 
       {/* Cross-link back to state + related actions */}
       <div style={{ padding: '1.5rem', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
