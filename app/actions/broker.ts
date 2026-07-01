@@ -341,6 +341,21 @@ export async function approveBrokerApplication(
     .update({ status: 'approved' })
     .eq('id', applicationId)
 
+  // Backfill broker_profile_id on any listings this user submitted BEFORE
+  // being approved. createListing only stamps broker_profile_id when the
+  // user is already a verified broker at insert time, so listings from
+  // the pre-approval window carry NULL and don't appear on the broker's
+  // public profile even though they're published on the browse page.
+  const { data: backfilled } = await supabaseAdmin
+    .from('listings')
+    .update({ broker_profile_id: profileId })
+    .eq('user_id', userId)
+    .is('broker_profile_id', null)
+    .select('id')
+  if (backfilled && backfilled.length > 0) {
+    console.log(`[approveBroker] backfilled broker_profile_id on ${backfilled.length} listing(s) for user ${userId}`)
+  }
+
   // Stamp the broker tag in BOTH user_metadata and app_metadata.
   //
   // - user_metadata is what existing client code reads from the session.
