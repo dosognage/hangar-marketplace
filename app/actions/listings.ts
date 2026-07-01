@@ -37,32 +37,46 @@ export async function deleteListing(listingId: string): Promise<{ error?: string
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.' }
 
-  // Verify ownership
-  const { data: listing } = await supabase
+  // Verify ownership via admin so we can see assigned-broker rows too
+  // (the "Users can read their own listings" RLS policy only exposes
+  // rows where auth.uid() = user_id, which hides listings admin-assigned
+  // to a broker via broker_profile_id). Mirror the updateListing gate.
+  const { data: listing } = await supabaseAdmin
     .from('listings')
-    .select('id, user_id')
+    .select('id, user_id, broker_profile_id')
     .eq('id', listingId)
     .single()
 
   if (!listing) return { error: 'Listing not found.' }
-  if (listing.user_id !== user.id) return { error: 'Not authorised.' }
 
-  // Delete photos from storage
-  const { data: photos } = await supabase
+  // Two paths permitted (mirror updateListing exactly):
+  //   1. The user IS the listing owner.
+  //   2. The user is a verified broker whose broker_profile_id matches
+  //      the listing's broker_profile_id (admin-assigned).
+  // SECURITY: resolve broker identity from the broker_profiles table —
+  // never from JWT user_metadata, which is end-user-editable.
+  const userBrokerProfileId = await resolveBrokerProfileId(user)
+  const isOwner            = listing.user_id === user.id
+  const isAssignedBroker   = !!userBrokerProfileId && listing.broker_profile_id === userBrokerProfileId
+  if (!isOwner && !isAssignedBroker) return { error: 'Not authorised.' }
+
+  // All mutations use supabaseAdmin — there are no INSERT/UPDATE/DELETE
+  // RLS policies on `listings` so the user-scoped client silently
+  // deletes zero rows, and the redirect fires as if it worked. This was
+  // the "Deleting… but nothing happens" bug hit by brokers.
+  const { data: photos } = await supabaseAdmin
     .from('listing_photos')
     .select('storage_path')
     .eq('listing_id', listingId)
 
   if (photos && photos.length > 0) {
     const paths = photos.map((p: { storage_path: string }) => p.storage_path)
-    await supabase.storage.from('listing-photos').remove(paths)
+    await supabaseAdmin.storage.from('listing-photos').remove(paths)
   }
 
-  // Delete photo records
-  await supabase.from('listing_photos').delete().eq('listing_id', listingId)
+  await supabaseAdmin.from('listing_photos').delete().eq('listing_id', listingId)
 
-  // Delete the listing
-  const { error } = await supabase.from('listings').delete().eq('id', listingId)
+  const { error } = await supabaseAdmin.from('listings').delete().eq('id', listingId)
   if (error) return { error: error.message }
 
   revalidatePath('/dashboard')
