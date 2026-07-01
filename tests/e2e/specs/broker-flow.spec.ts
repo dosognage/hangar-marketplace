@@ -156,7 +156,18 @@ test.describe('Broker application: end-to-end', () => {
       .eq('type', 'broker_approved')
     expect(notifs?.length ?? 0).toBeGreaterThan(0)
 
-    // Cleanup the ephemeral applicant (best-effort)
+    // Cleanup the ephemeral applicant. auth.users has FK inbound from
+    // multiple public tables (notifications, broker_applications,
+    // broker_profiles) with NO ACTION delete rules, so we have to purge
+    // those child rows FIRST or the auth.admin.deleteUser silently
+    // fails and the ephemeral user stays around forever.
+    //
+    // We accumulated 59 leaks over ~2 months of CI runs before adding
+    // this — enough to push the persistent seed users past listUsers()'s
+    // default 50-per-page window and break the stripe checkout tests.
+    await supabase.from('notifications').delete().eq('user_id', applicantId).then(() => undefined, () => undefined)
+    await supabase.from('broker_profiles').delete().eq('user_id', applicantId).then(() => undefined, () => undefined)
+    await supabase.from('broker_applications').delete().eq('user_id', applicantId).then(() => undefined, () => undefined)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).auth.admin.deleteUser(applicantId).catch(() => undefined)
   })

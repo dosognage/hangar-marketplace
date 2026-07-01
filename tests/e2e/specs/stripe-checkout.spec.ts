@@ -38,7 +38,12 @@ test.describe('Stripe sponsor checkout @stripe', () => {
     // pre-C1 this test picked any approved listing, which now correctly
     // 403s because the caller doesn't own it.
     const supabase = getTestSupabaseAdmin()
-    const { data: { users } } = await supabase.auth.admin.listUsers()
+    // listUsers() defaults to 50 per page and returns newest-first, so a
+    // buildup of ephemeral applicant users from broker-flow.spec can
+    // push the seeded USER off page 1 and .find() returns undefined.
+    // Ask for a larger page (Supabase max is 200) so the seed reliably
+    // shows up even if leak cleanup drifts.
+    const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 200 })
     const userRow = users.find(u => u.email === USER.email)
     expect(userRow, `seeded test user ${USER.email} not found`).toBeTruthy()
 

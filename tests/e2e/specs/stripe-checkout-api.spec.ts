@@ -28,7 +28,10 @@ test.describe('Stripe checkout API @stripe-api', () => {
     // (Pre-C1 this test picked any approved listing, which now correctly
     // returns 403 because the caller doesn't own it.)
     const supabase = getTestSupabaseAdmin()
-    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers()
+    // See stripe-checkout.spec.ts for the pagination rationale — default
+    // 50 users per page × 3 seed accounts + N ephemeral broker-flow
+    // applicants = seed pushed off page 1 and lookup fails.
+    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers({ perPage: 200 })
     if (usersError) throw usersError
     const userRow = users.find(u => u.email === USER.email)
     expect(userRow, `seeded test user ${USER.email} not found`).toBeTruthy()
