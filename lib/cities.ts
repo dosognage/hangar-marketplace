@@ -141,6 +141,74 @@ export const CITIES: CityEntry[] = [
       { icao: 'KBZN', name: 'Bozeman Yellowstone International' },
     ],
   },
+
+  // ── Round 2: mountain-west resort + Great Lakes + SE coast ────────
+  {
+    slug:      'aspen-co',
+    city:      'Aspen',
+    state:     'CO',
+    stateName: 'Colorado',
+    stateSlug: 'colorado',
+    metroDesc: 'Aspen–Pitkin County (KASE) — one of the most premium GA markets in the country, serving Roaring Fork Valley and the Aspen–Snowmass resort corridor.',
+    marketContext:
+      'Aspen–Pitkin County (KASE) sits at 7,820 feet in a high-mountain valley, serving one of the most concentrated high-net-worth aviation communities in the United States. Hangar space is intensely limited by both physical airport constraints and municipal restrictions, and when a private hangar does come to market it typically trades at multiples of the national average. Buyers evaluating options here weigh runway performance implications at altitude, seasonal weather (KASE closes to jet operations at times), and the small number of nearby alternatives (Eagle County KEGE and Rifle Garfield KRIL).',
+    airports:  [
+      { icao: 'KASE', name: 'Aspen–Pitkin County / Sardy Field' },
+      { icao: 'KEGE', name: 'Eagle County Regional' },
+    ],
+  },
+  {
+    slug:      'traverse-city-mi',
+    city:      'Traverse City',
+    state:     'MI',
+    stateName: 'Michigan',
+    stateSlug: 'michigan',
+    metroDesc: 'Cherry Capital (KTVC) — the primary GA gateway to northern Michigan resort country and Grand Traverse Bay.',
+    marketContext:
+      'Cherry Capital Airport (KTVC) is the dominant general aviation field for northern Michigan, serving Grand Traverse Bay, Sleeping Bear Dunes, and the resort corridor stretching from Petoskey to Charlevoix. Seasonal owner-flown traffic drives disproportionate hangar demand during the summer months, and inventory has tightened considerably as second-home ownership in the region has grown. Buyers here weigh winter operations (heated hangars are a meaningful premium) and proximity to Interlochen and the northern lakeshore communities.',
+    airports:  [
+      { icao: 'KTVC', name: 'Cherry Capital Airport' },
+    ],
+  },
+  {
+    slug:      'sun-valley-id',
+    city:      'Sun Valley',
+    state:     'ID',
+    stateName: 'Idaho',
+    stateSlug: 'idaho',
+    metroDesc: 'Friedman Memorial (KSUN) — the highest-elevation and most premium GA field in the Sawtooth Mountains, serving Ketchum and the Sun Valley resort community.',
+    marketContext:
+      'Friedman Memorial (KSUN) sits at 5,318 feet in the Wood River Valley, serving Sun Valley, Ketchum, and one of the older concentrations of aviation-owning second-home residents in the American West. The airport\'s single 7,550-foot runway and mountain-terrain approach profile make hangar space a serious asset for owner-flown turboprop and light jet operators. Inventory is genuinely rare — most transactions happen off-market between long-established owners, and when a hangar does list publicly, it moves quickly.',
+    airports:  [
+      { icao: 'KSUN', name: 'Friedman Memorial Airport' },
+    ],
+  },
+  {
+    slug:      'wilmington-nc',
+    city:      'Wilmington',
+    state:     'NC',
+    stateName: 'North Carolina',
+    stateSlug: 'north-carolina',
+    metroDesc: 'Wilmington International (KILM) — the coastal GA hub for southeastern North Carolina and Cape Fear.',
+    marketContext:
+      'Wilmington International (KILM) is the dominant GA field for the southeastern North Carolina coast, serving Wrightsville Beach, Bald Head Island, and the broader Cape Fear region. The area\'s combination of coastal second-home ownership, mild winter operating conditions, and proximity to the Charlotte/Raleigh metros has driven steady hangar demand growth. Owners in this market often value hurricane-resilient construction and elevated pad heights alongside the usual dimensions.',
+    airports:  [
+      { icao: 'KILM', name: 'Wilmington International Airport' },
+    ],
+  },
+  {
+    slug:      'truckee-ca',
+    city:      'Truckee',
+    state:     'CA',
+    stateName: 'California',
+    stateSlug: 'california',
+    metroDesc: 'Truckee Tahoe (KTRK) — the primary GA field for the Lake Tahoe region and one of the most active mountain airports in the Sierra Nevada.',
+    marketContext:
+      'Truckee Tahoe Airport (KTRK) sits at 5,900 feet on the north side of the Lake Tahoe basin, serving Truckee, Northstar, Tahoe City, and the broader north-shore resort corridor. The airport has invested heavily in noise abatement, fire preparedness, and community-relations programming, and its hangar inventory is closely watched by both Bay Area second-home owners and California-based turboprop operators. Density altitude, snow load, and heated-hangar premiums are the practical considerations for buyers here.',
+    airports:  [
+      { icao: 'KTRK', name: 'Truckee Tahoe Airport' },
+    ],
+  },
 ]
 
 const BY_SLUG = new Map<string, CityEntry>(CITIES.map(c => [c.slug, c]))
