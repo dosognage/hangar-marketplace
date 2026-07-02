@@ -35,6 +35,23 @@ export async function verifyTurnstileToken(
     return { ok: true }
   }
 
+  // CI / E2E short-circuit. Cloudflare publishes two well-known test
+  // secret keys that are documented to always pass ("1x0000…AA") or
+  // always block ("2x0000…AA") without hitting siteverify. But the
+  // GitHub Actions runner still has to actually make the round-trip to
+  // challenges.cloudflare.com, and that fetch has been slow/flaky enough
+  // to time out the login flow on E2E runs. When we detect the
+  // documented always-passes test secret, honor Cloudflare's contract
+  // ourselves and skip the network call.
+  //
+  // See: https://developers.cloudflare.com/turnstile/troubleshooting/testing/
+  if (secret === '1x0000000000000000000000000000000AA') {
+    return { ok: true }
+  }
+  if (secret === '2x0000000000000000000000000000000AA') {
+    return { ok: false, error: 'Captcha verification failed. Please try again.' }
+  }
+
   if (!token) {
     return { ok: false, error: 'Please complete the captcha and try again.' }
   }
