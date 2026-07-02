@@ -127,15 +127,19 @@ export async function updateListing(
   const isHome         = property_type === 'airport_home' || property_type === 'fly_in_community'
 
   // ── Determine target status ─────────────────────────────────────────────
-  // Published listings always reset to 'pending' so admin re-reviews edits.
-  // Drafts are trickier: user picks via the save_mode field ("draft" keeps it
+  // Draft path: user picks via the save_mode field ("draft" keeps it
   // unpublished, "publish" runs the same gate as a new submission).
   //
-  // SECURITY: `isBroker` here decides whether the draft skips admin review
-  // and the paywall. Reading user_metadata.is_broker would let any user
-  // self-promote and ship their own listing live. Source the answer from
-  // broker_profiles instead — !!userBrokerProfileId is true iff there's a
-  // verified profile (already loaded above). Defense in depth.
+  // Published-edit path: verified brokers own their listings, so their
+  // edits stay approved without needing admin re-review. Non-broker
+  // sellers still bounce back to 'pending' — their initial publish went
+  // through an admin gate, so material edits do too.
+  //
+  // SECURITY: `isBroker` here decides whether an edit skips admin
+  // review. Reading user_metadata.is_broker would let any user
+  // self-promote. Source the answer from broker_profiles instead —
+  // !!userBrokerProfileId is true iff there's a verified profile
+  // (already loaded above). Defense in depth.
   const saveMode = formData.get('save_mode') as string | null
   const isBroker = !!userBrokerProfileId
 
@@ -153,7 +157,8 @@ export async function updateListing(
       nextStatus = 'draft'
     }
   } else {
-    nextStatus = 'pending'
+    // Broker edits stay approved. Everyone else bounces to pending.
+    nextStatus = isBroker ? existing.status : 'pending'
   }
 
   // Amenities come in as a JSON-encoded string from a hidden field.
