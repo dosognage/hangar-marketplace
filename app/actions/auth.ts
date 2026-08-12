@@ -135,7 +135,7 @@ export async function signup(
   }
 
   const supabase = await createServerClient()
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: { full_name: name } },
@@ -147,6 +147,19 @@ export async function signup(
       return { error: 'That email is already registered. Try logging in instead.', name, email }
     }
     return { error: error.message, name, email }
+  }
+
+  // An address that already has a confirmed account does NOT come back as
+  // an error, so the branch above never catches it. Supabase answers with
+  // a decoy user carrying an empty `identities` array and sends no email,
+  // which is deliberate anti-enumeration. Left unhandled, the caller
+  // reports success, we send a welcome email to someone who already has
+  // an account, and they're never actually signed in.
+  //
+  // Not a leak: the empty-identities response is already returned to any
+  // direct caller of the API.
+  if (data.user?.identities?.length === 0) {
+    return { error: 'That email is already registered. Try logging in instead.', name, email }
   }
 
   // Send welcome email (fire-and-forget, non-fatal)
