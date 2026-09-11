@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { canEditListing } from '@/lib/listing-access'
 
 async function getAuthedUser(req: NextRequest) {
   // req is unused here — createServerClient reads cookies from the request context
@@ -18,41 +19,8 @@ async function getAuthedUser(req: NextRequest) {
   return user
 }
 
-async function canEditListing(userId: string, listingId: string): Promise<boolean> {
-  const { data: listing } = await supabaseAdmin
-    .from('listings')
-    .select('user_id, broker_profile_id')
-    .eq('id', listingId)
-    .single()
-
-  if (!listing) return false
-
-  if (listing.user_id === userId) return true
-
-  // Check if the user is a broker assigned to this listing
-  const { data: broker } = await supabaseAdmin
-    .from('broker_profiles')
-    .select('id, team_id')
-    .eq('user_id', userId)
-    .single()
-
-  if (!broker) return false
-  if (listing.broker_profile_id === broker.id) return true
-
-  // Check if the user's broker profile is on the same team as the listing's broker
-  if ((broker as { team_id?: string | null }).team_id && listing.broker_profile_id) {
-    const { data: listingBroker } = await supabaseAdmin
-      .from('broker_profiles')
-      .select('team_id')
-      .eq('id', listing.broker_profile_id)
-      .single()
-    if (listingBroker && (listingBroker as { team_id?: string | null }).team_id === (broker as { team_id?: string | null }).team_id) {
-      return true
-    }
-  }
-
-  return false
-}
+// canEditListing moved to lib/listing-access.ts so upload-url shares
+// the same authorization definition (audit SEC-10).
 
 // ── POST: insert photo records after a successful storage upload ─────────────
 export async function POST(req: NextRequest) {
@@ -119,20 +87,34 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Remove from storage (best-effort)
+  // SECURITY (audit SEC-11): the caller proved they can edit
+  // `listing_id`, but photo_id and storage_path used to be trusted
+  // as-is, letting one listing owner delete photos across every other
+  // listing. Both are now pinned to the authorized listing.
+  if (storage_path && !String(storage_path).startsWith(`${listing_id}/`)) {
+    return NextResponse.json({ error: 'storage_path does not belong to this listing' }, { status: 403 })
+  }
+
+  const { data: deleted, error } = await supabaseAdmin
+    .from('listing_photos')
+    .delete()
+    .eq('id', photo_id)
+    .eq('listing_id', listing_id)
+    .select('id')
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!deleted?.length) {
+    return NextResponse.json({ error: 'Photo not found on this listing' }, { status: 404 })
+  }
+
+  // Remove from storage (best-effort) only after the row proved to
+  // belong to this listing.
   if (storage_path) {
     const { error: storErr } = await supabaseAdmin.storage
       .from('listing-photos')
       .remove([storage_path])
     if (storErr) console.warn('[listing-photos DELETE] storage remove failed:', storErr.message)
   }
-
-  const { error } = await supabaseAdmin
-    .from('listing_photos')
-    .delete()
-    .eq('id', photo_id)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ success: true })
 }
@@ -155,9 +137,14 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // SECURITY (audit SEC-11): pin every reorder to the authorized
+  // listing so foreign photo ids are inert.
   await Promise.all(
     updates.map(u =>
-      supabaseAdmin.from('listing_photos').update({ display_order: u.display_order }).eq('id', u.id)
+      supabaseAdmin.from('listing_photos')
+        .update({ display_order: u.display_order })
+        .eq('id', u.id)
+        .eq('listing_id', listing_id)
     )
   )
 

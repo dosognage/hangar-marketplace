@@ -62,10 +62,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })
   }
 
-  const { buyerName, buyerEmail, buyerPhone: rawBuyerPhone, message, listingTitle, sellerName, sellerEmail, listingId } = body
+  const { buyerName, buyerEmail, buyerPhone: rawBuyerPhone, message, listingId } = body
 
-  if (!buyerName || !buyerEmail || !message || !sellerEmail) {
+  if (!buyerName || !buyerEmail || !message || !listingId) {
     return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
+  }
+
+  // SECURITY (audit SEC-03): recipient, seller name, and listing title
+  // are resolved server-side from the listing row. They used to come
+  // from the request body, which made this endpoint an open email
+  // relay: any anonymous caller could send arbitrary-recipient,
+  // arbitrary-subject mail from our verified domain. Client-supplied
+  // sellerEmail/sellerName/listingTitle are now ignored entirely.
+  const { data: listingRecord } = await supabaseAdmin
+    .from('listings')
+    .select('id, title, status, contact_name, contact_email, user_id')
+    .eq('id', listingId)
+    .maybeSingle()
+
+  if (!listingRecord || listingRecord.status !== 'approved') {
+    return NextResponse.json({ error: 'Listing not found.' }, { status: 404 })
+  }
+
+  const listingTitle = listingRecord.title
+  const sellerName   = listingRecord.contact_name ?? 'there'
+  const sellerEmail  = listingRecord.contact_email
+  if (!sellerEmail) {
+    return NextResponse.json({ error: 'This listing has no contact address.' }, { status: 422 })
   }
 
   // M13: validate phone if provided. Reject malformed values rather than
