@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description: 'How Hangar Marketplace collects, uses, and protects your personal information.',
 }
 
-const EFFECTIVE_DATE = 'April 9, 2026'
+const EFFECTIVE_DATE = 'September 14, 2026'
 const CONTACT_EMAIL  = 'hello@hangarmarketplace.com'
 const SITE_NAME      = 'Hangar Marketplace'
 const SITE_URL       = 'https://hangarmarketplace.com'
@@ -33,7 +33,10 @@ export default function PrivacyPage() {
         <p>We collect information in the following ways:</p>
         <ul style={listStyle}>
           <li><strong>Account information</strong>: name and email address when you create an account or sign in via a third-party provider.</li>
-          <li><strong>Listing information</strong>: details you provide when submitting a hangar listing or hangar request (airport, dimensions, pricing, contact details).</li>
+          <li><strong>Listing information</strong>: details you provide when submitting a hangar listing or hangar request (airport, dimensions, pricing, contact details), including the photos you upload.</li>
+          <li><strong>Messages and inquiries</strong>: messages you send to a listing&apos;s broker or seller, showing requests, and reports you file, together with the name and email on your account so the other party can respond and so we can moderate.</li>
+          <li><strong>Saved listings and alerts</strong>: listings you save and the search alerts you create, including the email address the alerts are sent to.</li>
+          <li><strong>Mobile app</strong>: if you allow it, the Hangar Marketplace app uses your device location only to center the map; it is not stored or sent to us. Photos you choose from your library are uploaded only when you attach them to a listing or profile.</li>
           <li><strong>Payment information</strong>: when you make a purchase, payment is processed by Stripe. We do not store card numbers or full payment details on our servers. We retain a Stripe customer ID and transaction records.</li>
           <li><strong>Marketing consent</strong>: email address, timestamp, IP address, and source page when you subscribe to marketing emails. This data is retained as proof of consent as required by GDPR and CASL.</li>
           <li><strong>Usage data</strong>: pages visited, browser type, device type, and referring URL, collected via standard server logs and analytics.</li>
@@ -124,6 +127,13 @@ export default function PrivacyPage() {
           To exercise any of these rights, email us at{' '}
           <a href={`mailto:${CONTACT_EMAIL}`} style={linkStyle}>{CONTACT_EMAIL}</a>.
           We will respond within 30 days.
+        </p>
+        <p>
+          <strong>Deleting your account:</strong> you can delete your account yourself at any time
+          in the Hangar Marketplace app under Profile, then Delete my account. Your profile,
+          saved listings, alerts, and messages are removed immediately, listings you published are
+          taken down, and the records described under Data retention are kept only for the periods
+          stated there. You can also request deletion by email at the address above.
         </p>
       </Section>
 
