@@ -56,6 +56,9 @@ export type ListingFormData = {
   longitude: number | null
   // When true, save as a draft (no payment, no email, no notifications).
   isDraft?: boolean
+  // Per-attempt id from the submit form. A retry of the same attempt gets
+  // back the listing that attempt already created instead of a second row.
+  clientSubmissionId?: string
 }
 
 export type CreateListingResult =
@@ -64,6 +67,10 @@ export type CreateListingResult =
       requiresPayment?: boolean
       checkoutUrl?: string
       amount?: number
+      // Set when the id belongs to an earlier attempt with the same
+      // clientSubmissionId; the form skips photos the listing already has.
+      resumed?: boolean
+      existingPhotoCount?: number
     }
   | {
       // Tier cap or other up-front rejection. The form surfaces this as
@@ -73,6 +80,80 @@ export type CreateListingResult =
     }
 
 const IS_RENTAL = (t: string) => t === 'lease' || t === 'space'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Stripe Checkout for the one-time listing fee. Sessions expire after 24h, so a resumed attempt gets a fresh one. */
+async function createListingFeeCheckout(
+  listingId: string,
+  title: string,
+  amount: number,
+  isHangar: boolean,
+): Promise<string> {
+  const stripe    = getStripe()
+  const siteUrl   = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+  const typeLabel = isHangar ? 'hangar' : 'property'
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    line_items: [{
+      price_data: {
+        currency: 'usd',
+        unit_amount: amount * 100,
+        product_data: {
+          name: `Listing Fee: ${title}`,
+          description: `One-time fee to publish your ${typeLabel} listing on Hangar Marketplace`,
+        },
+      },
+      quantity: 1,
+    }],
+    metadata: {
+      type:       'listing_fee',
+      listing_id: listingId,
+    },
+    success_url: `${siteUrl}/submit/success`,
+    cancel_url:  `${siteUrl}/`,
+  })
+
+  return session.url!
+}
+
+/**
+ * The submit flow inserts the listing first and uploads photos after, so a
+ * failure in between (checkout creation, a signed upload URL, the photo
+ * record save) leaves a real listing behind while the form says "try
+ * again". When the retry carries the same attempt id, hand back that
+ * listing rather than inserting a copy.
+ */
+async function resumeSubmission(
+  userId: string,
+  submissionId: string,
+  title: string,
+  isHangar: boolean,
+): Promise<CreateListingResult | null> {
+  const { data: existing } = await supabaseAdmin
+    .from('listings')
+    .select('id, status, listing_fee_amount')
+    .eq('user_id', userId)
+    .eq('client_submission_id', submissionId)
+    .maybeSingle()
+  if (!existing) return null
+
+  const { count } = await supabaseAdmin
+    .from('listing_photos')
+    .select('id', { count: 'exact', head: true })
+    .eq('listing_id', existing.id)
+  const existingPhotoCount = count ?? 0
+
+  if (existing.status !== 'pending_payment') {
+    return { id: existing.id, resumed: true, existingPhotoCount }
+  }
+
+  const amount = Number(existing.listing_fee_amount)
+    || Number(isHangar ? process.env.LISTING_FEE_HANGAR ?? 25 : process.env.LISTING_FEE_HOME ?? 49)
+  const checkoutUrl = await createListingFeeCheckout(existing.id, title, amount, isHangar)
+  return { id: existing.id, requiresPayment: true, checkoutUrl, amount, resumed: true, existingPhotoCount }
+}
 
 /**
  * Returns true if today is before the free-trial cutoff date.
@@ -112,6 +193,14 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
   const isHangar = !data.property_type || data.property_type === 'hangar'
   const isHome   = data.property_type === 'airport_home' || data.property_type === 'fly_in_community'
   const isDraft  = data.isDraft === true
+
+  // Idempotent retry: checked before the tier cap so the row the first
+  // attempt created does not count against the retry of the same attempt.
+  const submissionId = UUID_RE.test(data.clientSubmissionId ?? '') ? data.clientSubmissionId! : null
+  if (submissionId) {
+    const resumed = await resumeSubmission(user.id, submissionId, data.title, isHangar)
+    if (resumed) return resumed
+  }
 
   // Tier listing-count cap. Drafts and broker-owned listings bypass —
   // brokers have their own seat-based pricing on broker_profiles, and
@@ -216,11 +305,18 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
       hangar_lng:       data.hangar_lng,
       latitude:         data.latitude,
       longitude:        data.longitude,
+      client_submission_id: submissionId,
     }])
     .select('id')
     .single()
 
   if (error || !listing) {
+    // Two requests for the same attempt raced past the lookup above; the
+    // unique index stopped this one, so return the row the other made.
+    if (error?.code === '23505' && submissionId) {
+      const resumed = await resumeSubmission(user.id, submissionId, data.title, isHangar)
+      if (resumed) return resumed
+    }
     throw new Error(error?.message ?? 'Failed to save listing.')
   }
 
@@ -233,35 +329,11 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
 
   // ── Payment required — create Stripe Checkout ────────────────────────────
   if (paymentRequired) {
-    const stripe   = getStripe()
-    const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-    const typeLabel = isHangar ? 'hangar' : 'property'
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          unit_amount: feeAmountDollars * 100,
-          product_data: {
-            name: `Listing Fee: ${data.title}`,
-            description: `One-time fee to publish your ${typeLabel} listing on Hangar Marketplace`,
-          },
-        },
-        quantity: 1,
-      }],
-      metadata: {
-        type:       'listing_fee',
-        listing_id: listing.id,
-      },
-      success_url: `${siteUrl}/submit/success`,
-      cancel_url:  `${siteUrl}/`,
-    })
-
+    const checkoutUrl = await createListingFeeCheckout(listing.id, data.title, feeAmountDollars, isHangar)
     return {
       id:              listing.id,
       requiresPayment: true,
-      checkoutUrl:     session.url!,
+      checkoutUrl,
       amount:          feeAmountDollars,
     }
   }

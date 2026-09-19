@@ -141,6 +141,17 @@ type StoredDraft = {
   hasRunwayAccess?: boolean
   hangarLat?:       number | null
   hangarLng?:       number | null
+  submissionId?:    string
+}
+
+// One id per submission attempt. It is saved with the draft and sent to
+// createListing, which hands back the existing listing when the same attempt
+// is retried after a mid-flow failure, instead of inserting a second copy.
+function newSubmissionId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`
 }
 
 type Props = {
@@ -166,6 +177,7 @@ export default function SubmitForm({
   const [hasRunwayAccess, setHasRunwayAccess] = useState(false)
   const [amenities, setAmenities] = useState<string[]>([])
   const [draftRestored, setDraftRestored] = useState(false)
+  const [submissionId, setSubmissionId] = useState<string>(() => newSubmissionId())
   const [photos, setPhotos] = useState<File[]>([])
   const [status, setStatus] = useState<{ type: 'error'; message: string } | null>(null)
   const [loading, setLoading] = useState(false)
@@ -220,6 +232,7 @@ export default function SubmitForm({
       if (typeof parsed.hasRunwayAccess === 'boolean') setHasRunwayAccess(parsed.hasRunwayAccess)
       if (typeof parsed.hangarLat === 'number') setHangarLat(parsed.hangarLat)
       if (typeof parsed.hangarLng === 'number') setHangarLng(parsed.hangarLng)
+      if (typeof parsed.submissionId === 'string' && parsed.submissionId) setSubmissionId(parsed.submissionId)
       setDraftRestored(true)
     } catch {
       /* corrupt storage — ignore and start fresh */
@@ -236,13 +249,14 @@ export default function SubmitForm({
       hasRunwayAccess,
       hangarLat,
       hangarLng,
+      submissionId,
     }
     try {
       window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload))
     } catch {
       /* sessionStorage might be disabled (Safari private mode); non-fatal */
     }
-  }, [formData, amenities, hasRunwayAccess, hangarLat, hangarLng])
+  }, [formData, amenities, hasRunwayAccess, hangarLat, hangarLng, submissionId])
 
   // Debounce airport_code → geocode + map load (fires 600ms after user stops typing)
   useEffect(() => {
@@ -435,6 +449,7 @@ export default function SubmitForm({
     }
 
     setLoading(true)
+    let listingCreated = false
 
     try {
       // ── Step 1: Insert the listing (server action — bypasses RLS) ──────
@@ -459,6 +474,7 @@ export default function SubmitForm({
         runway_width_ft:  formData.runway_width_ft,
         runway_surface:   formData.runway_surface,
         isDraft,
+        clientSubmissionId: submissionId,
       })
 
       // Tier-cap rejection or other up-front error from the server action.
@@ -470,6 +486,12 @@ export default function SubmitForm({
       }
 
       const listingId = result.id
+      listingCreated = true
+      // A retry of an earlier attempt that failed after the insert comes back
+      // as the same listing. Photos it already has are kept; only upload
+      // when this attempt carries more than the listing holds.
+      const resumed        = result.resumed === true
+      const existingPhotos = result.existingPhotoCount ?? 0
 
       // If neither pin nor auto-geocode produced coords, do a final fallback
       // geocode using airport name + city + state (non-fatal, best-effort).
@@ -512,13 +534,17 @@ export default function SubmitForm({
 
       // ── Steps 2 & 3: Upload photos + save records ─────────────────────
       // Photos are optional for drafts but still uploaded if present.
-      const saved = photos.length > 0
-        ? await uploadPhotos(listingId, photos, 0, setUploadProgress)
+      const skipPhotos = resumed && existingPhotos >= photos.length
+      const saved = photos.length > 0 && !skipPhotos
+        ? await uploadPhotos(listingId, photos, existingPhotos, setUploadProgress)
         : []
+      const photoCount = existingPhotos + saved.length
 
       // Listing successfully created — clear the auto-saved draft so it
-      // doesn't haunt the next time this user starts a new submission.
+      // doesn't haunt the next time this user starts a new submission, and
+      // start a fresh submission id so the next listing is its own attempt.
       try { window.sessionStorage.removeItem(DRAFT_STORAGE_KEY) } catch { /* ignore */ }
+      setSubmissionId(newSubmissionId())
 
       // ── Draft path — go straight to the dashboard ─────────────────────
       if (isDraft) {
@@ -529,17 +555,20 @@ export default function SubmitForm({
 
       // ── Payment required — redirect to Stripe checkout ───────────────────
       if (result.requiresPayment && result.checkoutUrl) {
-        setUploadProgress(`Photos saved (${saved.length}) — redirecting to payment…`)
+        setUploadProgress(`Photos saved (${photoCount}) — redirecting to payment…`)
         window.location.href = result.checkoutUrl
         return
       }
 
       // ── Free path — redirect to success page ────────────────────────────
-      router.push(`/submit/success?photos=${saved.length}`)
+      router.push(`/submit/success?photos=${photoCount}`)
     } catch (err: unknown) {
+      const base = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       setStatus({
         type: 'error',
-        message: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+        message: listingCreated
+          ? `${base} Your listing was saved. Try again and we will pick up where it left off rather than create a second copy.`
+          : base,
       })
     } finally {
       setLoading(false)

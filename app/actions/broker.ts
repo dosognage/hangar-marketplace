@@ -356,6 +356,21 @@ export async function approveBrokerApplication(
     console.log(`[approveBroker] backfilled broker_profile_id on ${backfilled.length} listing(s) for user ${userId}`)
   }
 
+  // Listings submitted while the application was still pending went through
+  // the non-broker gate: 'pending' admin review, or 'pending_payment' behind
+  // the listing fee. Verified brokers publish free and without review, so
+  // bring those up to approved now rather than leaving them stuck behind a
+  // fee the broker never owed.
+  const { data: promoted } = await supabaseAdmin
+    .from('listings')
+    .update({ status: 'approved', listing_fee_amount: null })
+    .eq('user_id', userId)
+    .in('status', ['pending', 'pending_payment'])
+    .select('id')
+  if (promoted && promoted.length > 0) {
+    console.log(`[approveBroker] promoted ${promoted.length} pre-approval listing(s) to approved for user ${userId}`)
+  }
+
   // Stamp the broker tag in BOTH user_metadata and app_metadata.
   //
   // - user_metadata is what existing client code reads from the session.
