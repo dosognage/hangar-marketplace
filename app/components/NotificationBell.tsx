@@ -14,13 +14,6 @@ type Notification = {
   created_at: string
 }
 
-const TYPE_ICON: Record<string, string> = {
-  inquiry:          '💬',
-  listing_approved: '✅',
-  listing_rejected: '❌',
-  broker_approved:  '🏅',
-}
-
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
@@ -31,13 +24,21 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`
 }
 
+async function markAllReadOnServer() {
+  await fetch('/api/notifications', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ all: true }),
+  }).catch(() => { /* the count self-corrects on the next page load */ })
+}
+
 export default function NotificationBell({ initialUnread }: { initialUnread: number }) {
-  const [open, setOpen]           = useState(false)
-  const [unread, setUnread]       = useState(initialUnread)
-  const [items, setItems]         = useState<Notification[]>([])
-  const [loading, setLoading]     = useState(false)
-  const ref                       = useRef<HTMLDivElement>(null)
-  const router                    = useRouter()
+  const [open, setOpen]       = useState(false)
+  const [unread, setUnread]   = useState(initialUnread)
+  const [items, setItems]     = useState<Notification[]>([])
+  const [loading, setLoading] = useState(false)
+  const ref                   = useRef<HTMLDivElement>(null)
+  const router                = useRouter()
 
   // Close on outside click
   useEffect(() => {
@@ -48,7 +49,20 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
     return () => document.removeEventListener('mousedown', onDown)
   }, [])
 
-  // Realtime: increment unread count when new notification arrives
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/notifications')
+      const { notifications } = await res.json()
+      setItems(notifications ?? [])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Realtime: a new notification bumps the badge while the panel is closed.
+  // While it is open the user is already looking, so refresh the list and
+  // keep it marked seen instead.
   useEffect(() => {
     const channel = supabase
       .channel('notifications-bell')
@@ -57,41 +71,35 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
         schema: 'public',
         table: 'notifications',
       }, () => {
-        setUnread(n => n + 1)
-        // Refresh list if dropdown is open
-        setItems(prev => prev.length > 0 ? [] : prev) // force re-fetch on next open
+        if (open) {
+          void fetchNotifications()
+          void markAllReadOnServer()
+        } else {
+          setUnread(n => n + 1)
+          setItems([])   // stale; refetch on next open
+        }
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [])
+  }, [open, fetchNotifications])
 
-  const fetchNotifications = useCallback(async () => {
-    setLoading(true)
-    const res = await fetch('/api/notifications')
-    const { notifications } = await res.json()
-    setItems(notifications ?? [])
-    setLoading(false)
-  }, [])
-
+  // Opening the panel counts as seeing everything in it: the badge clears
+  // at once and the server is told in the background. The rows keep their
+  // unseen highlight for this viewing (the list is fetched with the
+  // pre-open read state) and show as seen from the next open onward.
   async function handleOpen() {
-    setOpen(o => !o)
-    if (!open) {
-      await fetchNotifications()
+    if (open) {
+      setOpen(false)
+      return
     }
-  }
-
-  async function markAllRead() {
-    await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
-    setItems(prev => prev.map(n => ({ ...n, read: true })))
+    setOpen(true)
+    const hadUnread = unread > 0
     setUnread(0)
+    await fetchNotifications()
+    if (hadUnread) void markAllReadOnServer()
   }
 
-  async function handleClick(n: Notification) {
-    if (!n.read) {
-      await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [n.id] }) })
-      setItems(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
-      setUnread(c => Math.max(0, c - 1))
-    }
+  function handleClick(n: Notification) {
     setOpen(false)
     if (n.link) router.push(n.link)
   }
@@ -102,6 +110,7 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
       <button
         onClick={handleOpen}
         aria-label="Notifications"
+        aria-expanded={open}
         style={{
           position: 'relative',
           display: 'flex',
@@ -124,7 +133,7 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
 
-        {/* Unread badge — translucent, light weight */}
+        {/* Unread badge */}
         {unread > 0 && (
           <span style={{
             position: 'absolute',
@@ -151,8 +160,7 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
         )}
       </button>
 
-      {/* Backdrop — only renders on mobile, dims the page behind the panel
-          and provides a tap-to-close target outside the dropdown. */}
+      {/* Backdrop: mobile only, dims the page and gives a tap-to-close target. */}
       {open && (
         <div
           className="notif-mobile-backdrop"
@@ -162,12 +170,12 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
             inset: 0,
             backgroundColor: 'rgba(15,23,42,0.35)',
             zIndex: 3999,
-            // Hidden on desktop, visible only on mobile (≤768px).
           }}
         />
       )}
 
-      {/* Dropdown */}
+      {/* Dropdown. Grows out of the bell: anchored at its top-right corner,
+          scales and fades in over one short beat. */}
       {open && (
         <div className="notif-dropdown" style={{
           position: 'absolute',
@@ -180,11 +188,25 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
           border: '1px solid #e5e7eb',
           overflow: 'hidden',
           zIndex: 4000,
+          transformOrigin: 'top right',
+          animation: 'notifExpand 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
         }}>
           <style>{`
+            @keyframes notifExpand {
+              from { opacity: 0; transform: translateY(-6px) scale(0.85); }
+              to   { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @keyframes notifBackdropIn {
+              from { opacity: 0; }
+              to   { opacity: 1; }
+            }
+            .notif-mobile-backdrop { animation: notifBackdropIn 180ms ease-out both; }
+            @media (prefers-reduced-motion: reduce) {
+              .notif-dropdown, .notif-mobile-backdrop { animation: none !important; }
+            }
             /* On mobile (≤768px) switch to a fixed sheet that spans the
-               viewport with a small inset margin. Avoids the "anchored
-               320px box gets clipped off-screen" problem entirely. */
+               viewport with a small inset margin, so the anchored 320px box
+               never gets clipped off-screen. */
             @media (max-width: 768px) {
               .notif-dropdown {
                 position: fixed !important;
@@ -200,27 +222,15 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
               .notif-mobile-backdrop { display: none; }
             }
           `}</style>
+
           {/* Header */}
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '0.85rem 1rem 0.7rem',
             borderBottom: '1px solid #f3f4f6',
           }}>
             <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827' }}>
               Notifications
             </span>
-            {unread > 0 && (
-              <button
-                onClick={markAllRead}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: '0.75rem', color: '#6366f1', fontWeight: '400',
-                  padding: 0,
-                }}
-              >
-                Mark all read
-              </button>
-            )}
           </div>
 
           {/* List */}
@@ -260,10 +270,18 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
                     transition: 'background 0.1s',
                   }}
                 >
-                  {/* Icon */}
-                  <span style={{ fontSize: '1.1rem', flexShrink: 0, marginTop: '1px' }}>
-                    {TYPE_ICON[n.type] ?? '📩'}
-                  </span>
+                  {/* Unseen marker: a blue dot, or an empty slot so rows line up */}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      flexShrink: 0,
+                      width: '8px',
+                      height: '8px',
+                      marginTop: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: n.read ? 'transparent' : '#2563eb',
+                    }}
+                  />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
                       margin: '0 0 0.15rem',
@@ -291,14 +309,6 @@ export default function NotificationBell({ initialUnread }: { initialUnread: num
                       {timeAgo(n.created_at)}
                     </p>
                   </div>
-                  {/* Unread dot */}
-                  {!n.read && (
-                    <span style={{
-                      flexShrink: 0, width: '7px', height: '7px',
-                      borderRadius: '50%', backgroundColor: 'rgba(99,102,241,0.7)',
-                      marginTop: '5px',
-                    }} />
-                  )}
                 </button>
               ))
             )}
