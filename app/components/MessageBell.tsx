@@ -249,27 +249,24 @@ export default function MessageBell({
                 display: 'flex', alignItems: 'center', gap: '0.9rem',
                 width: '100%',
                 padding: isMobile ? '1rem 1.25rem' : '0.85rem 1rem',
-                background: hasUnread ? '#f8f9ff' : 'white',
+                background: hasUnread ? '#f8faff' : 'white',
                 border: 'none',
                 borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
                 cursor: 'pointer', textAlign: 'left',
                 transition: 'background 0.12s',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = '#f3f4f6' }}
-              onMouseLeave={e => { e.currentTarget.style.background = hasUnread ? '#f8f9ff' : 'white' }}
+              onMouseLeave={e => { e.currentTarget.style.background = hasUnread ? '#f8faff' : 'white' }}
             >
-              {/* Avatar with unread indicator dot */}
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <Avatar name={c.other_party.name} size={isMobile ? 48 : 44} />
-                {hasUnread && (
-                  <span style={{
-                    position: 'absolute', bottom: 0, right: 0,
-                    width: '13px', height: '13px', borderRadius: '50%',
-                    backgroundColor: '#6366f1',
-                    border: '2px solid white',
-                  }} />
-                )}
-              </div>
+              {/* Unread marker: a blue dot, or an empty slot so rows line up */}
+              <span
+                aria-hidden="true"
+                style={{
+                  flexShrink: 0, width: '8px', height: '8px', borderRadius: '50%',
+                  backgroundColor: hasUnread ? '#2563eb' : 'transparent',
+                }}
+              />
+              <Avatar name={c.other_party.name} size={isMobile ? 48 : 44} />
 
               {/* Content */}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -310,19 +307,6 @@ export default function MessageBell({
                   {c.other_party.role === 'broker' ? '✓ Verified Broker' : 'Buyer'}
                 </p>
               </div>
-
-              {/* Unread count badge */}
-              {hasUnread && (
-                <span style={{
-                  flexShrink: 0, minWidth: '22px', height: '22px', borderRadius: '11px',
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                  color: 'white', fontSize: '0.65rem', fontWeight: '700',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '0 6px',
-                }}>
-                  {c.unread_count > 99 ? '99+' : c.unread_count}
-                </span>
-              )}
             </button>
           )
         })}
@@ -356,33 +340,60 @@ export default function MessageBell({
           <span style={{
             position: 'absolute', top: '-3px', right: '-3px',
             minWidth: '17px', height: '17px', borderRadius: '9999px',
-            backgroundColor: '#ef4444', color: 'white',
-            fontSize: '0.6rem', fontWeight: '700',
+            backgroundColor: 'rgba(239, 68, 68, 0.92)',
+            backdropFilter: 'blur(4px)',
+            color: 'white',
+            fontSize: '0.6rem', fontWeight: '500',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: '0 4px', lineHeight: 1,
-            border: '1.5px solid rgba(26,58,92,0.8)',
+            border: '1.5px solid rgba(255,255,255,0.25)',
+            letterSpacing: '0.01em',
           }}>
             {unread > 99 ? '99+' : unread}
           </span>
         )}
       </button>
 
+      {/* Same motion as the notification bell: the desktop panel grows out of
+          the bell's corner, the mobile sheet rises from the bottom edge. */}
+      {open && (
+        <style>{`
+          @keyframes msgExpand {
+            from { opacity: 0; transform: translateY(-6px) scale(0.85); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          @keyframes msgSheetUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes msgFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .msg-dropdown, .msg-sheet, .msg-backdrop { animation: none !important; }
+          }
+        `}</style>
+      )}
+
       {/* ── Mobile: backdrop + bottom sheet ──────────────────────────────── */}
       {isMobile && open && (
         <>
           {/* Backdrop */}
           <div
+            className="msg-backdrop"
             onClick={() => setOpen(false)}
             style={{
               position: 'fixed', inset: 0,
               backgroundColor: 'rgba(0,0,0,0.4)',
               backdropFilter: 'blur(2px)',
               zIndex: 4998,
+              animation: 'msgFadeIn 180ms ease-out both',
             }}
           />
 
           {/* Bottom sheet */}
-          <div style={{
+          <div className="msg-sheet" style={{
             position: 'fixed',
             bottom: 0, left: 0, right: 0,
             backgroundColor: 'white',
@@ -393,6 +404,7 @@ export default function MessageBell({
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
+            animation: 'msgSheetUp 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
           }}>
             {/* Drag handle */}
             <div style={{ padding: '0.75rem 0 0', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
@@ -405,18 +417,7 @@ export default function MessageBell({
               padding: '0.75rem 1.25rem 0.9rem',
               flexShrink: 0,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#111827' }}>Messages</span>
-                {unread > 0 && (
-                  <span style={{
-                    padding: '0.1rem 0.5rem', borderRadius: '9999px',
-                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                    color: 'white', fontSize: '0.72rem', fontWeight: '700',
-                  }}>
-                    {unread} new
-                  </span>
-                )}
-              </div>
+              <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#111827' }}>Messages</span>
               <button
                 onClick={() => setOpen(false)}
                 style={{
@@ -442,34 +443,25 @@ export default function MessageBell({
 
       {/* ── Desktop: positioned dropdown ─────────────────────────────────── */}
       {!isMobile && open && (
-        <div style={{
+        <div className="msg-dropdown" style={{
           position: 'absolute', top: 'calc(100% + 10px)', right: 0,
           width: '360px',
           backgroundColor: 'white',
-          borderRadius: '16px',
-          boxShadow: '0 16px 48px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
+          borderRadius: '12px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
           border: '1px solid #e5e7eb',
           overflow: 'hidden',
           zIndex: 4000,
+          transformOrigin: 'top right',
+          animation: 'msgExpand 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
         }}>
           {/* Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '1rem 1.1rem 0.85rem',
+            padding: '0.85rem 1rem 0.7rem',
             borderBottom: '1px solid #f3f4f6',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.95rem', fontWeight: '800', color: '#111827' }}>Messages</span>
-              {unread > 0 && (
-                <span style={{
-                  padding: '0.1rem 0.5rem', borderRadius: '9999px',
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  color: 'white', fontSize: '0.72rem', fontWeight: '700',
-                }}>
-                  {unread} new
-                </span>
-              )}
-            </div>
+            <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827' }}>Messages</span>
             {loading && (
               <div style={{
                 width: '14px', height: '14px', borderRadius: '50%',
