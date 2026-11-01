@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, modernLayout } from '@/lib/email'
 import { isAdminUser, adminEmailList } from '@/lib/auth-admin'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 
 export type AircraftSpec = {
   id:             string
@@ -203,14 +204,15 @@ export async function reportMissingAircraft(args: {
     return { error: 'Failed to send. Please try again.' }
   }
 
-  // Fire-and-forget email to admins. We don't block the user on delivery.
-  void notifyAdminsOfAircraftRequest({
+  // Email admins after the response goes out; after() keeps the function
+  // alive on Vercel until the send finishes. The user never waits on it.
+  after(() => notifyAdminsOfAircraftRequest({
     requesterName:  (user.user_metadata?.full_name as string | undefined) ?? user.email ?? 'A user',
     requesterEmail: user.email ?? '(no email)',
     manufacturer,
     model,
     notes,
-  }).catch(e => console.error('[aircraft] notify admins failed:', e))
+  }).catch(e => console.error('[aircraft] notify admins failed:', e)))
 
   revalidatePath('/settings')
   return {}

@@ -7,6 +7,7 @@ export type NotificationType =
   | 'broker_approved'
   | 'broker_request_alert'
   | 'broker_application'   // admin-facing: a new broker has applied for verification
+  | 'listing_submitted'    // admin-facing: a listing is waiting for review, or a broker listing went live
 
 export async function createNotification({
   userId,

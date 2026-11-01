@@ -7,6 +7,8 @@ import { sendEmail, listingSubmittedEmail } from '@/lib/email'
 import { getStripe } from '@/lib/stripe'
 import { notifyBuyersOfNewListing } from '@/lib/listingAlerts'
 import { resolveBrokerProfileId } from '@/lib/auth-broker'
+import { after } from 'next/server'
+import { notifyAdminsOfNewListing } from '@/lib/adminAlerts'
 
 export type ListingFormData = {
   title: string
@@ -358,6 +360,16 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
     void notifyBuyersOfNewListing(listing.id)
       .catch(e => console.error('[createListing] buyer alert failed:', e))
   }
+
+  // ── Tell the admin ──────────────────────────────────────────────────────
+  // A trial listing is now waiting in the review queue; a broker listing is
+  // already live. Paid listings are announced by the Stripe webhook instead,
+  // once the fee clears. after() keeps the function alive past the response
+  // so the email actually leaves on Vercel.
+  after(() =>
+    notifyAdminsOfNewListing(listing.id)
+      .catch(e => console.error('[createListing] admin notify failed:', e))
+  )
 
   return { id: listing.id }
 }

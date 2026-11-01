@@ -696,6 +696,88 @@ export function newBrokerApplicationEmail(opts: {
   }
 }
 
+/**
+ * Admin-facing: a listing was submitted for review or, for a verified
+ * broker, went live on submit. One email per ADMIN_EMAILS address.
+ */
+export function newListingAdminEmail(opts: {
+  listingId:    string
+  title:        string
+  propertyType: string | null
+  listingType:  string | null
+  airportCode:  string
+  airportName:  string | null
+  city:         string
+  state:        string
+  priceLabel:   string
+  contactName:  string
+  contactEmail: string
+  listedBy:     string   // "Mandy Chiota, EG Realty (verified broker)" or "Private seller"
+  feeLabel:     string   // "Broker listing, no fee" / "Free trial listing" / "$49 listing fee paid"
+  needsReview:  boolean  // true = status pending (admin must approve); false = already live
+}): { subject: string; html: string } {
+  const {
+    listingId, title, propertyType, listingType, airportCode, airportName,
+    city, state, priceLabel, contactName, contactEmail, listedBy, feeLabel, needsReview,
+  } = opts
+
+  const propertyLabel =
+    propertyType === 'airport_home'     ? 'Airport home' :
+    propertyType === 'fly_in_community' ? 'Fly-in community home' :
+    propertyType === 'land'             ? 'Aviation land' : 'Hangar'
+  const listingLabel = listingType === 'sale' ? 'For sale' : listingType ? 'For lease' : null
+
+  const rows: Array<[string, string | null]> = [
+    ['Property',  [propertyLabel, listingLabel].filter(Boolean).join(' · ')],
+    ['Airport',   [airportCode, airportName].filter(Boolean).join(' · ')],
+    ['Location',  `${city}, ${state}`],
+    ['Price',     priceLabel],
+    ['Listed by', listedBy],
+    ['Contact',   `${contactName} <${contactEmail}>`],
+    ['Fee',       feeLabel],
+  ]
+
+  const rowsHtml = rows
+    .filter(([, v]) => !!v)
+    .map(([label, value], i, arr) => `
+      <tr>
+        <td style="padding:8px 0;font-size:14px;color:#64748b;white-space:nowrap;padding-right:16px;${i === arr.length - 1 ? '' : 'border-bottom:1px solid #f1f5f9;'}">${htmlEscape(label)}</td>
+        <td style="padding:8px 0;font-size:14px;color:#0f172a;font-weight:500;${i === arr.length - 1 ? '' : 'border-bottom:1px solid #f1f5f9;'}">${htmlEscape(String(value))}</td>
+      </tr>`).join('')
+
+  const listingUrl = `${SITE_URL}/listing/${listingId}`
+  const adminUrl   = `${SITE_URL}/admin`
+
+  return {
+    subject: needsReview
+      ? `Listing waiting for review: ${title}`
+      : `New broker listing is live: ${title}`,
+    html: modernLayout({
+      preheader: needsReview
+        ? `${title} at ${airportCode} is waiting for your approval.`
+        : `${title} at ${airportCode} just went live from a verified broker.`,
+      eyebrow:   'Admin inbox',
+      title:     needsReview ? 'Listing waiting for review' : 'New broker listing is live',
+      subtitle:  needsReview
+        ? `${contactName} submitted "${title}" at ${airportCode}. It stays hidden until you approve it from the admin panel.`
+        : `${listedBy} published "${title}" at ${airportCode}. Broker listings go live without review, so this is a heads up, not a to-do.`,
+      heroCaption:  needsReview ? 'REVIEW' : 'LIVE',
+      heroGradient: needsReview
+        ? 'linear-gradient(135deg,#0c4a6e 0%,#2563eb 55%,#93c5fd 100%)'
+        : 'linear-gradient(135deg,#064e3b 0%,#059669 55%,#6ee7b7 100%)',
+      sections: [{
+        title: 'Listing',
+        html:  `<table width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table>`,
+      }],
+      cta: needsReview
+        ? { label: 'Review in admin panel', href: adminUrl }
+        : { label: 'View the listing',      href: listingUrl },
+      secondaryCta: needsReview ? undefined : { label: 'Open admin panel', href: adminUrl },
+      footerIntro: `You're getting this because your email is in ADMIN_EMAILS.`,
+    }),
+  }
+}
+
 /** Sent to a broker when their application is rejected. */
 export function brokerRejectedEmail(opts: {
   name: string

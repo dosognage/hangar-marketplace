@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { listAllAuthUsers } from '@/lib/authUsers'
 import { createServerClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { sendEmail, brokerApprovedEmail, brokerRejectedEmail, newBrokerApplicationEmail } from '@/lib/email'
 import { createNotification } from '@/lib/notifications'
 import { geocodeLocation } from '@/lib/geocode'
@@ -172,11 +173,13 @@ export async function submitBrokerApplication(formData: {
     return { error: error.message }
   }
 
-  // ── Notify admins (fire-and-forget) ─────────────────────────────────────
+  // ── Notify admins ───────────────────────────────────────────────────────
   // Email everyone in ADMIN_EMAILS and drop an in-app notification on each of
-  // their bells. Any failure here is logged but does not affect the applicant's
-  // success response.
-  void notifyAdminsOfNewApplication({
+  // their bells. after() runs this once the response is sent and keeps the
+  // function alive until it finishes; a bare dangling promise can be frozen
+  // with the function on Vercel before the email ever leaves. Any failure is
+  // logged but does not affect the applicant's success response.
+  after(() => notifyAdminsOfNewApplication({
     applicantName:  formData.full_name,
     applicantEmail: user.email ?? '',
     brokerage:      formData.brokerage || null,
@@ -186,7 +189,7 @@ export async function submitBrokerApplication(formData: {
     website:        formData.website  || null,
     bio:            formData.bio      || null,
     isUnlicensed,
-  }).catch(e => console.error('[applyForBroker] admin notify failed:', e))
+  }).catch(e => console.error('[applyForBroker] admin notify failed:', e)))
 
   return {}
 }

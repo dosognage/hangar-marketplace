@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import Stripe from 'stripe'
 import { getStripe, SPONSOR_TIERS, HOST_TIERS, type HostTier } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail, newRequestAtAirportEmail } from '@/lib/email'
+import { notifyAdminsOfNewListing } from '@/lib/adminAlerts'
 
 /**
  * Allowed sponsorship durations, derived from the canonical tier list.
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
 
     // ── Listing fee payment ──────────────────────────────────────────────────
     if (type === 'listing_fee' && listing_id && session.payment_status === 'paid') {
-      const { error: feeError } = await supabaseAdmin
+      const { data: moved, error: feeError } = await supabaseAdmin
         .from('listings')
         .update({
           listing_fee_paid: true,
@@ -135,12 +136,23 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', listing_id)
         .eq('status', 'pending_payment')
+        .select('id')
 
       if (feeError) {
         console.error('[webhook] Failed to activate listing after fee payment:', feeError.message)
         return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
       }
       console.log(`[webhook] Listing ${listing_id} fee paid — moved to pending review`)
+
+      // The listing just entered the admin review queue. Only announce it when
+      // this event actually moved the row, so a Stripe retry stays quiet.
+      // after() keeps the function alive past the 200 so the email leaves.
+      if (moved && moved.length > 0) {
+        after(() =>
+          notifyAdminsOfNewListing(listing_id)
+            .catch(e => console.error('[webhook] admin notify failed:', e))
+        )
+      }
     }
 
     // ── Host tier subscription created ─────────────────────────────────────
