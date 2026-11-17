@@ -239,7 +239,8 @@ export default async function BrokerDashboardPage({ searchParams }: { searchPara
             </span>
           </div>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem' }}>
-            {profile.brokerage} · Licensed in {profile.license_state} · Member since {memberSince}
+            {[profile.brokerage, profile.license_state && `Licensed in ${profile.license_state}`, `Member since ${memberSince}`]
+              .filter(Boolean).join(' · ')}
           </p>
         </div>
 
@@ -555,7 +556,7 @@ export default async function BrokerDashboardPage({ searchParams }: { searchPara
           {[
             ['Name', profile.full_name],
             ['Brokerage', profile.brokerage],
-            ['License state', profile.license_state],
+            ['License state', profile.license_state ?? 'None'],
           ].map(([label, value]) => (
             <div key={label}>
               <div style={{ fontSize: '0.7rem', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.15rem' }}>{label}</div>

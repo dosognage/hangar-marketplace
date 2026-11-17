@@ -9,7 +9,7 @@ export type AdminBrokerProfile = {
   user_id:             string | null
   full_name:           string
   brokerage:           string
-  license_state:       string
+  license_state:       string | null
   license_number:      string | null
   is_hidden:           boolean
   is_verified:         boolean
@@ -156,7 +156,7 @@ export default function AdminBrokersManager({ brokers: initial }: { brokers: Adm
                     )}
                   </div>
                   <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>
-                    {broker.brokerage} · Licensed in {broker.license_state}
+                    {broker.brokerage} · {broker.license_state ? `Licensed in ${broker.license_state}` : 'No RE license'}
                     {broker.license_number && ` · #${broker.license_number}`}
                     {broker.listing_count > 0 && ` · ${broker.listing_count} listing${broker.listing_count !== 1 ? 's' : ''}`}
                   </p>

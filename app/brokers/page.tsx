@@ -20,7 +20,7 @@ type BrokerProfile = {
   user_id: string
   full_name: string
   brokerage: string
-  license_state: string
+  license_state: string | null
   avatar_url: string | null
   bio: string | null
   created_at: string
@@ -328,16 +328,18 @@ export default async function BrokersPage({ searchParams }: PageProps) {
                   borderTop: '1px solid #f3f4f6', gap: '0.5rem', flexWrap: 'wrap',
                 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                      fontSize: '0.78rem', color: '#6b7280',
-                    }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                      </svg>
-                      Licensed in {broker.license_state}
-                    </span>
+                    {broker.license_state && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                        fontSize: '0.78rem', color: '#6b7280',
+                      }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        Licensed in {broker.license_state}
+                      </span>
+                    )}
                     <span style={{
                       fontSize: '0.78rem', fontWeight: '600',
                       color: activeCount > 0 ? '#1e40af' : '#9ca3af',

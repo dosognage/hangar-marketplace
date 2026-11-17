@@ -150,7 +150,7 @@ export default async function BrokerProfilePage({ params }: PageProps) {
             )}
           </div>
           <p style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
-            Licensed in {broker.license_state} · Member since {new Date(broker.created_at).getFullYear()}
+            {broker.license_state ? `Licensed in ${broker.license_state} · ` : ''}Member since {new Date(broker.created_at).getFullYear()}
           </p>
 
           {/* Contact buttons */}
