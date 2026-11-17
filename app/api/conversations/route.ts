@@ -178,7 +178,9 @@ export async function POST(req: Request) {
 
   if (convoErr) {
     console.error('[POST /api/conversations] upsert:', convoErr.message)
-    return NextResponse.json({ error: convoErr.message }, { status: 500 })
+    // check_violation from the block trigger: one side blocked the other.
+    const status = (convoErr as { code?: string }).code === '23514' ? 403 : 500
+    return NextResponse.json({ error: convoErr.message }, { status })
   }
 
   // Insert the opening message

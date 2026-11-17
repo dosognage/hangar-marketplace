@@ -83,7 +83,11 @@ export async function POST(
     .select('id, body, sender_id, read, created_at')
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    // check_violation from the block trigger: one side blocked the other.
+    const status = (error as { code?: string }).code === '23514' ? 403 : 500
+    return NextResponse.json({ error: error.message }, { status })
+  }
 
   // Update last_message_at on the conversation
   await supabaseAdmin
