@@ -77,7 +77,7 @@ export async function POST(req: Request) {
   if (brokerEmail) {
     await sendEmail({
       to: brokerEmail,
-      subject: `Showing request from ${requester_name} — Hangar Marketplace`,
+      subject: `Showing request from ${requester_name} on Hangar Marketplace`,
       html: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"/></head>
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
   // Send confirmation email to the requester
   await sendEmail({
     to: requester_email,
-    subject: `Your showing request was received — Hangar Marketplace`,
+    subject: `Your showing request was received`,
     html: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"/></head>
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
           </p>
 
           <table style="width:100%;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;">
-            <tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Broker</td><td style="padding:10px 16px;font-size:14px;color:#111827;">${broker?.full_name ?? '—'}</td></tr>
+            <tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Broker</td><td style="padding:10px 16px;font-size:14px;color:#111827;">${broker?.full_name ?? 'Your broker'}</td></tr>
             <tr><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Preferred date</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#111827;">${dateStr}</td></tr>
             ${preferred_time ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Preferred time</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#111827;">${preferred_time}</td></tr>` : ''}
             ${message ? `<tr><td style="padding:10px 16px;font-size:12px;font-weight:700;color:#6b7280;border-top:1px solid #f3f4f6;text-transform:uppercase;letter-spacing:0.05em;">Your message</td><td style="padding:10px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#374151;">${message}</td></tr>` : ''}
