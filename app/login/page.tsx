@@ -2,40 +2,58 @@
 
 /**
  * Login page
- * Uses React 19's useActionState to call the login Server Action and
- * show errors without a full page reload.
+ * Posts the form to /api/auth/login with fetch. On success it does a full
+ * page load of the destination; on failure it shows the error in place.
+ * Why not a Server Action + redirect(): see lib/password-login.ts.
  */
 
-import { useActionState, useEffect, useRef, useState, Suspense } from 'react'
+import { useState, Suspense, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { login, type AuthState } from '@/app/actions/auth'
 import { safeNextPath } from '@/lib/safe-redirect'
 import TurnstileWidget from '@/app/components/TurnstileWidget'
 
 function LoginForm() {
-  const [state, formAction, isPending] = useActionState<AuthState, FormData>(
-    login,
-    null
-  )
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, setIsPending] = useState(false)
   const searchParams = useSearchParams()
-  // Sanitize on the client too — the server action also sanitizes (so an
+  // Sanitize on the client too — the server also sanitizes (so an
   // attacker can't bypass us by hand-crafting the form), but cleaning the
   // value here keeps the hidden input + "Create one" link href safe.
   const next = safeNextPath(searchParams.get('next'))
 
-  // Preserve the email the user typed so it stays in the field on error
-  const submittedEmail = state?.email ?? ''
-
-  // Reset Turnstile after every server-action response. Tokens are
-  // single-use; on a bad-password retry the widget UI still shows ✓
-  // but Cloudflare rejects the consumed token. Remounting via key bump
-  // gives the next submit a fresh token. See signup/page.tsx for the
-  // full rationale.
+  // Reset Turnstile after every failed attempt. Tokens are single-use; on a
+  // bad-password retry the widget UI still shows ✓ but Cloudflare rejects
+  // the consumed token. Remounting via key bump gives the next submit a
+  // fresh token. See signup/page.tsx for the full rationale.
   const [turnstileKey, setTurnstileKey] = useState(0)
-  useEffect(() => {
-    if (state) setTurnstileKey(k => k + 1)
-  }, [state])
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (isPending) return
+    setIsPending(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: new FormData(e.currentTarget),
+        credentials: 'same-origin',
+      })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok && typeof body.redirectTo === 'string') {
+        // Signed in. A full page load (not a client-side transition) so the
+        // signed-in layout renders from scratch, the same as a reload.
+        // isPending stays true so the button holds "Signing in…".
+        window.location.assign(body.redirectTo)
+        return
+      }
+      setError(typeof body.error === 'string' ? body.error : 'Something went wrong signing in. Please try again.')
+    } catch {
+      setError('Could not reach Hangar Marketplace. Check your connection and try again.')
+    }
+    setIsPending(false)
+    setTurnstileKey(k => k + 1)
+  }
 
   return (
     <div style={cardStyle}>
@@ -44,11 +62,11 @@ function LoginForm() {
         Welcome back to Hangar Marketplace
       </p>
 
-      {state?.error && (
-        <div role="alert" data-testid="login-error" style={errorStyle}>{state.error}</div>
+      {error && (
+        <div role="alert" data-testid="login-error" style={errorStyle}>{error}</div>
       )}
 
-      <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {/* Pass the redirect destination through the form */}
         <input type="hidden" name="next" value={next} />
 
@@ -60,8 +78,6 @@ function LoginForm() {
             type="email"
             required
             placeholder="you@example.com"
-            defaultValue={submittedEmail}
-            key={submittedEmail}
             style={inputStyle}
           />
         </div>
