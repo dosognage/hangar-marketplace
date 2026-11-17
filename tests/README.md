@@ -56,7 +56,7 @@ tests/
     │   ├── admin-reauth.spec.ts    # Comp-sponsor password modal
     │   ├── broker-flow.spec.ts     # Apply → approve with reauth → broker dashboard
     │   ├── listing-flow.spec.ts    # Submit listing → pending → approve
-    │   ├── stripe-checkout.spec.ts # Stripe sponsor checkout via hosted UI (@stripe)
+    │   ├── stripe-checkout.spec.ts # Stripe sponsor checkout: UI to Stripe redirect, session check, webhook (@stripe)
     │   ├── stripe-checkout-api.spec.ts     # Sponsor checkout + portal API endpoints (@stripe-api)
     │   └── stripe-webhook-handler.spec.ts  # Synthetic webhook events, no UI (@stripe-webhook)
     ├── .auth/                      # Saved auth states (gitignored)

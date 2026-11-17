@@ -3,10 +3,19 @@
  *
  * Exercises the full sponsorship purchase:
  *   1. User clicks "Sponsor this listing" on a listing detail page
- *   2. Server creates a Checkout Session and redirects
- *   3. Test card 4242 4242 4242 4242 completes payment
- *   4. Stripe webhook fires → DB updates is_sponsored + sponsored_until
- *   5. Stripe customer portal can cancel the sponsorship
+ *   2. Server creates a Checkout Session and redirects to checkout.stripe.com
+ *   3. The test reads that Session back from the Stripe API and checks the
+ *      price, mode and metadata our webhook depends on
+ *   4. A signed checkout.session.completed webhook for that Session updates
+ *      is_sponsored + sponsored_until in the DB
+ *
+ * The test deliberately does NOT type into Stripe's hosted payment form.
+ * That form is Stripe's UI, not ours, and Stripe reshapes it without notice:
+ * Link added required Email/ZIP/phone fields in 2025, and in November 2026
+ * the whole form moved into a cross-origin iframe ("Secure embedded form
+ * frame"), which broke the old page-level selectors on every retry. Card
+ * entry is Stripe's code path; everything our code controls (session
+ * creation, metadata, webhook handling) is still covered end to end.
  *
  * Setup needed:
  *   - STRIPE_SECRET_KEY in .env.test must be a TEST key (sk_test_...)
@@ -21,8 +30,8 @@
 
 import { test, expect, AUTH_STATES } from '../fixtures/test'
 import { getTestSupabaseAdmin } from '../helpers/supabase-admin'
-import { STRIPE_TEST_CARDS } from '../helpers/stripe-cards'
 import { USER } from '../helpers/test-users'
+import { getStripe, SPONSOR_TIERS } from '../../../lib/stripe'
 import { buildCheckoutCompletedEvent, signWebhookPayload } from '../helpers/stripe-webhook'
 
 test.use({ storageState: AUTH_STATES.user })
@@ -88,47 +97,31 @@ test.describe('Stripe sponsor checkout @stripe', () => {
     await page.getByTestId('sponsor-checkout-confirm').click()
     await page.waitForURL(/checkout\.stripe\.com/, { timeout: 15_000 })
 
-    // Stripe-hosted checkout (the iframe-free flavour).
-    //
-    // The page evolved significantly when Stripe rolled Link in: there's now
-    // a "Contact information" section above payment that requires Email,
-    // multiple payment-method accordions (Card / Bank / Klarna) with Card
-    // expanded by default, the billing block demands ZIP on top of name +
-    // country, and a "Save my information for faster checkout" checkbox is
-    // pre-checked which makes Phone required for the Link save path.
-    //
-    // The form's submit button stays in `SubmitButton--incomplete` state
-    // (CSS class — visibly greyed out, technically still clickable but a
-    // no-op) until ALL these inputs are valid. Fill them in order:
-    const card = STRIPE_TEST_CARDS.visaSuccess
+    // Read the Session the server just created straight from Stripe and
+    // check what the webhook relies on. The test runner and the dev server
+    // share the same STRIPE_SECRET_KEY (a sk_test_ key), so the Session is
+    // visible here.
+    const sessionId = page.url().match(/cs_test_[A-Za-z0-9]+/)?.[0]
+    expect(sessionId, `no cs_test_ id in checkout URL ${page.url()}`).toBeTruthy()
 
-    // Contact information — Email (top of form)
-    await page.getByRole('textbox', { name: /^email$/i })
-              .fill('e2e-test@hangarmarketplace.com')
+    const stripe  = getStripe()
+    const session = await stripe.checkout.sessions.retrieve(sessionId!)
+    const tier    = SPONSOR_TIERS.find(t => t.days === 7)!
 
-    // Card details (the Card accordion is the default-checked payment method)
-    await page.locator('#cardNumber, [name="cardNumber"]').fill(card.number.replace(/\s/g, ''))
-    await page.locator('#cardExpiry, [name="cardExpiry"]').fill(card.exp.replace(/\s/g, ''))
-    await page.locator('#cardCvc,    [name="cardCvc"]').fill(card.cvc)
+    expect(session.mode).toBe('payment')
+    expect(session.status).toBe('open')
+    expect(session.currency).toBe('usd')
+    expect(session.amount_total).toBe(tier.cents)
+    expect(session.metadata).toMatchObject({
+      type:          'listing_sponsor',
+      listing_id:    listing!.id,
+      duration_days: '7',
+    })
+    expect(session.success_url).toContain(`/listing/${listing!.id}`)
 
-    // Billing block — cardholder name + ZIP (country defaults to US)
-    await page.locator('#billingName, [name="billingName"]').fill('E2E Tester')
-    await page.getByRole('textbox', { name: /^zip$/i }).fill('80014')
-
-    // Disable the Link "Save my info" flow so we don't have to satisfy its
-    // phone-number requirement. This is a TEST-only convenience — real users
-    // benefit from Link, but the spec is scoped to the plain-card path.
-    await page.getByRole('checkbox', { name: /save my information/i }).uncheck()
-
-    // Submit. Stripe's hosted checkout exposes a stable data-testid on the
-    // submit CTA — we use it directly rather than role+name regex because
-    // the page now contains multiple "Pay with X" accordion buttons (Card,
-    // Bank, Klarna, Link) that match any loose `name: /pay/i` and trip
-    // Playwright strict-mode violations.
-    await page.getByTestId('hosted-payment-submit-button').click()
-
-    // Land back on /listing/[id]?status=success or similar
-    await page.waitForURL(/hangarmarketplace|localhost/, { timeout: 30_000 })
+    // Nobody will pay this Session; expire it so it does not sit open in the
+    // Stripe test dashboard for 24 hours.
+    await stripe.checkout.sessions.expire(sessionId!)
 
     // Stripe's real checkout.session.completed webhook can't reach the dev
     // server (Stripe → localhost isn't a path) so we fire a synthetic
@@ -141,6 +134,7 @@ test.describe('Stripe sponsor checkout @stripe', () => {
     // rationale; stripe-webhook-handler.spec.ts owns the deeper handler
     // contract tests.)
     const event = buildCheckoutCompletedEvent({
+      id:             sessionId!,
       type:           'listing_sponsor',
       listing_id:     listing!.id,
       duration_days:  '7',
