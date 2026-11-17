@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabase-admin'
+import { pushToUser, type PushCategory } from './push'
 
 export type NotificationType =
   | 'inquiry'
@@ -30,4 +31,18 @@ export async function createNotification({
     link:    link ?? null,
   }])
   if (error) console.error('[notifications] insert failed:', error.message)
+
+  // Mirror the bell to the phone. 'inquiry' doubles as the "new listing
+  // near your airport" alert (link /listing/<id>), which belongs under the
+  // listings switch rather than messages.
+  const category: PushCategory =
+    type === 'broker_request_alert' ? 'listings' :
+    type === 'inquiry' && link?.startsWith('/listing/') ? 'listings' :
+    type === 'inquiry' ? 'messages' :
+    'account'
+  await pushToUser(userId, category, {
+    title,
+    body: body ?? '',
+    data: { type: 'link', link: link ?? null },
+  })
 }

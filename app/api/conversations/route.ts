@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { pushToUser, senderDisplayName } from '@/lib/push'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -197,6 +198,18 @@ export async function POST(req: Request) {
     .from('conversations')
     .update({ last_message_at: msg.created_at })
     .eq('id', convo.id)
+
+  // Push the broker's phone (Hangar Marketplace app).
+  const brokerUserId = brokerProfile?.user_id
+  if (brokerUserId) {
+    after(async () => {
+      await pushToUser(brokerUserId, 'messages', {
+        title: await senderDisplayName(user.id),
+        body:  msg.body,
+        data:  { type: 'message', conversationId: convo.id },
+      })
+    })
+  }
 
   return NextResponse.json({ conversation_id: convo.id, message: msg })
 }

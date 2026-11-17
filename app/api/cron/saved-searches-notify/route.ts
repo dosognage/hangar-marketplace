@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { pushToUser } from '@/lib/push'
+
+/** Quote a value for a PostgREST or() filter so , ( ) inside it are literal. */
+function pgrstQuote(value: string): string {
+  return '"' + value.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+}
 
 /**
  * GET /api/cron/saved-searches-notify
@@ -56,10 +62,15 @@ export async function GET(req: NextRequest) {
 
       // Apply filters
       if (search.query) {
-        const like = `%${search.query}%`
+        // Quoted: a query like "Eastsound, WA" has a comma, which is a
+        // separator in or() and used to make this whole search error out.
+        const like = pgrstQuote(`%${search.query}%`)
         q = q.or(`city.ilike.${like},state.ilike.${like},airport_name.ilike.${like},airport_code.ilike.${like}`)
       }
-      if (search.listing_type) {
+      if (search.listing_type === 'sale' || search.listing_type === 'lease') {
+        // A "both" listing is for sale AND for lease, so it matches either alert.
+        q = q.in('listing_type', [search.listing_type, 'both'])
+      } else if (search.listing_type) {
         q = q.eq('listing_type', search.listing_type)
       }
       if (search.max_price) {
@@ -149,6 +160,17 @@ export async function GET(req: NextRequest) {
           html,
         }),
       })
+
+      // Push too, for alerts made by a signed-in user with the app.
+      if (search.user_id) {
+        await pushToUser(search.user_id, 'listings', {
+          title: `${listings.length} new listing${listings.length !== 1 ? 's' : ''} match your alert`,
+          body:  listings.map((l: { title: string; airport_code: string }) => `${l.title} (${l.airport_code})`).join(', '),
+          data:  listings.length === 1
+            ? { type: 'listing', listingId: listings[0].id }
+            : { type: 'search', query: search.query ?? '' },
+        })
+      }
 
       // Update last_notified_at so next run only picks up newer listings
       await supabaseAdmin

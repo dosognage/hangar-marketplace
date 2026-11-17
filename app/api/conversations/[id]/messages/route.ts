@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { pushToUser, senderDisplayName } from '@/lib/push'
 
 // GET /api/conversations/[id]/messages
 export async function GET(
@@ -89,6 +90,18 @@ export async function POST(
     .from('conversations')
     .update({ last_message_at: msg.created_at })
     .eq('id', id)
+
+  // Push the other participant's phone (Hangar Marketplace app).
+  const recipientId = convo.buyer_id === user.id ? brokerUserId : convo.buyer_id
+  if (recipientId) {
+    after(async () => {
+      await pushToUser(recipientId, 'messages', {
+        title: await senderDisplayName(user.id),
+        body:  msg.body,
+        data:  { type: 'message', conversationId: id },
+      })
+    })
+  }
 
   return NextResponse.json({ message: msg })
 }

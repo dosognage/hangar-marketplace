@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { pushToUser } from '@/lib/push'
 import { sendEmail, htmlEscape } from '@/lib/email'
 import { validatePhone, validateEmail } from '@/lib/validate'
 
@@ -45,6 +46,18 @@ export async function POST(req: Request) {
     .select('full_name, contact_email, phone, user_id')
     .eq('id', broker_profile_id)
     .single()
+
+  // Push the broker's phone (Hangar Marketplace app).
+  if (broker?.user_id) {
+    const brokerUserId = broker.user_id
+    after(async () => {
+      await pushToUser(brokerUserId, 'messages', {
+        title: 'New showing request',
+        body:  `${requester_name} wants to schedule a showing${listing_id ? ' of your listing' : ''}.`,
+        data:  { type: 'showing' },
+      })
+    })
+  }
 
   // Create in-app notification for the broker
   if (broker?.user_id) {
