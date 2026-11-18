@@ -12,12 +12,21 @@ export class SignupPage extends BasePage {
   get email():         Locator { return this.page.getByLabel('Email', { exact: true }) }
   get password():      Locator { return this.page.getByLabel('Password', { exact: true }) }
   get confirm():       Locator { return this.page.getByLabel('Confirm password', { exact: true }) }
-  get marketingCheck(): Locator { return this.page.getByRole('checkbox') }
+  // By id: the footer newsletter form adds a second checkbox to every page.
+  get marketingCheck(): Locator { return this.page.locator('#marketingConsent') }
   get submit():        Locator { return this.page.getByRole('button', { name: /create account/i }) }
-  get errorBox():      Locator { return this.page.locator('div[style*="dc2626"]').first() }
+  // The data-testid on signup/page.tsx, not the inline color, which changed.
+  get errorBox():      Locator { return this.page.getByTestId('signup-error') }
 
-  /** Cloudflare's test sitekey passes silently — but the iframe still mounts. */
-  get turnstileMount(): Locator { return this.page.locator('iframe[src*="challenges.cloudflare.com"]') }
+  /**
+   * The widget's container (@marsidev/react-turnstile renders id="cf-turnstile").
+   * Cloudflare now draws its iframe inside a closed shadow root under this
+   * div, so the iframe itself is not reachable from the page; the container
+   * and the hidden token input are.
+   */
+  get turnstileMount(): Locator { return this.page.locator('#cf-turnstile') }
+  /** Cloudflare's Turnstile script, proof the widget came from Cloudflare. */
+  get turnstileScript(): Locator { return this.page.locator('script[src*="challenges.cloudflare.com/turnstile"]') }
   get turnstileToken(): Locator { return this.page.locator('input[name="cf-turnstile-response"]') }
 
   async goto(): Promise<void> {

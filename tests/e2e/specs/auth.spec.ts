@@ -107,7 +107,7 @@ test.describe('Forgot password', () => {
     await forgotPasswordPage.submitWithEmail('definitely-not-a-user@example.com')
     await expect(forgotPasswordPage.successHeading).toBeVisible({ timeout: 10_000 })
     // Generic copy — never reveals whether the address is registered
-    await expect(forgotPasswordPage.page.locator('p')).toContainText(/if an account exists/i)
+    await expect(forgotPasswordPage.page.getByText(/if an account exists/i)).toBeVisible()
   })
 
   test('real seeded email is also accepted (cannot tell from UI alone)', async ({ forgotPasswordPage }) => {

@@ -10,9 +10,17 @@ export class ForgotPasswordPage extends BasePage {
   get email():          Locator { return this.page.getByLabel(/email\s*address/i) }
   get submit():         Locator { return this.page.getByRole('button', { name: /send reset link/i }) }
   get successHeading(): Locator { return this.page.getByRole('heading', { name: /check your email/i }) }
-  get errorBox():       Locator { return this.page.locator('div[style*="dc2626"]').first() }
+  get errorBox():       Locator { return this.page.getByTestId('forgot-error') }
 
-  get turnstileMount(): Locator { return this.page.locator('iframe[src*="challenges.cloudflare.com"]') }
+  /**
+   * The widget's container (@marsidev/react-turnstile renders id="cf-turnstile").
+   * Cloudflare now draws its iframe inside a closed shadow root under this
+   * div, so the iframe itself is not reachable from the page; the container
+   * and the hidden token input are.
+   */
+  get turnstileMount(): Locator { return this.page.locator('#cf-turnstile') }
+  /** Cloudflare's Turnstile script, proof the widget came from Cloudflare. */
+  get turnstileScript(): Locator { return this.page.locator('script[src*="challenges.cloudflare.com/turnstile"]') }
   get turnstileToken(): Locator { return this.page.locator('input[name="cf-turnstile-response"]') }
 
   async goto(): Promise<void> {

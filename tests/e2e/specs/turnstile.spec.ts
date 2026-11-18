@@ -11,7 +11,7 @@
 
 import { test, expect } from '../fixtures/test'
 
-// GitHub Actions runners can't load challenges.cloudflare.com iframes
+// GitHub Actions runners can't load challenges.cloudflare.com widgets
 // reliably (network egress + sandbox restrictions). These tests still
 // run locally where the test sitekey produces a token in <1s.
 const skipInCI = !!process.env.CI
@@ -37,9 +37,10 @@ test.describe('Turnstile @security', () => {
 
   test('Turnstile uses test sitekey in this environment (sanity check)', async ({ signupPage }) => {
     await signupPage.goto()
-    const iframeSrc = await signupPage.turnstileMount.getAttribute('src')
-    // Just confirm it's a Turnstile iframe — we can't assert the sitekey via
-    // src directly because Cloudflare passes it as a postMessage payload.
-    expect(iframeSrc).toMatch(/challenges\.cloudflare\.com/)
+    // Confirm the widget is Cloudflare's: its script is on the page and the
+    // container mounted. The iframe sits in a closed shadow root, so we can't
+    // read its src, and Cloudflare passes the sitekey by postMessage anyway.
+    await expect(signupPage.turnstileScript).toHaveCount(1)
+    await expect(signupPage.turnstileMount).toBeVisible({ timeout: 10_000 })
   })
 })
