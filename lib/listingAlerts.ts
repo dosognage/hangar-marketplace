@@ -101,7 +101,7 @@ export async function notifyBuyersOfNewListing(arg: string | { id: string }): Pr
   const { data: listing, error: listErr } = await supabaseAdmin
     .from('listings')
     .select(`
-      id, title, property_type, listing_type,
+      id, title, status, property_type, listing_type,
       airport_code, airport_name, city, state,
       latitude, longitude,
       asking_price, monthly_lease, hoa_monthly, annual_property_tax,
@@ -117,6 +117,10 @@ export async function notifyBuyersOfNewListing(arg: string | { id: string }): Pr
     console.error('[listingAlerts] listing fetch failed:', listErr?.message)
     return
   }
+  // Only listings the public can see. Callers fire this right after a
+  // broker creates a listing, assuming it went live, but a database rule
+  // can hold it back (the App Review demo broker's listings stay drafts).
+  if (listing.status !== 'approved') return
   if (listing.latitude == null || listing.longitude == null) return
 
   // Pick the cover photo. Supabase puts listing_photos in whatever order the
