@@ -14,6 +14,7 @@ import dynamic from 'next/dynamic'
 import { updateListing, type UpdateState } from '@/app/actions/listings'
 import FeetInchesInput from '@/app/components/FeetInchesInput'
 import AirportAutocomplete, { type AirportSuggestion } from '@/app/components/AirportAutocomplete'
+import { LEASE_TERMS, isLeaseTerm } from '@/lib/leaseTerm'
 
 // Leaflet must be loaded client-side only — same dynamic-import pattern as
 // the submit form.
@@ -61,6 +62,7 @@ type Listing = {
   ownership_type: string | null
   asking_price: number | null
   monthly_lease: number | null
+  lease_term?: string | null
   square_feet: number | null
   door_width: number | null
   door_height: number | null
@@ -368,12 +370,26 @@ export default function EditListingForm({ listing }: { listing: Listing }) {
         </Section>
 
         {/* ── Pricing ────────────────────────────────────────────────────── */}
-        {/* Same rule as submit: For Sale → asking only, For Lease → monthly only. */}
+        {/* Same rule as submit: For Sale → asking only, For Lease → monthly + lease term. */}
         <Section title="Pricing">
           {isRental ? (
-            <Field label={listingType === 'space' ? 'Monthly rent for the space ($)' : 'Monthly lease ($)'}>
-              <input name="monthly_lease" type="number" min="0" defaultValue={listing.monthly_lease ?? ''} style={inputStyle} />
-            </Field>
+            <TwoCol>
+              <Field label={listingType === 'space' ? 'Monthly rent for the space ($)' : 'Monthly lease ($)'}>
+                <input name="monthly_lease" type="number" min="0" defaultValue={listing.monthly_lease ?? ''} style={inputStyle} />
+              </Field>
+              <Field label="Lease term">
+                <select
+                  name="lease_term"
+                  defaultValue={isLeaseTerm(listing.lease_term) ? listing.lease_term : ''}
+                  style={inputStyle}
+                >
+                  <option value="">Not specified</option>
+                  {LEASE_TERMS.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </Field>
+            </TwoCol>
           ) : (
             <Field label="Asking price ($)">
               <input name="asking_price" type="number" min="0" defaultValue={listing.asking_price ?? ''} style={inputStyle} />

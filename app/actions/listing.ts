@@ -9,6 +9,7 @@ import { notifyBuyersOfNewListing } from '@/lib/listingAlerts'
 import { resolveBrokerProfileId } from '@/lib/auth-broker'
 import { after } from 'next/server'
 import { notifyAdminsOfNewListing } from '@/lib/adminAlerts'
+import { parseLeaseTerm } from '@/lib/leaseTerm'
 
 export type ListingFormData = {
   title: string
@@ -21,6 +22,9 @@ export type ListingFormData = {
   ownership_type: string
   asking_price: string
   monthly_lease: string
+  // Rentals only: shortest commitment ('month_to_month' | 'six_months' |
+  // 'one_year' | 'multi_year'), '' or absent when not stated.
+  lease_term?: string
   // Leasehold only — years left on the ground lease
   leasehold_years_remaining: string
   // Recurring costs (apply to homes + land; user can enter 0)
@@ -268,6 +272,7 @@ export async function createListing(data: ListingFormData): Promise<CreateListin
                           ? Number(data.asking_price) : null,
       monthly_lease:    IS_RENTAL(data.listing_type) && data.monthly_lease
                           ? Number(data.monthly_lease) : null,
+      lease_term:       parseLeaseTerm(data.lease_term, data.listing_type),
       hoa_monthly:         parseOptionalNumber(data.hoa_monthly),
       annual_property_tax: parseOptionalNumber(data.annual_property_tax),
       amenities:           cleanAmenities,

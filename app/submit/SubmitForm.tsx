@@ -20,6 +20,7 @@ import { Sparkles, CreditCard, Warehouse, Home, Trees, Plane } from 'lucide-reac
 import { supabase } from '@/lib/supabase'
 import PhotoUploader from '@/app/components/PhotoUploader'
 import { createListing, getListingFeeInfo } from '@/app/actions/listing'
+import { LEASE_TERMS } from '@/lib/leaseTerm'
 import { uploadPhotos } from '@/lib/uploadPhotos'
 import AirportAutocomplete, { type AirportSuggestion } from '@/app/components/AirportAutocomplete'
 
@@ -52,6 +53,8 @@ const EMPTY_FORM = {
   ownership_type: '',
   asking_price: '',
   monthly_lease: '',
+  // Rentals only: shortest lease commitment ('' = not specified)
+  lease_term: '',
   // Leasehold only: years remaining on the ground lease
   leasehold_years_remaining: '',
   // Recurring costs — both fields must accept literal 0
@@ -884,12 +887,22 @@ export default function SubmitForm({
 
         {/* ── Pricing ─────────────────────────────────────────────────── */}
         {/* For Sale  → asking price only. */}
-        {/* For Lease / Space → monthly lease only. */}
+        {/* For Lease / Space → monthly lease, plus the optional lease term. */}
         <Section title="Pricing">
           {IS_RENTAL(formData.listing_type) ? (
-            <Field label={formData.listing_type === 'space' ? 'Monthly rent for the space ($)' : 'Monthly lease ($)'}>
-              <input name="monthly_lease" type="number" min="0" placeholder="0" value={formData.monthly_lease} onChange={handleChange} style={inputStyle} />
-            </Field>
+            <TwoCol>
+              <Field label={formData.listing_type === 'space' ? 'Monthly rent for the space ($)' : 'Monthly lease ($)'}>
+                <input name="monthly_lease" type="number" min="0" placeholder="0" value={formData.monthly_lease} onChange={handleChange} style={inputStyle} />
+              </Field>
+              <Field label="Lease term">
+                <select name="lease_term" value={formData.lease_term} onChange={handleChange} style={inputStyle}>
+                  <option value="">Not specified</option>
+                  {LEASE_TERMS.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </Field>
+            </TwoCol>
           ) : (
             <Field label="Asking price ($)">
               <input name="asking_price" type="number" min="0" placeholder="0" value={formData.asking_price} onChange={handleChange} style={inputStyle} />

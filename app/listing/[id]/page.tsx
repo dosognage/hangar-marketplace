@@ -22,6 +22,7 @@ export const dynamic = 'force-dynamic'
 
 import AirportMapClient from '@/app/components/AirportMapClient'
 import { formatFtIn } from '@/lib/dimensions'
+import { leaseTermLabel, takesLeaseTerm } from '@/lib/leaseTerm'
 
 type ListingPageProps = {
   params:       Promise<{ id: string }>
@@ -107,6 +108,7 @@ type Listing = {
   ownership_type: string
   asking_price: number | null
   monthly_lease: number | null
+  lease_term: string | null
   // Hangar-specific
   square_feet: number | null
   door_width: number | null
@@ -201,6 +203,8 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
   }
 
   const typedListing = listing as Listing
+  // Shortest commitment the lease asks for; rentals only, when stated.
+  const leaseTerm = takesLeaseTerm(typedListing.listing_type) ? leaseTermLabel(typedListing.lease_term) : null
 
   const sortedPhotos = [...(typedListing.listing_photos ?? [])].sort(
     (a, b) => a.display_order - b.display_order
@@ -423,6 +427,9 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
             label="Listing type"
             value={typedListing.listing_type === 'sale' ? 'For Sale' : typedListing.listing_type === 'space' ? 'Space Available' : 'For Lease'}
           />
+          {leaseTerm && (
+            <DetailRow label="Lease term" value={leaseTerm} />
+          )}
           {/* Address — non-hangar listings */}
           {typedListing.address && (
             <DetailRow

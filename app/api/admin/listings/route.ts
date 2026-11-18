@@ -6,6 +6,7 @@ import { createNotification } from '@/lib/notifications'
 import { notifyBuyersOfNewListing } from '@/lib/listingAlerts'
 import { isAdminUser } from '@/lib/auth-admin'
 import { verifyCurrentPassword } from '@/lib/reauth'
+import { parseLeaseTerm } from '@/lib/leaseTerm'
 
 async function requireAdmin(req: NextRequest) {
   void req
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const {
       title, listing_type, ownership_type, airport_code, airport_name, city, state,
-      asking_price, monthly_lease, square_feet, door_width, door_height, hangar_depth,
+      asking_price, monthly_lease, lease_term, square_feet, door_width, door_height, hangar_depth,
       contact_name, contact_email, contact_phone, description,
       broker_profile_id, broker_user_id,
     } = body
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
         state,
         asking_price:   asking_price   ? Number(asking_price)   : null,
         monthly_lease:  monthly_lease  ? Number(monthly_lease)  : null,
+        lease_term:     parseLeaseTerm(lease_term, listing_type),
         square_feet:    square_feet    ? Number(square_feet)    : null,
         door_width:     door_width     ? Number(door_width)     : null,
         door_height:    door_height    ? Number(door_height)    : null,

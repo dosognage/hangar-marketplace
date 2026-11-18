@@ -12,6 +12,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { resolveBrokerProfileId } from '@/lib/auth-broker'
+import { parseLeaseTerm } from '@/lib/leaseTerm'
 
 // Accept literal 0 for optional numeric fields (HOA, tax). Empty string → null.
 function parseOptionalNumber(raw: FormDataEntryValue | null): number | null {
@@ -192,6 +193,8 @@ export async function updateListing(
     monthly_lease:  (listing_type === 'lease' || listing_type === 'space') && formData.get('monthly_lease')
                       ? Number(formData.get('monthly_lease'))
                       : null,
+    // Shortest lease commitment; cleared when the listing is sale-only.
+    lease_term:     parseLeaseTerm(formData.get('lease_term'), listing_type),
     // Hangar dimensions
     square_feet:    isHangar && formData.get('square_feet')  ? Number(formData.get('square_feet'))  : null,
     door_width:     isHangar && formData.get('door_width')   ? Number(formData.get('door_width'))   : null,
