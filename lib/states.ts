@@ -31,3 +31,35 @@ export function slugToState(slug: string): string {
 export function slugToStateName(slug: string): string {
   return STATE_NAMES[slug] ?? slug
 }
+
+/** US state (and DC) 2-letter codes to display names. */
+export const US_STATE_NAMES: Record<string, string> = {
+  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
+  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', DC: 'District of Columbia',
+  FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois',
+  IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
+  ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan',
+  MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana',
+  NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
+  NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota',
+  OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania',
+  RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota',
+  TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
+  WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+}
+
+const US_STATE_CODE_BY_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(US_STATE_NAMES).map(([code, name]) => [name.toLowerCase(), code]),
+)
+
+/**
+ * The 2-letter code for text that is exactly a US state: a code in any
+ * case ("wa") or a full name ("Washington", "new york"). Null otherwise.
+ */
+export function resolveUsState(text: string | null | undefined): string | null {
+  const t = (text ?? '').trim().replace(/\s+/g, ' ')
+  if (!t) return null
+  const upper = t.toUpperCase()
+  if (upper.length === 2 && US_STATE_NAMES[upper]) return upper
+  return US_STATE_CODE_BY_NAME[t.toLowerCase()] ?? null
+}
