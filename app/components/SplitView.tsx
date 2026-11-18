@@ -189,7 +189,7 @@ export default function SplitView({
       if (!aSample && bSample) return -1
 
       // Within a tier, preserve the DB input order (which is already
-      // created_at DESC from the query in app/page.tsx). Array.sort in modern
+      // created_at DESC from the query in app/(browse)/page.tsx). Array.sort in modern
       // engines is stable, so returning 0 holds that order.
       return 0
     })
@@ -443,7 +443,7 @@ export default function SplitView({
           const isFeaturedActive  = isActiveFeatured(listing)
           const isSponsoredActive = isActiveSponsored(listing)
           // Paid subscription tier (from host_subscriptions, stamped in
-          // app/page.tsx). Pro > Featured > Free. Takes precedence over
+          // app/(browse)/page.tsx). Pro > Featured > Free. Takes precedence over
           // the legacy admin-pinned is_featured badge.
           const tierPriority      = listing._tier_priority ?? 0
           const isPaidPro         = tierPriority === 2
