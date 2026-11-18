@@ -15,9 +15,19 @@ import { ephemeralEmail, USER } from '../helpers/test-users'
 // in CI; the underlying server actions are exercised by other specs.
 const skipTurnstileInCI = !!process.env.CI
 
+// Two tests make the e2e Supabase project send real auth email: the signup
+// happy path (confirmation) and the seeded-user password reset (recovery).
+// They go to e2e+...@hangarmarketplace.com; with no e2e@ mailbox those
+// bounce, and Supabase threatens to cut the project's email on a high
+// bounce rate (warning received 2026-11-17). Run them only when the
+// e2e@ address actually receives mail: set E2E_REAL_INBOX=1.
+const skipUnlessRealInbox = !process.env.E2E_REAL_INBOX
+const REAL_INBOX_REASON = 'Sends real auth email to e2e+...@hangarmarketplace.com; set E2E_REAL_INBOX=1 once that inbox exists.'
+
 test.describe('Signup flow', () => {
   test.skip(skipTurnstileInCI, 'Turnstile widget does not load on GitHub Actions runners.')
   test('happy path: new user can sign up via Turnstile-protected form', async ({ signupPage, page }) => {
+    test.skip(skipUnlessRealInbox, REAL_INBOX_REASON)
     const email = ephemeralEmail('signup')
     const password = 'TestPassword123!'
 
@@ -111,6 +121,7 @@ test.describe('Forgot password', () => {
   })
 
   test('real seeded email is also accepted (cannot tell from UI alone)', async ({ forgotPasswordPage }) => {
+    test.skip(skipUnlessRealInbox, REAL_INBOX_REASON)
     await forgotPasswordPage.goto()
     await forgotPasswordPage.submitWithEmail(USER.email)
     await expect(forgotPasswordPage.successHeading).toBeVisible({ timeout: 10_000 })
