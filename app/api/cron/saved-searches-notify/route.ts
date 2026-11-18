@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { pushToUser } from '@/lib/push'
+import { likeEscape, pgrstQuote } from '@/lib/airportSearch'
+import {
+  ALERT_LISTING_COLUMNS,
+  acceptedListingTypes,
+  describeSearch,
+  listingMatchesSearch,
+  priceColumn,
+  queryStateValues,
+  requiredAmenities,
+  searchPoint,
+  searchQuery,
+  type AlertListing,
+  type SavedSearchFilters,
+} from '@/lib/savedSearchMatch'
 
-/** Quote a value for a PostgREST or() filter so , ( ) inside it are literal. */
-function pgrstQuote(value: string): string {
-  return '"' + value.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+// Listings shown per alert email (newest first).
+const MAX_PER_ALERT = 6
+// Candidates fetched when the radius or amenity filters, which only the
+// JS matcher applies, are set.
+const OVERFETCH = 50
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 /**
@@ -12,7 +36,9 @@ function pgrstQuote(value: string): string {
  *
  * Runs every hour via Vercel Cron.
  * For each saved search, finds listings created since last_notified_at
- * that match the criteria, and emails the subscriber.
+ * that match the criteria, and emails the subscriber. Matching rules live
+ * in lib/savedSearchMatch.ts: SQL narrows the candidates, then
+ * listingMatchesSearch decides (it alone applies radius and amenities).
  *
  * Uses supabaseAdmin throughout — saved_searches has no public RLS
  * policies (intentionally locked down so the alert list can't be
@@ -51,55 +77,62 @@ export async function GET(req: NextRequest) {
       // Build query for new listings since last notified
       const since = search.last_notified_at ?? search.created_at
 
+      const filters = search as SavedSearchFilters
+      const jsOnly  = searchPoint(filters) != null || requiredAmenities(filters).length > 0
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let q: any = supabaseAdmin
         .from('listings')
-        .select('id, title, airport_name, airport_code, city, state, listing_type, asking_price, monthly_lease, square_feet')
+        .select(ALERT_LISTING_COLUMNS)
         .eq('status', 'approved')
         .gt('created_at', since)
         .order('created_at', { ascending: false })
-        .limit(6)
+        .limit(jsOnly ? OVERFETCH : MAX_PER_ALERT)
 
       // Apply filters
-      if (search.query) {
-        // Quoted: a query like "Eastsound, WA" has a comma, which is a
-        // separator in or() and used to make this whole search error out.
-        const like = pgrstQuote(`%${search.query}%`)
-        q = q.or(`city.ilike.${like},state.ilike.${like},airport_name.ilike.${like},airport_code.ilike.${like}`)
+      const text = searchQuery(filters)
+      if (text) {
+        const states = queryStateValues(filters)
+        if (states) {
+          // A state ("WA", "Washington") matches the listing's state only,
+          // not every city or airport name containing "wa". No wildcards,
+          // so ilike is a case-insensitive equals.
+          q = q.or(states.map(v => `state.ilike.${pgrstQuote(likeEscape(v))}`).join(','))
+        } else {
+          // Quoted: a query like "Eastsound, WA" has a comma, which is a
+          // separator in or() and used to make this whole search error out.
+          const like = pgrstQuote(`%${likeEscape(text)}%`)
+          q = q.or(`city.ilike.${like},state.ilike.${like},airport_name.ilike.${like},airport_code.ilike.${like}`)
+        }
       }
-      if (search.listing_type === 'sale' || search.listing_type === 'lease') {
-        // A "both" listing is for sale AND for lease, so it matches either alert.
-        q = q.in('listing_type', [search.listing_type, 'both'])
-      } else if (search.listing_type) {
-        q = q.eq('listing_type', search.listing_type)
-      }
-      if (search.max_price) {
-        const priceCol = search.listing_type === 'lease' || search.listing_type === 'space'
-          ? 'monthly_lease' : 'asking_price'
-        q = q.lte(priceCol, search.max_price)
-      }
+      const types = acceptedListingTypes(filters)
+      if (types) q = q.in('listing_type', types)
+      if (search.property_type) q = q.eq('property_type', search.property_type)
+      const priceCol = priceColumn(filters)
+      if (search.min_price) q = q.gte(priceCol, search.min_price)
+      if (search.max_price) q = q.lte(priceCol, search.max_price)
       if (search.min_sqft) {
         q = q.gte('square_feet', search.min_sqft)
       }
 
-      const { data: listings } = await q
+      const { data: candidates, error: listErr } = await q
+      if (listErr) {
+        console.error('[saved-searches-notify] listing query failed', search.id, listErr.message)
+        continue
+      }
 
-      if (!listings?.length) continue // nothing new
+      // The full match (radius, amenities and everything above), newest first.
+      const listings = ((candidates ?? []) as AlertListing[])
+        .filter(l => listingMatchesSearch(l, filters))
+        .slice(0, MAX_PER_ALERT)
+
+      if (!listings.length) continue // nothing new
 
       // Build email
       const unsubscribeUrl = `${SITE_URL}/api/saved-searches/unsubscribe?token=${search.notify_token}`
-      const filterDesc = [
-        search.query && `matching "${search.query}"`,
-        search.listing_type && `(${search.listing_type})`,
-        search.max_price && `under $${search.max_price.toLocaleString()}`,
-        search.min_sqft && `${search.min_sqft.toLocaleString()}+ sq ft`,
-      ].filter(Boolean).join(' ')
+      const filterDesc = describeSearch(filters)
 
-      const listingCards = listings.map((l: {
-        id: string; title: string; airport_name: string; airport_code: string;
-        city: string; state: string; listing_type: string;
-        asking_price: number | null; monthly_lease: number | null; square_feet: number | null
-      }) => {
+      const listingCards = listings.map(l => {
         const price = l.asking_price
           ? `$${l.asking_price.toLocaleString()}`
           : l.monthly_lease
@@ -118,8 +151,8 @@ export async function GET(req: NextRequest) {
               <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;
                 background:${badge};color:${badgeText};">${label}</span>
             </div>
-            <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:2px;">${l.title}</div>
-            <div style="font-size:13px;color:#6b7280;">${l.airport_code} · ${l.city}, ${l.state}${l.square_feet ? ` · ${l.square_feet.toLocaleString()} sq ft` : ''}</div>
+            <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:2px;">${escapeHtml(l.title)}</div>
+            <div style="font-size:13px;color:#6b7280;">${escapeHtml(l.airport_code ?? '')} · ${escapeHtml(l.city ?? '')}, ${escapeHtml(l.state ?? '')}${l.square_feet ? ` · ${l.square_feet.toLocaleString()} sq ft` : ''}</div>
           </a>`
       }).join('')
 
@@ -130,7 +163,7 @@ export async function GET(req: NextRequest) {
           </div>
           <div style="border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;padding:28px;background:#f9fafb;">
             <p style="margin:0 0 6px;font-size:15px;">
-              We found <strong>${listings.length} new hangar${listings.length !== 1 ? 's' : ''}</strong>${filterDesc ? ` ${filterDesc}` : ''}:
+              We found <strong>${listings.length} new hangar${listings.length !== 1 ? 's' : ''}</strong>${filterDesc ? ` ${escapeHtml(filterDesc)}` : ''}:
             </p>
             <div style="margin-top:20px;">
               ${listingCards}
@@ -165,7 +198,7 @@ export async function GET(req: NextRequest) {
       if (search.user_id) {
         await pushToUser(search.user_id, 'listings', {
           title: `${listings.length} new listing${listings.length !== 1 ? 's' : ''} match your alert`,
-          body:  listings.map((l: { title: string; airport_code: string }) => `${l.title} (${l.airport_code})`).join(', '),
+          body:  listings.map(l => `${l.title} (${l.airport_code})`).join(', '),
           data:  listings.length === 1
             ? { type: 'listing', listingId: listings[0].id }
             : { type: 'search', query: search.query ?? '' },
